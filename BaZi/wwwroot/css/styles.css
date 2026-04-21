@@ -178,3 +178,22 @@ h1:focus {
 .dark-mode .sidebar {
     background-image: linear-gradient(180deg, #1a1a1a 0%, #000 100%);
 }
+
+/* 其他 */
+.border-bottom-dash {
+    border-bottom: var(--bs-border-width) dashed var(--bs-border-color) !important
+}
+
+.col-vc-hc {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 95px;
+}
+
+.col-vc-hl {
+    display: flex;
+    align-items: center;
+    justify-content: left;
+    height: 85px;
+}

@@ -4,7 +4,7 @@ namespace BaZi.Models {
 
     public static class BaZiDefine {
 
-        /// <summary>取得五行的相生關係</summary>
+        /// <summary>取得五行的相生關係，即 '我生'</summary>
         public static IDictionary<WuXing, WuXing> Generation { get; }
             = new ConcurrentDictionary<WuXing, WuXing> {
                 [WuXing.Huo] = WuXing.Tu,
@@ -14,7 +14,17 @@ namespace BaZi.Models {
                 [WuXing.Mu] = WuXing.Huo
             };
 
-        /// <summary>取得五行的相剋關係</summary>
+        /// <summary>取得五行的被生關係，即 '生我'</summary>
+        public static IDictionary<WuXing, WuXing> GenerateBy { get; }
+            = new ConcurrentDictionary<WuXing, WuXing> {
+                [WuXing.Huo] = WuXing.Mu,
+                [WuXing.Tu] = WuXing.Huo,
+                [WuXing.Jin] = WuXing.Tu,
+                [WuXing.Shui] = WuXing.Jin,
+                [WuXing.Mu] = WuXing.Shui
+            };
+
+        /// <summary>取得五行的相剋關係，即 '我剋'</summary>
         public static IDictionary<WuXing, WuXing> Restricting { get; }
             = new ConcurrentDictionary<WuXing, WuXing> {
                 [WuXing.Huo] = WuXing.Jin,
@@ -22,6 +32,16 @@ namespace BaZi.Models {
                 [WuXing.Mu] = WuXing.Tu,
                 [WuXing.Tu] = WuXing.Shui,
                 [WuXing.Shui] = WuXing.Huo
+            };
+
+        /// <summary>取得五行的被剋關係，即 '剋我'</summary>
+        public static IDictionary<WuXing, WuXing> RestrictBy { get; }
+            = new ConcurrentDictionary<WuXing, WuXing> {
+                [WuXing.Huo] = WuXing.Shui,
+                [WuXing.Jin] = WuXing.Huo,
+                [WuXing.Mu] = WuXing.Jin,
+                [WuXing.Tu] = WuXing.Mu,
+                [WuXing.Shui] = WuXing.Tu
             };
 
         /// <summary>取得地支六合</summary>
