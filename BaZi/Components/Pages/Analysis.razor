@@ -1,0 +1,118 @@
+@page "/analysis"
+@inherits Fluxor.Blazor.Web.Components.FluxorComponent
+@inject IState<BaZiState> BaZiState
+@inject NavigationManager Navigation
+
+@if (BaZiState.Value.Info == null) {
+    <div class="alert alert-info">請先回首頁輸入生日。</div>
+    <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/")'>回首頁</button>
+} else {
+    var info = BaZiState.Value.Info;
+    <div class="container mt-4">
+        <h2 class="mb-4 text-center"><i class="fa-solid fa-chart-column me-2"></i>命盤分析</h2>
+        
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card p-3 h-100">
+                    <h5 class="card-title border-bottom pb-2">基本資訊</h5>
+                    <p><strong>性別：</strong> @info.Gender.ToSexString()</p>
+                    <p><strong>國曆：</strong> @info.SolarDate</p>
+                    <p><strong>農曆：</strong> @info.LunarDate</p>
+                    <p><strong>生肖：</strong> @info.ShengXiao</p>
+                    <p><strong>格局：</strong> <span class="badge @GetStrengthBadgeClass(info.StrengthStatus)">@info.StrengthStatus.ToGeJuString() (@info.StrengthScore%)</span></p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card p-3 h-100">
+                    <h5 class="card-title border-bottom pb-2">日主核心</h5>
+                    <div class="d-flex align-items-center justify-content-center h-100">
+                        <div class="day-master-box text-center">
+                            <h1 class="display-1 @GetElementColorClass(info.RiZhu)">@info.DayZhu.Gan.ToGanString()</h1>
+                            <div class="fs-4">@info.RiZhuJiXing.ToJiXingString()@info.RiZhu.ToWuXingString()</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bazi-chart card p-4">
+            <div class="row text-center border-bottom pb-2 mb-2 font-weight-bold">
+                <div class="col">時柱</div>
+                <div class="col">日柱</div>
+                <div class="col">月柱</div>
+                <div class="col">年柱</div>
+            </div>
+            <div class="row text-center mb-3">
+                <div class="col shishen zhuxing">@info.HourZhu.ZhuXing.ToShenString()</div>
+                <div class="col shishen zhuxing">日主</div>
+                <div class="col shishen zhuxing">@info.MonthZhu.ZhuXing.ToShenString()</div>
+                <div class="col shishen zhuxing">@info.YearZhu.ZhuXing.ToShenString()</div>
+            </div>
+            <div class="row text-center mb-3 fs-1">
+                <div class="col gan @GetElementColorClass(info.HourZhu.GanWuXing)">@info.HourZhu.Gan.ToGanString()</div>
+                <div class="col gan @GetElementColorClass(info.DayZhu.GanWuXing)">@info.DayZhu.Gan.ToGanString()</div>
+                <div class="col gan @GetElementColorClass(info.MonthZhu.GanWuXing)">@info.MonthZhu.Gan.ToGanString()</div>
+                <div class="col gan @GetElementColorClass(info.YearZhu.GanWuXing)">@info.YearZhu.Gan.ToGanString()</div>
+            </div>
+            <div class="row text-center mb-3 fs-1">
+                <div class="col zhi @GetElementColorClass(info.HourZhu.ZhiWuXing)">@info.HourZhu.Zhi.ToZhiString()</div>
+                <div class="col zhi @GetElementColorClass(info.DayZhu.ZhiWuXing)">@info.DayZhu.Zhi.ToZhiString()</div>
+                <div class="col zhi @GetElementColorClass(info.MonthZhu.ZhiWuXing)">@info.MonthZhu.Zhi.ToZhiString()</div>
+                <div class="col zhi @GetElementColorClass(info.YearZhu.ZhiWuXing)">@info.YearZhu.Zhi.ToZhiString()</div>
+            </div>
+            <div class="row text-center">
+                <div class="col fuxing">
+                    <div class="row text-center">
+                        @foreach (var ts in info.HourZhu.FuXing) {
+                            <div class="col shishen">@ts.ToShenString()</div>
+                        }
+                    </div>
+                </div>
+                <div class="col fuxing">
+                    <div class="row text-center">
+                        @foreach (var ts in info.DayZhu.FuXing) {
+                            <div class="col shishen">@ts.ToShenString()</div>
+                        }
+                    </div>
+                </div>
+                <div class="col fuxing">
+                    <div class="row text-center">
+                        @foreach (var ts in info.MonthZhu.FuXing) {
+                            <div class="col shishen">@ts.ToShenString()</div>
+                        }
+                    </div>
+                </div>
+                <div class="col fuxing">
+                    <div class="row text-center">
+                        @foreach (var ts in info.YearZhu.FuXing) {
+                            <div class="col shishen">@ts.ToShenString()</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private string GetStrengthBadgeClass(GeJu geJu) {
+        return geJu switch {
+            GeJu.CongQiang => "bg-primary",
+            GeJu.ShenQiang => "bg-success",
+            GeJu.ShenRuo => "bg-warning text-dark",
+            GeJu.CongRuo => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string GetElementColorClass(WuXing element) {
+        return element switch {
+            WuXing.Mu => "element-wood",
+            WuXing.Huo => "element-fire",
+            WuXing.Tu => "element-earth",
+            WuXing.Jin => "element-metal",
+            WuXing.Shui => "element-water",
+            _ => ""
+        };
+    }
+}

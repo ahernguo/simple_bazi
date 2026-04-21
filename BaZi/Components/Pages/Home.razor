@@ -1,0 +1,201 @@
+@page "/"
+@inherits Fluxor.Blazor.Web.Components.FluxorComponent
+@implements IDisposable
+@using System.Text
+@inject Fluxor.IDispatcher Dispatcher
+@inject IState<BaZiState> BaZiState
+@inject NavigationManager Navigation
+@inject SecurityService SecurityService
+
+@* ... rest of UI code ... *@
+<div class="container mt-4">
+    <div class="card p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-0"><i class="fa-solid fa-yin-yang me-2"></i>輸入生日進行排盤</h2>
+            <div>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="ShowImport">
+                    <i class="fa-solid fa-file-import me-1"></i> 匯入
+                </button>
+                @if (BaZiState.Value.IsCalculated) {
+                    <button class="btn btn-outline-secondary btn-sm ms-2" @onclick="ExportData">
+                        <i class="fa-solid fa-file-export me-1"></i> 匯出
+                    </button>
+                }
+            </div>
+        </div>
+
+        @if (mShowImport) {
+            <div class="input-group mb-4">
+                <input type="text" class="form-control" placeholder="貼上匯出的編碼文字..." @bind="mImportText" />
+                <button class="btn btn-success" @onclick="ImportData">確認</button>
+                <button class="btn btn-secondary" @onclick="() => mShowImport = false">取消</button>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(mExportText)) {
+            <div class="alert alert-info mb-4">
+                <strong>匯出編碼：</strong><br />
+                <code class="text-break">@mExportText</code>
+                <button class="btn btn-sm btn-link" @onclick="() => mExportText = null">關閉</button>
+            </div>
+        }
+
+        <div class="mb-3">
+            <label class="form-label">性別</label>
+            <div class="btn-group w-100" role="group">
+                <input type="radio" class="btn-check" name="gender" id="male" @onclick="() => SetGender(2)" checked="@(BaZiState.Value.Gender == 2)" />
+                <label class="btn btn-outline-primary" for="male"><i class="fa-solid fa-mars me-1"></i> 男</label>
+
+                <input type="radio" class="btn-check" name="gender" id="female" @onclick="() => SetGender(1)" checked="@(BaZiState.Value.Gender == 1)" />
+                <label class="btn btn-outline-danger" for="female"><i class="fa-solid fa-venus me-1"></i> 女</label>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <label class="form-label">年 (西元)</label>
+                <select class="form-select" @bind="mYear">
+                    @for (int i = 1900; i <= DateTime.Now.Year; i++) {
+                        <option value="@i">@i</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">月</label>
+                <select class="form-select" @bind="mMonth">
+                    @for (int i = 1; i <= 12; i++) {
+                        <option value="@i">@i</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">日</label>
+                <select class="form-select" @bind="mDay">
+                    @for (int i = 1; i <= 31; i++) {
+                        <option value="@i">@i</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <div class="row g-1">
+                    <div class="col-6">
+                        <label class="form-label">時</label>
+                        <select class="form-select" @bind="mHour">
+                            @for (int i = 0; i < 24; i++) {
+                                <option value="@i">@($"{i:D2}")</option>
+                            }
+                            <option value="25">吉時</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">分</label>
+                        <select class="form-select" @bind="mMinute">
+                            @for (int i = 0; i < 60; i++) {
+                                <option value="@i">@($"{i:D2}")</option>
+                            }
+                            <option value="61">吉分</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(BaZiState.Value.Error)) {
+            <div class="alert alert-danger mb-3">
+                @BaZiState.Value.Error
+            </div>
+        }
+
+        <div class="d-grid gap-2">
+            <button class="btn btn-primary btn-lg" @onclick="Calculate" disabled="@BaZiState.Value.IsLoading">
+                @if (BaZiState.Value.IsLoading) {
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                }
+                <i class="fa-solid fa-calculator me-2"></i>開始分析
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int mYear = 1990;
+    private int mMonth = 1;
+    private int mDay = 1;
+    private int mHour = 12;
+    private int mMinute = 0;
+
+    private bool mShowImport = false;
+    private string? mImportText;
+    private string? mExportText;
+
+    private void SetGender(int gender) => Dispatcher.Dispatch(new SetGenderAction(gender));
+
+    private void ShowImport() => mShowImport = true;
+
+    private void ExportData() {
+        byte[] data = new byte[7];
+        data[0] = (byte)BaZiState.Value.Gender;
+        data[1] = (byte)((mYear & 0xFF00) >> 16);
+        data[2] = (byte)(mYear & 0x00FF);
+        data[3] = (byte)mMonth;
+        data[4] = (byte)mDay;
+        data[5] = (byte)mHour;
+        data[6] = (byte)mMinute;
+
+        mExportText = SecurityService.Encrypt(data);
+    }
+
+    private void ImportData() {
+        if (string.IsNullOrEmpty(mImportText)) return;
+        try {
+            byte[] data = SecurityService.Decrypt(mImportText);
+            if (data.Length >= 7) {
+                int gender = data[0];
+                int year = (data[1] << 16) | data[2];
+                int month = data[3];
+                int day = data[4];
+                int hour = data[5];
+                int minute = data[6];
+
+                mYear = year;
+                mMonth = month;
+                mDay = day;
+                mHour = hour;
+                mMinute = minute;
+                
+                mShowImport = false;
+                Calculate();
+            }
+        } catch (Exception ex) {
+            Dispatcher.Dispatch(new CalculateBaZiFailureAction($"匯入資料格式錯誤。{ex.Message}"));
+        }
+    }
+
+    private void Calculate() {
+        try {
+            int h = mHour == 25 ? 12 : mHour;
+            int m = mMinute == 61 ? 0 : mMinute;
+            DateTime dt = new DateTime(mYear, mMonth, mDay, h, m, 0);
+            Dispatcher.Dispatch(new CalculateBaZiAction(dt, BaZiState.Value.Gender));
+        } catch (Exception ex) {
+            Dispatcher.Dispatch(new CalculateBaZiFailureAction(ex.Message));
+        }
+    }
+
+    protected override void OnInitialized() {
+        base.OnInitialized();
+        BaZiState.StateChanged += HandleStateChanged;
+    }
+
+    private void HandleStateChanged(object? sender, EventArgs e) {
+        if (BaZiState.Value.IsCalculated) {
+            InvokeAsync(() => {
+                Navigation.NavigateTo("/analysis");
+            });
+        }
+    }
+
+    void IDisposable.Dispose() {
+        BaZiState.StateChanged -= HandleStateChanged;
+    }
+}

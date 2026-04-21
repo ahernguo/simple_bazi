@@ -1,0 +1,85 @@
+@page "/overview"
+@inherits Fluxor.Blazor.Web.Components.FluxorComponent
+@inject IState<BaZiState> BaZiState
+@inject NavigationManager Navigation
+
+@if (BaZiState.Value.Info == null) {
+    <div class="alert alert-info">請先回首頁輸入生日。</div>
+    <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/")'>回首頁</button>
+} else {
+    var info = BaZiState.Value.Info;
+    var stats = CalculateTenStarStats(info);
+    
+    <div class="container mt-4">
+        <h2 class="mb-4 text-center"><i class="fa-solid fa-user-tag me-2"></i>個人概述</h2>
+
+        <div class="row">
+            <div class="col-md-7">
+                <div class="card p-3 mb-4">
+                    <h5 class="card-title border-bottom pb-2">十神性格比例</h5>
+                    @foreach (var stat in stats.OrderByDescending(x => x.Count)) {
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>@stat.Name</span>
+                                <span>@($"{stat.Percentage:P1}") (@stat.Count 字)</span>
+                            </div>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar" role="progressbar" style="width: @($"{stat.Percentage * 100}%")"></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="card p-3 mb-4">
+                    <h5 class="card-title border-bottom pb-2">五行補運建議</h5>
+                    <p>根據您的命盤分析為 <strong>@info.StrengthStatus</strong>。</p>
+                    <p>建議補運方向：</p>
+                    <ul>
+                        @foreach (var advice in GetElementAdvice(info)) {
+                            <li>@advice</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private class ShiShenState {
+        public string Name { get; set; } = string.Empty;
+        public int Count { get; set; }
+        public double Percentage { get; set; }
+    }
+
+    private List<ShiShenState> CalculateTenStarStats(BaZi.Models.BaZiInfo info) {
+        var allStars = new List<ShiShen>();
+        // 天干十神
+        allStars.Add(info.YearZhu.ZhuXing);
+        allStars.Add(info.MonthZhu.ZhuXing);
+        allStars.Add(info.HourZhu.ZhuXing);
+        
+        // 支藏干十神
+        allStars.AddRange(info.YearZhu.FuXing);
+        allStars.AddRange(info.MonthZhu.FuXing);
+        allStars.AddRange(info.DayZhu.FuXing);
+        allStars.AddRange(info.HourZhu.FuXing);
+
+        var groups = allStars
+            .GroupBy(x => x)
+            .Select(g => new ShiShenState {
+                Name = g.Key.ToShenString(),
+                Count = g.Count(),
+                Percentage = (double)g.Count() / allStars.Count
+            })
+            .ToList();
+        return groups;
+    }
+
+    private List<string> GetElementAdvice(BaZi.Models.BaZiInfo info) {
+        // 簡單邏輯：身強找剋洩，身弱找幫扶
+        // 這邊僅為示意，實際應根據 Rules.md 的補運章節
+        return new List<string> { "請參閱 Rules.md 補運章節進行調整" };
+    }
+}

@@ -1,0 +1,51 @@
+@inherits Fluxor.Blazor.Web.Components.FluxorComponent
+@inject IDispatcher Dispatcher
+@inject IState<BaZiState> BaZiState
+@inject IState<ThemeState> ThemeState
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">BaZi 算命</a>
+    </div>
+</div>
+<div class="top-row px-4">
+    <button class="btn btn-link" @onclick="ToggleSidebar">
+        <i class="fa-solid fa-bars"></i>
+    </button>
+    <button class="btn btn-link ms-auto" @onclick="ToggleTheme">
+        <i class="fa-solid @(ThemeState.Value.IsDarkMode ? "fa-sun" : "fa-moon")"></i>
+    </button>
+</div>
+<div class="nav-scrollable">
+    <nav class="nav flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <i class="fa-solid fa-home me-2"></i> 首頁
+            </NavLink>
+        </div>
+
+        @if (BaZiState.Value.IsCalculated)
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="analysis">
+                    <i class="fa-solid fa-chart-line me-2"></i> 命盤分析
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="overview">
+                    <i class="fa-solid fa-user me-2"></i> 個人概述
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="fortune">
+                    <i class="fa-solid fa-calendar-days me-2"></i> 大運/流年
+                </NavLink>
+            </div>
+        }
+    </nav>
+</div>
+
+@code {
+    private void ToggleTheme() => Dispatcher.Dispatch(new ToggleThemeAction());
+    private void ToggleSidebar() => Dispatcher.Dispatch(new ToggleSidebarAction());
+}

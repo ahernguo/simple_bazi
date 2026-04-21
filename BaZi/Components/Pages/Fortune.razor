@@ -1,0 +1,63 @@
+@page "/fortune"
+@inherits Fluxor.Blazor.Web.Components.FluxorComponent
+@inject IState<BaZiState> BaZiState
+@inject NavigationManager Navigation
+
+@if (BaZiState.Value.Info == null) {
+    <div class="alert alert-info">請先回首頁輸入生日。</div>
+    <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/")'>回首頁</button>
+} else {
+    var info = BaZiState.Value.Info;
+    <div class="container mt-4">
+        <h2 class="mb-4 text-center"><i class="fa-solid fa-road me-2"></i>大運與流年</h2>
+
+        <div class="card p-3 mb-4">
+            <h5 class="card-title border-bottom pb-2">大運表 (每十年一運)</h5>
+            <div class="table-responsive">
+                <table class="table table-bordered text-center">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>起運年</th>
+                            <th>起運歲數</th>
+                            <th>大運干支</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var dy in info.DaYunList) {
+                            <tr class="@(IsCurrentDaYun(dy, info) ? "table-warning" : "")">
+                                <td>@dy.StartYear</td>
+                                <td>@dy.StartAge</td>
+                                <td class="fw-bold">@dy.Gan.ToGanString()@dy.Zhi.ToZhiString()</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="alert alert-light mt-3">
+            <i class="fa-solid fa-circle-info me-2"></i>
+            格局為 <strong>@info.StrengthStatus.ToGeJuString()</strong>
+        </div>
+
+        <div class="card p-3">
+            <h5 class="card-title border-bottom pb-2">十年大運</h5>
+            @DaYunDescription(info)
+        </div>
+    </div>
+}
+
+@code {
+    private bool IsCurrentDaYun(DaYun dy, BaZiInfo info) {
+        int currentYear = DateTime.Now.Year;
+        var nextDaYun = info.DaYunList.FirstOrDefault(x => x.StartYear > dy.StartYear);
+        if (nextDaYun == null) {
+            return currentYear >= dy.StartYear;
+        }
+        return currentYear >= dy.StartYear && currentYear < nextDaYun.StartYear;
+    }
+
+    private string DaYunDescription(BaZiInfo info) {
+        return "測試";
+    }
+}
