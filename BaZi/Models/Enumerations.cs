@@ -79,29 +79,30 @@
     }
 
     /// <summary>十神</summary>
+    [Flags]
     public enum ShiShen : int {
         /// <summary>日主</summary>
         RiZhu = 0,
         /// <summary>比肩</summary>
-        BiJian = 1,
+        BiJian = 0x0001,
         /// <summary>劫財</summary>
-        JieCai = 2,
+        JieCai = 0x0002,
         /// <summary>食神</summary>
-        ShihShen = 3,
+        ShihShen = 0x0004,
         /// <summary>傷官</summary>
-        ShangGuan = 4,
+        ShangGuan = 0x0008,
         /// <summary>偏財</summary>
-        PianCai = 5,
+        PianCai = 0x0010,
         /// <summary>正財</summary>
-        ZhengCai = 6,
+        ZhengCai = 0x0020,
         /// <summary>七殺</summary>
-        QiSha = 7,
+        QiSha = 0x0040,
         /// <summary>正官</summary>
-        ZhengGuan = 8,
+        ZhengGuan = 0x0080,
         /// <summary>偏印</summary>
-        PianYin = 9,
+        PianYin = 0x0100,
         /// <summary>正印</summary>
-        ZhengYin = 10
+        ZhengYin = 0x0200
     }
 
     /// <summary>性別</summary>

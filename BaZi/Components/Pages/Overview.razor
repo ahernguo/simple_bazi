@@ -13,43 +13,39 @@
     <div class="container mt-4">
         <h2 class="mb-4 text-center"><i class="fa-solid fa-user-tag me-2"></i>個人概述</h2>
 
-        <div class="row">
-            <div class="col-md-7">
-                <div class="card p-3 mb-4">
-                    <h5 class="card-title border-bottom pb-2">十神性格比例</h5>
-                    @foreach (var stat in stats.OrderByDescending(x => x.Count)) {
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between mb-1">
-                                <span>@stat.Name</span>
-                                <span>@($"{stat.Percentage:P1}") (@stat.Count 字)</span>
-                            </div>
-                            <div class="progress" style="height: 10px;">
-                                <div class="progress-bar" role="progressbar" style="width: @($"{stat.Percentage * 100}%")"></div>
-                            </div>
-                        </div>
-                    }
+        <div class="card p-3 mb-4">
+            <h5 class="card-title border-bottom pb-2">十神性格比例</h5>
+            @foreach (var stat in stats.OrderByDescending(x => x.Count)) {
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>@stat.Xing.ToShenString()</span>
+                        <span>@($"{stat.Percentage:P1}") (@stat.Count 字)</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar" role="progressbar" style="width: @($"{stat.Percentage * 100}%")"></div>
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-5">
-                <div class="card p-3 mb-4">
-                    <h5 class="card-title border-bottom pb-2">五行補運建議</h5>
-                    <p>根據您的命盤分析為 <strong>@info.StrengthStatus</strong>。</p>
-                    <p>建議補運方向：</p>
-                    <ul>
-                        @foreach (var advice in GetElementAdvice(info)) {
-                            <li>@advice</li>
-                        }
-                    </ul>
-                </div>
-            </div>
+            }
         </div>
+
+        @foreach (var kvp in GetShiShenDesc(info, stats)) {
+            <div class="card mt-4 p-4">
+                <h5 class="card-title border-bottom pb-2">@kvp.title</h5>
+                @kvp.content
+            </div>
+        }
+
     </div>
 }
 
 @code {
+    /// <summary>十神統計狀態</summary>
     private class ShiShenState {
-        public string Name { get; set; } = string.Empty;
+        /// <summary>取得或設定星</summary>
+        public ShiShen Xing { get; set; }
+        /// <summary>取得或設定此星對應的數量</summary>
         public int Count { get; set; }
+        /// <summary>取得或設定此星對應的百分比</summary>
         public double Percentage { get; set; }
     }
 
@@ -59,7 +55,7 @@
         allStars.Add(info.YearZhu.ZhuXing);
         allStars.Add(info.MonthZhu.ZhuXing);
         allStars.Add(info.HourZhu.ZhuXing);
-        
+
         // 支藏干十神
         allStars.AddRange(info.YearZhu.FuXing);
         allStars.AddRange(info.MonthZhu.FuXing);
@@ -68,18 +64,113 @@
 
         var groups = allStars
             .GroupBy(x => x)
-            .Select(g => new ShiShenState {
-                Name = g.Key.ToShenString(),
-                Count = g.Count(),
-                Percentage = (double)g.Count() / allStars.Count
-            })
-            .ToList();
+            .Select(
+                g => new ShiShenState {
+                    Xing = g.Key,
+                    Count = g.Count()
+                }
+            ).ToList();
+
+        double total = groups.Sum(s => s.Count);
+        foreach (var g in groups) {
+            g.Percentage = g.Count / total;
+        }
         return groups;
     }
 
-    private List<string> GetElementAdvice(BaZi.Models.BaZiInfo info) {
-        // 簡單邏輯：身強找剋洩，身弱找幫扶
-        // 這邊僅為示意，實際應根據 Rules.md 的補運章節
-        return new List<string> { "請參閱 Rules.md 補運章節進行調整" };
+    private MarkupString FormatShiShenHtml(ShiShen src, ShiShen aXing, ShiShen bXing, int a, int b) {
+        var html = new System.Text.StringBuilder();
+
+
+        if (a == b) {
+            var detail = ((a + b) < 3)
+                ? BaZiDefine.ShiShenCombineLs3Details[src]
+                : BaZiDefine.ShiShenCombineGte3Details[src];
+
+            html.AppendLine(@"<div class=""row ms-1 me-1 py-3"">");
+            html.AppendLine(@"    <table>");
+            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong>特性：</strong></td><td>{detail.desc}</td></tr>");
+            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-success"">優點：</strong></td><td>{detail.positive}</td></tr>");
+            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-danger"">缺點：</strong></td><td>{detail.negative}</td></tr>");
+            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-info"">建議：</strong></td><td>{detail.advice}</td></tr>");
+            html.AppendLine(@"    </table>");
+            html.AppendLine(@"</div>");
+        } else if (a != b) {
+            var more = (a > b) ? aXing : bXing;
+            var less = (a > b) ? bXing : aXing;
+            var subDetail = BaZiDefine.ShiShenDetails[more];
+            html.AppendLine(@"<div class=""row ms-1 me-1 py-3"">");
+            html.AppendLine(@"    <table>");
+            html.AppendLine($@"        <tr height=""40px"" valign=""top""><td colspan=""2""><u>{more.ToShenString()}</u> 較 <u>{less.ToShenString()}</u> 多時...</td></tr>");
+            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong>特性：</strong></td><td>{subDetail.desc}</td></tr>");
+            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-success"">優點：</strong></td><td>{subDetail.positive}</td></tr>");
+            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-danger"">缺點：</strong></td><td>{subDetail.negative}</td></tr>");
+            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-info"">建議：</strong></td><td>{subDetail.advice}</td></tr>");
+            html.AppendLine(@"    </table>");
+            html.AppendLine(@"</div>");
+        }
+        return (MarkupString)html.ToString();
+    }
+
+    private MarkupString FormatShiShenHtml(ShiShen src, int count) {
+        var html = new System.Text.StringBuilder();
+        html.AppendLine(@"<div class=""row ms-1 me-1 py-3"">");
+        html.AppendLine(@"    <table>");
+
+        var detail = (count < 3)
+            ? BaZiDefine.ShiShenCombineLs3Details[src]
+            : BaZiDefine.ShiShenCombineGte3Details[src];
+
+        html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong>特性：</strong></td><td>{detail.desc}</td></tr>");
+        html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-success"">優點：</strong></td><td>{detail.positive}</td></tr>");
+        html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-danger"">缺點：</strong></td><td>{detail.negative}</td></tr>");
+        html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-info"">建議：</strong></td><td>{detail.advice}</td></tr>");
+
+        html.AppendLine(@"    </table>");
+        html.AppendLine(@"</div>");
+        return (MarkupString)html.ToString();
+    }
+
+    private List<(MarkupString title, MarkupString content)> GetShiShenDesc(BaZiInfo info, List<ShiShenState> states) {
+        var desc = new List<(MarkupString title, MarkupString content)>();
+        /* 以各十神重新計算 */
+        var allStars = new List<ShiShen>();
+        // 天干十神
+        allStars.Add(info.YearZhu.ZhuXing);
+        allStars.Add(info.MonthZhu.ZhuXing);
+        allStars.Add(info.HourZhu.ZhuXing);
+        // 支藏干十神
+        allStars.AddRange(info.YearZhu.FuXing);
+        allStars.AddRange(info.MonthZhu.FuXing);
+        allStars.AddRange(info.DayZhu.FuXing);
+        allStars.AddRange(info.HourZhu.FuXing);
+        /* 先統計官殺、食傷等組合各自的數量 */
+        var counting = new Dictionary<ShiShen, (ShiShen aXing, ShiShen bXing, int a, int b)>() {
+            { ShiShen.ZhengGuan | ShiShen.QiSha, (ShiShen.ZhengGuan, ShiShen.QiSha, allStars.Count(s => s == ShiShen.ZhengGuan), allStars.Count(s => s == ShiShen.QiSha)) },
+            { ShiShen.ShihShen | ShiShen.ShangGuan, (ShiShen.ShihShen, ShiShen.ShangGuan, allStars.Count(s => s == ShiShen.ShihShen), allStars.Count(s => s == ShiShen.ShangGuan)) },
+            { ShiShen.ZhengCai | ShiShen.PianCai, (ShiShen.ZhengCai, ShiShen.PianCai, allStars.Count(s => s == ShiShen.ZhengCai), allStars.Count(s => s == ShiShen.PianCai)) },
+            { ShiShen.ZhengYin | ShiShen.PianYin, (ShiShen.ZhengYin, ShiShen.PianYin, allStars.Count(s => s == ShiShen.ZhengYin), allStars.Count(s => s == ShiShen.PianYin)) },
+            { ShiShen.BiJian | ShiShen.JieCai, (ShiShen.BiJian, ShiShen.JieCai, allStars.Count(s => s == ShiShen.BiJian), allStars.Count(s => s == ShiShen.JieCai)) }
+        };
+        /* 依序建置、印出 */
+        var ordered = counting.Where(kvp => (kvp.Value.a > 0) && (kvp.Value.b > 0)).OrderByDescending(kvp => (kvp.Value.a + kvp.Value.b));
+        double total = states.Sum(s => s.Count);
+        var percents = counting.ToDictionary(kvp => kvp.Key, kvp => ((kvp.Value.a + kvp.Value.b) / total));
+        foreach (var kvp in ordered) {
+            string title;
+            MarkupString ms;
+            if ((kvp.Value.a > 0) && (kvp.Value.b > 0)) {
+                title = $"{kvp.Key.ToShenString()}&emsp;<span style=\"color: lightgreen;\">{percents[kvp.Key]:P1}</span>&emsp;<strong style=\"color: lightskyblue;\">{BaZiDefine.ShiShenCombineMeans[kvp.Key]}</strong>";
+                ms = FormatShiShenHtml(kvp.Key, kvp.Value.aXing, kvp.Value.bXing, kvp.Value.a, kvp.Value.b);
+            } else if (kvp.Value.a > 0) {
+                title = $"{kvp.Value.aXing.ToShenString()}&emsp;<span style=\"color: lightgreen;\">{percents[kvp.Key]:P1}</span>";
+                ms = FormatShiShenHtml(kvp.Value.aXing, kvp.Value.a);
+            } else {
+                title = $"{kvp.Value.bXing.ToShenString()}&emsp;<span style=\"color: lightgreen;\">{percents[kvp.Key]:P1}</span>";
+                ms = FormatShiShenHtml(kvp.Value.bXing, kvp.Value.b);
+            }
+            desc.Add(((MarkupString)title, ms));
+        }
+        return desc;
     }
 }

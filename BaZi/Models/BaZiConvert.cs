@@ -230,6 +230,11 @@ namespace BaZi.Models {
                 ShiShen.ZhengGuan => "正官",
                 ShiShen.PianYin => "偏印",
                 ShiShen.ZhengYin => "正印",
+                ShiShen.ZhengGuan | ShiShen.QiSha => "官殺",
+                ShiShen.ShihShen | ShiShen.ShangGuan => "食傷",
+                ShiShen.ZhengCai | ShiShen.PianCai => "財星",
+                ShiShen.ZhengYin | ShiShen.PianYin => "印星",
+                ShiShen.BiJian | ShiShen.JieCai => "比劫",
                 _ => throw new InvalidEnumArgumentException(nameof(shen), (int)shen, typeof(ShiShen))
             };
         }
