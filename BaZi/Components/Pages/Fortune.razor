@@ -35,15 +35,13 @@
             </div>
         </div>
 
-        <div class="alert alert-light mt-3">
-            <i class="fa-solid fa-circle-info me-2"></i>
-            格局為 <strong>@info.StrengthStatus.ToGeJuString()</strong>
-        </div>
+        @if (HasSelfConflict(info, out var confMs)) {
+            @confMs
+        }
 
-        <div class="card p-3">
-            <h5 class="card-title border-bottom pb-2">十年大運</h5>
-            @DaYunDescription(info)
-        </div>
+        @DaYunAnalysis(info)
+
+        @LiuNianAnalysis(info)
     </div>
 }
 
@@ -57,7 +55,981 @@
         return currentYear >= dy.StartYear && currentYear < nextDaYun.StartYear;
     }
 
-    private string DaYunDescription(BaZiInfo info) {
-        return "測試";
+    private bool Gte2(IList<IGanZhi> src, IList<DiZhi> tar, bool mustLast) {
+        var temp = tar.ToDictionary(
+            d => d,
+            d => src.Count(tp => tp.Zhi == d)
+        );
+        if (mustLast) {
+            return (temp.Count(kvp => kvp.Value > 0) >= 2) && temp.ContainsKey(src.Last().Zhi) && (temp[src.Last().Zhi] > 0);
+        } else {
+            return temp.Count(kvp => kvp.Value > 0) >= 2;
+        }
+    }
+
+    private bool Gte2(IList<IGanZhi> src, IList<TianGan> tar, bool mustLast) {
+        var temp = tar.ToDictionary(
+            d => d,
+            d => src.Count(tp => tp.Gan == d)
+        );
+        if (mustLast) {
+            return (temp.Count(kvp => kvp.Value > 0) >= 2) && temp.ContainsKey(src.Last().Gan) && (temp[src.Last().Gan] > 0);
+        } else {
+            return temp.Count(kvp => kvp.Value > 0) >= 2;
+        }
+    }
+
+    private bool Gte3(IList<IGanZhi> src, IList<DiZhi> tar, bool mustLast) {
+        var temp = tar.ToDictionary(
+            d => d,
+            d => src.Count(tp => tp.Zhi == d)
+        );
+        if (mustLast) {
+            return (temp.Count(kvp => kvp.Value > 0) >= 3) && temp.ContainsKey(src.Last().Zhi) && (temp[src.Last().Zhi] > 0);
+        } else {
+            return temp.Count(kvp => kvp.Value > 0) >= 3;
+        }
+    }
+
+    private bool AllSame(IList<IGanZhi> src, DiZhi tar) {
+        return src.All(dz => dz.Zhi == tar);
+    }
+
+    private bool FindGte2Index(IList<IList<IGanZhi>> src, IList<DiZhi> tar, bool mustLast, out int idx) {
+        var found = false;
+        var curIdx = 0;
+        var tarIdx = -1;
+        foreach (var item in src) {
+            if (Gte2(item, tar, mustLast)) {
+                tarIdx = curIdx;
+                found = true;
+                break;
+            }
+            curIdx++;
+        }
+        idx = tarIdx;
+        return found;
+    }
+
+    private bool FindGte2Index(IList<IList<IGanZhi>> src, IList<IList<DiZhi>> tar, bool mustLast, out int idx) {
+        var found = false;
+        var curIdx = 0;
+        var tarIdx = -1;
+        foreach (var tp in src) {
+            foreach (var zhi in tar) {
+                if (Gte2(tp, zhi, mustLast)) {
+                    tarIdx = curIdx;
+                    found = true;
+                    break;
+                }
+            }
+            curIdx++;
+        }
+        idx = tarIdx;
+        return found;
+    }
+
+    private bool FindGte2Index(IList<IList<IGanZhi>> src, IList<IList<TianGan>> tar, bool mustLast, out int idx) {
+        var found = false;
+        var curIdx = 0;
+        var tarIdx = -1;
+        foreach (var tp in src) {
+            foreach (var gan in tar) {
+                if (Gte2(tp, gan, mustLast)) {
+                    tarIdx = curIdx;
+                    found = true;
+                    break;
+                }
+            }
+            curIdx++;
+        }
+        idx = tarIdx;
+        return found;
+    }
+
+    private bool FindGte3Index(IList<IList<IGanZhi>> src, IList<DiZhi> tar, bool mustLast, out int idx) {
+        var found = false;
+        var curIdx = 0;
+        var tarIdx = -1;
+        foreach (var item in src) {
+            if (Gte3(item, tar, mustLast)) {
+                tarIdx = curIdx;
+                found = true;
+                break;
+            }
+            curIdx++;
+        }
+        idx = tarIdx;
+        return found;
+    }
+
+    private bool FindAllSameIndex(IList<IList<IGanZhi>> src, IList<DiZhi> tar, out int idx) {
+        var found = false;
+        var curIdx = 0;
+        var tarIdx = -1;
+        foreach (var tp in src) {
+            foreach (var zhi in tar) {
+                if (AllSame(tp, zhi)) {
+                    tarIdx = curIdx;
+                    found = true;
+                    break;
+                }
+            }
+            curIdx++;
+        }
+        idx = tarIdx;
+        return found;
+    }
+
+    private void CreateThreeHeDesc(IList<IGanZhi> a, WuXing wuXing, System.Text.StringBuilder html) {
+        html.AppendLine(@"<div class=""row ms-1 me-1 py-3"">");
+        html.AppendLine(@"    <table>");
+        html.AppendLine($@"        <tr height=""40px"" valign=""top""><td colspan=""2"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span>、{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 與{a[2].Id} <span class=""border-bottom-dash"">{a[2].Zhi.ToZhiString()}</span> 形成「<strong class=""text-success"">三合{wuXing.ToWuXingString()}局</strong>」</td></tr>");
+        html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-success"">幫助：</strong></td><td>補充所需的能量，提升整體運勢、壞事化小、趨吉避凶</td></tr>");
+        html.AppendLine(@"    </table>");
+        html.AppendLine(@"</div>");
+    }
+
+    private void CreateFiveHeDesc(IList<IGanZhi> a, int type, System.Text.StringBuilder html) {
+        html.AppendLine(@"<div class=""row ms-1 me-1 py-3"">");
+        html.AppendLine(@"    <table>");
+        html.AppendLine($@"        <tr height=""40px"" valign=""top""><td colspan=""2"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Gan.ToGanString()}</span> 與{a[1].Id} <span class=""border-bottom-dash"">{a[1].Gan.ToGanString()}</span> 形成「<strong class=""text-success"">合相</strong>」</td></tr>");
+        if (type == 0) {
+            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-success"">幫助：</strong></td><td>補充所需的能量，提升整體運勢、壞事化小、趨吉避凶</td></tr>");
+        } else if (type == 1) {
+            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-warning"">狀況：</strong></td><td>原本好的能量被用走，綁手綁腳、事情不順</td></tr>");
+        } else {
+            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-success"">幫助：</strong></td><td>削弱不好的能量，整體運勢加分</td></tr>");
+        }
+        html.AppendLine(@"    </table>");
+        html.AppendLine(@"</div>");
+    }
+
+    private void CreateSixHeDesc(IList<IGanZhi> a, int type, System.Text.StringBuilder html) {
+        html.AppendLine(@"<div class=""row ms-1 me-1 py-3"">");
+        html.AppendLine(@"    <table>");
+        html.AppendLine($@"        <tr height=""40px"" valign=""top""><td colspan=""2"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span> 與{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 形成「<strong class=""text-success"">合相</strong>」</td></tr>");
+        if (type == 0) {
+            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-success"">幫助：</strong></td><td>補充所需的能量，提升整體運勢、壞事化小、趨吉避凶</td></tr>");
+        } else if (type == 1) {
+            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-warning"">狀況：</strong></td><td>原本好的能量被用走，綁手綁腳、事情不順</td></tr>");
+        } else {
+            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-success"">幫助：</strong></td><td>削弱不好的能量，整體運勢加分</td></tr>");
+        }
+        html.AppendLine(@"    </table>");
+        html.AppendLine(@"</div>");
+    }
+
+    private void CreateTwoXingDesc(IList<IGanZhi> a, string means, string advice, string force, System.Text.StringBuilder html) {
+        html.AppendLine(@"<div class=""row ms-1 me-1 py-3"">");
+        html.AppendLine(@"    <table>");
+        html.AppendLine($@"        <tr height=""40px"" valign=""top""><td colspan=""2"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span> 與{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 形成「<strong class=""text-danger"">相刑</strong>」</td></tr>");
+        html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong>阻力：</strong></td><td>外在、力度{force}</td></tr>");
+        html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-warning"">狀況：</strong></td><td>{means}</td></tr>");
+        html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-info"">建議：</strong></td><td>{advice}</td></tr>");
+        html.AppendLine(@"    </table>");
+        html.AppendLine(@"</div>");
+    }
+
+    private void CreateThreeXingDesc(IList<IGanZhi> a, string means, string advice, System.Text.StringBuilder html) {
+        html.AppendLine(@"<div class=""row ms-1 me-1 py-3"">");
+        html.AppendLine(@"    <table>");
+        html.AppendLine($@"        <tr height=""40px"" valign=""top""><td colspan=""2"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span>、{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 與{a[2].Id} <span class=""border-bottom-dash"">{a[2].Zhi.ToZhiString()}</span> 形成「<strong class=""text-danger"">三刑</strong>」</td></tr>");
+        html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong>阻力：</strong></td><td>外在、力度強</td></tr>");
+        html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-warning"">狀況：</strong></td><td>{means}</td></tr>");
+        html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-info"">建議：</strong></td><td>{advice}</td></tr>");
+        html.AppendLine(@"    </table>");
+        html.AppendLine(@"</div>");
+    }
+
+    private void CreateSelfXingDesc(IList<IGanZhi> a, string means, System.Text.StringBuilder html) {
+        html.AppendLine(@"<div class=""row ms-1 me-1 py-3"">");
+        html.AppendLine(@"    <table>");
+        html.AppendLine($@"        <tr height=""40px"" valign=""top""><td colspan=""2"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span> 與{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 形成「<strong class=""text-danger"">自刑</strong>」</td></tr>");
+        html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong>阻力：</strong></td><td>內在、力度中</td></tr>");
+        html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-warning"">狀況：</strong></td><td>{means}</td></tr>");
+        html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-info"">建議：</strong></td><td>適度釋放壓力</td></tr>");
+        html.AppendLine(@"    </table>");
+        html.AppendLine(@"</div>");
+    }
+
+    private void CreateChongDesc(IList<IGanZhi> a, string means, System.Text.StringBuilder html) {
+        html.AppendLine(@"<div class=""row ms-1 me-1 py-3"">");
+        html.AppendLine(@"    <table>");
+        html.AppendLine($@"        <tr height=""40px"" valign=""top""><td colspan=""2"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span> 與{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 形成「<strong class=""text-danger"">相沖</strong>」</td></tr>");
+        html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong>阻力：</strong></td><td>外在、力度中</td></tr>");
+        html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-warning"">狀況：</strong></td><td>{means}</td></tr>");
+        html.AppendLine(@"    </table>");
+        html.AppendLine(@"</div>");
+    }
+
+    private void CreatePoDesc(IList<IGanZhi> a, string means, System.Text.StringBuilder html) {
+        html.AppendLine(@"<div class=""row ms-1 me-1 py-3"">");
+        html.AppendLine(@"    <table>");
+        html.AppendLine($@"        <tr height=""40px"" valign=""top""><td colspan=""2"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span> 與{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 形成「<strong class=""text-danger"">破</strong>」</td></tr>");
+        html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong>阻力：</strong></td><td>內在、力度小</td></tr>");
+        html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-warning"">狀況：</strong></td><td>{means}</td></tr>");
+        html.AppendLine(@"    </table>");
+        html.AppendLine(@"</div>");
+    }
+
+    private void CreateHaiDesc(IList<IGanZhi> a, string means, System.Text.StringBuilder html) {
+        html.AppendLine(@"<div class=""row ms-1 me-1 py-3"">");
+        html.AppendLine(@"    <table>");
+        html.AppendLine($@"        <tr height=""40px"" valign=""top""><td colspan=""2"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span> 與{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 形成「<strong class=""text-danger"">害</strong>」</td></tr>");
+        html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong>阻力：</strong></td><td>內在、力度小</td></tr>");
+        html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-warning"">狀況：</strong></td><td>{means}</td></tr>");
+        html.AppendLine(@"    </table>");
+        html.AppendLine(@"</div>");
+    }
+
+    private (bool bad, IDictionary<HeHui, WuXing> heHui) CheckConflict(BaZiInfo info, IList<IList<IGanZhi>>? ganPair, IList<IList<IGanZhi>>? threePair, IList<IList<IGanZhi>> twoPair, System.Text.StringBuilder html) {
+        var bad = false;
+        var heHui = new Dictionary<HeHui, WuXing>();
+        if (info.CurrentDaYun is null) return (bad, heHui);
+        // 天干五合
+        if ((ganPair != null) && FindGte2Index(ganPair, BaZiDefine.FiveHe, true, out var ganIdx)) {
+            //檢查這個被合走的天干是喜用神還是忌神。由於
+            var type = 0;
+            var zhu = (Zhu)ganPair[ganIdx][0];
+            if (info.LikeWuXing.Contains(zhu.GanWuXing)) {
+                // 原本是喜用神，被合走反而反而會變不順
+                type = 1;
+            } else {
+                // 原本是忌神，被合走反而會比較順
+                type = 2;
+            }
+            CreateFiveHeDesc(ganPair[ganIdx], type, html);  //原本是加分項，被合走變成不加分了
+            heHui.Add(HeHui.FiveHe, zhu.GanWuXing);
+        }
+        // 地支三合
+        if (threePair != null) {
+            foreach (var wx in BaZiDefine.WuXingList) {
+                if (BaZiDefine.ThreeHe.ContainsKey(wx) && FindGte3Index(threePair, BaZiDefine.ThreeHe[wx], true, out var heIdx)) {
+                    CreateThreeHeDesc(threePair[heIdx], wx, html);   //三合沒有說會有合絆的狀況，只有說天干五合跟地支六合
+                    if (!heHui.ContainsKey(HeHui.ThreeHe)) heHui.Add(HeHui.ThreeHe, wx);
+                    break;
+                }
+            }
+        }
+        // 地支三會、六合
+        if (threePair != null) {
+            /* 由於六合裡有兩個是包含在三會裡，優先檢查三會，如果用走了，從清單移除，不要再被六合 */
+            var copiedThreePair = threePair.Select(p => p).ToList();
+            foreach (var wx in BaZiDefine.WuXingList) {
+                if (BaZiDefine.ThreeHui.ContainsKey(wx) && FindGte3Index(copiedThreePair, BaZiDefine.ThreeHui[wx], true, out var huiIdx)) {
+                    // 三會沒有要特別什麼狀況，理論上只跟判讀大運、流年時，看五行會不會很不平衡之類，所以這邊就不做 CreateThreeHuiDesc 了!
+                    if (!heHui.ContainsKey(HeHui.ThreeHui)) heHui.Add(HeHui.ThreeHui, wx);
+                    // 從 copiedThreePair 移除，避免再被六合比對到
+                    copiedThreePair.RemoveAt(huiIdx);
+                }
+                if (BaZiDefine.SixHe.ContainsKey(wx) && FindGte2Index(copiedThreePair, BaZiDefine.SixHe[wx], true, out var heIdx)) {
+                    //判斷這個被用走的地支是好的還壞的
+                    var type = 0;
+                    var z1 = (Zhu)copiedThreePair[heIdx][0];
+                    var z2 = (Zhu)copiedThreePair[heIdx][1];
+                    if (info.LikeWuXing.Contains(z1.ZhiWuXing) || info.LikeWuXing.Contains(z2.ZhiWuXing)) {
+                        // 原本是喜用神，被合走反而反而會變不順
+                        type = 1;
+                    } else {
+                        // 原本是忌神，被合走反而會比較順
+                        type = 2;
+                        if (!heHui.ContainsKey(HeHui.SixHe)) heHui.Add(HeHui.SixHe, wx);
+                    }
+                    CreateSixHeDesc(copiedThreePair[heIdx], type, html);
+                }
+            }
+        }
+        // 檢查是否合會可以減輕刑度
+        var help = (heHui.ContainsKey(HeHui.ThreeHui) && info.LikeWuXing.Contains(heHui[HeHui.ThreeHui]))
+            || (heHui.ContainsKey(HeHui.ThreeHe) && info.LikeWuXing.Contains(heHui[HeHui.ThreeHe]))
+            || (heHui.ContainsKey(HeHui.SixHe) && info.LikeWuXing.Contains(heHui[HeHui.SixHe]));
+        var worse = (heHui.ContainsKey(HeHui.ThreeHui) && info.UnlikeWuXing.Contains(heHui[HeHui.ThreeHui]))
+            || (heHui.ContainsKey(HeHui.ThreeHe) && info.UnlikeWuXing.Contains(heHui[HeHui.ThreeHe]))
+            || (heHui.ContainsKey(HeHui.SixHe) && info.UnlikeWuXing.Contains(heHui[HeHui.SixHe]));
+        var helpStr = "，但因有合相補分，會讓不順感降低一些";
+        var worseStr = "，且因合相能量過強，會讓不順感更加嚴重";
+        // 無恩之刑 = 寅巳申 (外在, 力度強)
+        if ((threePair != null) && FindGte3Index(threePair, BaZiDefine.ThreeXing[0], true, out var idx)) {
+            var msg = "談判破局、反覆失誤、衝動行事";
+            if (help) msg += helpStr;
+            if (worse) msg += worseStr;
+            CreateThreeXingDesc(twoPair[idx], msg, "三思後行、注意車關", html);
+            bad = true;
+        } else if (FindGte2Index(twoPair, BaZiDefine.ThreeXing[0], true, out idx)) {
+            var msg = "談判受挫、容易失誤、容易衝動";
+            if (help) msg += helpStr;
+            if (worse) msg += worseStr;
+            CreateTwoXingDesc(twoPair[idx], msg, "三思後行", "強", html);
+            bad = true;
+        }
+        // 恃勢之刑 = 丑戌未 (外在, 力度強)
+        if ((threePair != null) && FindGte3Index(twoPair, BaZiDefine.ThreeXing[1], true, out idx) && ((idx == 1) || (idx == 3))) {
+            var msg = (idx == 0)
+                ? "與父母緣薄、協助調停家庭內鬥或房產糾紛、捲入官司 (心中糾結累積、不開心)"
+                : "與子女緣薄、子女紛爭、房產糾紛 (心中糾結累積、不開心)";
+            if (help) msg += helpStr;
+            if (worse) msg += worseStr;
+            CreateThreeXingDesc(twoPair[idx], msg, "注意車關、不動產問題", html);
+            bad = true;
+        } else if (FindGte2Index(twoPair, BaZiDefine.TwoXing[1], true, out idx)) {
+            var msg = idx switch {
+                0 => "家族問題、祖業糾紛 (心中糾結累積、不開心)",
+                1 => "與父母關係較差、協助調停家庭內鬥或房產糾紛、捲入官司 (心中糾結累積、不開心)",
+                2 => "與另一半關係較差、容易有口角糾紛 (心中糾結累積、不開心)",
+                3 => "與子女關係較差、容易有口角糾紛 (心中糾結累積、不開心)",
+                _ => "與家人緣薄、家庭內鬥、房產糾紛 (心中糾結累積、不開心)"
+            };
+            if (help) msg += helpStr;
+            if (worse) msg += worseStr;
+            CreateTwoXingDesc(twoPair[idx], msg, "注意情緒性用詞", "強", html);
+            bad = true;
+        }
+        // 恩愛之刑 = 子卯 (外在, 力度小)
+        if (FindGte2Index(twoPair, [DiZhi.Zi, DiZhi.Mao], true, out idx)) {
+            var msg = idx switch {
+                0 => "與長輩較容易想法不同",
+                1 => "與父母較容易想法不同",
+                2 => "與另一半較容易糾結、感情爭執",
+                3 => "與子女較容易想法不同",
+                _ => "感情糾紛、口角"
+            };
+            if (help) msg += helpStr;
+            if (worse) msg += worseStr;
+            CreateTwoXingDesc(twoPair[idx], msg, "注意溝通", "小", html);
+            bad = true;
+        }
+        // 自刑 = 辰辰, 午午, 酉酉, 戌戌 (內在)
+        if (FindAllSameIndex(twoPair, BaZiDefine.SelfXing, out idx)) {
+            var msg = "內耗、情緒糾結、鑽牛角尖";
+            if (help) msg += helpStr;
+            if (worse) msg += worseStr;
+            CreateSelfXingDesc(twoPair[idx], msg, html);
+            bad = true;
+        }
+        // 沖 = 子午、丑未、寅申、卯酉、辰戌、巳亥
+        if (FindGte2Index(twoPair, BaZiDefine.Chong, true, out idx)) {
+            var msg = idx switch {
+                0 => "跟長輩聚少離多、易口角衝突",
+                1 => "跟父母聚少離多、晚婚、易口角衝突、住所不穩定",
+                2 => "跟另一半聚少離多、易口角衝突、事情易突發變動",
+                3 => "跟子女聚少離多、易口角衝突",
+                _ => "衝突、車關、變動、突發、搬遷"
+            };
+            if (help) msg += helpStr;
+            if (worse) msg += worseStr;
+            CreateChongDesc(twoPair[idx], msg, html);
+            bad = true;
+        }
+        // 破 = 寅亥、巳申、子酉、午卯、戌未、丑辰
+        if (FindGte2Index(twoPair, BaZiDefine.Po, true, out idx)) {
+            var msg = "做事有阻力、破局、容易受傷";
+            if (help) msg += helpStr;
+            if (worse) msg += worseStr;
+            CreatePoDesc(twoPair[idx], msg, html);
+            bad = true;
+        }
+        // 害 = 卯辰、寅巳、午丑、子未、酉戌、申亥
+        if (FindGte2Index(twoPair, BaZiDefine.Hai, true, out idx)) {
+            var msg = idx switch {
+                0 => "人際壓力、與長輩相處易有摩擦、情緒不悅",
+                1 => "人際壓力、與父母相處易有摩擦、情緒不悅",
+                2 => "人際壓力、與另一半相處易有摩擦、情緒不悅",
+                3 => "人際壓力、與子女相處易有摩擦、情緒不悅",
+                _ => "傷害、人際壓力、影響父母/夫妻/子女關係、情緒不悅、易摩擦"
+            };
+            if (help) msg += helpStr;
+            if (worse) msg += worseStr;
+            CreateHaiDesc(twoPair[idx], msg, html);
+            bad = true;
+        }
+        return (bad, heHui);
+    }
+
+    private bool HasSelfConflict(BaZiInfo info, out MarkupString desc) {
+        /* 本身命盤只檢查地支的相刑。三刑是 (日+月|日+時)+(大運/流年)，天干五合只有在流年時判斷 */
+        var twoPair = new List<IList<IGanZhi>> {
+            new List<IGanZhi>() { info.DayZhu, info.MonthZhu },
+            new List<IGanZhi>() { info.DayZhu, info.HourZhu }
+        };
+        var html = new System.Text.StringBuilder();
+        html.AppendLine("<div class=\"card p-3 mt-3\">");
+        html.AppendLine("    <h5 class=\"card-title border-bottom pb-2\">本身的衝突</h5>");
+        var (bad, _) = CheckConflict(info, null, null, twoPair, html);
+        html.AppendLine("</div>");
+        desc = new MarkupString(html.ToString());
+        return bad;
+    }
+
+    private bool HasDaYunConflict(BaZiInfo info, System.Text.StringBuilder html) {
+        /* 如果當前沒有大運，直接離開。可能是系統出錯或排盤有誤 */
+        if (info.CurrentDaYun is null) return false;
+        /* 這邊是判斷大運，所以最後一個一定要放大運，在 CheckConflict 裡面會有 mustLast，也就是跟大運有合、有刑沖破害的才會記錄 */
+        var dy = info.CurrentDaYun;
+        var threePair = new List<IList<IGanZhi>> {
+            new List<IGanZhi>() { info.DayZhu, info.MonthZhu, dy },
+            new List<IGanZhi>() { info.DayZhu, info.HourZhu, dy }
+        };
+        var twoPair = new List<IList<IGanZhi>> {
+            new List<IGanZhi>() { info.YearZhu, dy },
+            new List<IGanZhi>() { info.MonthZhu, dy },
+            new List<IGanZhi>() { info.DayZhu, dy },
+            new List<IGanZhi>() { info.HourZhu, dy }
+        };
+        var (bad, _) = CheckConflict(info, null, threePair, twoPair, html);
+        return bad;
+    }
+
+    private (bool bad, IDictionary<HeHui, WuXing> heHui) HasNianConflict(BaZiInfo info, System.Text.StringBuilder html) {
+        /* 如果當前沒有大運，直接離開。可能是系統出錯或排盤有誤 */
+        if (info.CurrentDaYun is null) return (false, new Dictionary<HeHui, WuXing>());
+        /* 取得當前的流年 */
+        var curYear = DateTime.Now.Year;
+        var ln = info.CurrentDaYun.LiuNianList.First(l => l.Year == curYear);
+        /* 這邊是判斷大運，所以最後一個一定要放流年，在 CheckConflict 裡面會有 mustLast，也就是跟流年有合、有刑沖破害的才會記錄
+        * 天干部分，有可能會是大運干+流年干合，這樣就有可能形成忌神被合走 */
+        var ganPair = new List<IList<IGanZhi>> {
+            new List<IGanZhi>() { info.YearZhu, info.CurrentDaYun, ln },
+            new List<IGanZhi>() { info.MonthZhu, info.CurrentDaYun, ln },
+            new List<IGanZhi>() { info.DayZhu, info.CurrentDaYun, ln },
+            new List<IGanZhi>() { info.HourZhu, info.CurrentDaYun, ln }
+        };
+        var threePair = new List<IList<IGanZhi>> {
+            new List<IGanZhi>() { info.DayZhu, info.MonthZhu, info.CurrentDaYun, ln },
+            new List<IGanZhi>() { info.DayZhu, info.HourZhu, info.CurrentDaYun, ln }
+        };
+        var twoPair = new List<IList<IGanZhi>> {
+            new List<IGanZhi>() { info.YearZhu, ln },
+            new List<IGanZhi>() { info.MonthZhu, ln },
+            new List<IGanZhi>() { info.DayZhu, ln },
+            new List<IGanZhi>() { info.HourZhu, ln }
+        };
+        return CheckConflict(info, ganPair, threePair, twoPair, html);
+    }
+
+    private void CreateYunDesc(BaZiInfo info, ShiShen yun, System.Text.StringBuilder html) {
+        if (info.CurrentDaYun is null) return;
+        html.Append("<span>");
+        /* 依照格局來判斷是否好運 */
+        if (info.StrengthStatus == GeJu.ShenQiang) {
+            switch (yun) {
+                case ShiShen.PianCai:
+                case ShiShen.ZhengCai:
+                    if (info.Gender == Sex.Male) {
+                        html.Append("易得財、姻緣桃花佳(正緣)，是個 <strong class=\"text-success\">好運</strong>");
+                    } else {
+                        html.Append("易得財，是個 <strong class=\"text-success\">好運</strong>");
+                    }
+                    info.CurrentDaYun.IsGoodYun = true;
+                    break;
+                case ShiShen.ZhengGuan:
+                case ShiShen.QiSha:
+                    if (info.Gender == Sex.Male) {
+                        html.Append("工作運好、受賞識升職，是個 <strong class=\"text-success\">好運</strong>");
+                    } else {
+                        html.Append("工作運好、受賞識升職、姻緣桃花佳(正緣、旺夫)，是個 <strong class=\"text-success\">好運</strong>");
+                    }
+                    info.CurrentDaYun.IsGoodYun = true;
+                    break;
+                case ShiShen.ShihShen:
+                case ShiShen.ShangGuan:
+                    if (info.Gender == Sex.Male) {
+                        html.Append("容易出名、才華被看見、文昌(考試)運好，是個 <strong class=\"text-success\">好運</strong>");
+                    } else {
+                        html.Append("容易出名、才華被看見、文昌(考試)運好、易懷孕、育兒教兒好，是個 <strong class=\"text-success\">好運</strong>");
+                    }
+                    info.CurrentDaYun.IsGoodYun = true;
+                    break;
+                case ShiShen.PianYin:
+                case ShiShen.ZhengYin:
+                    html.Append("女性長輩的壓力、女性長輩身體不好、思考較弱、創意不佳、員工/小孩容易出狀況，是個 <strong class=\"text-warning\">相對較差的運</strong>");
+                    break;
+                case ShiShen.BiJian:
+                case ShiShen.JieCai:
+                    if (info.Gender == Sex.Male) {
+                        html.Append("朋友手足關係煩惱、犯小人、因朋友惹禍、財運差、姻緣桃花差(無/爛桃花)，是個 <strong class=\"text-danger\">壞運</strong>");
+                    } else {
+                        html.Append("朋友手足關係煩惱、犯小人、因朋友惹禍，是個 <strong class=\"text-danger\">壞運</strong>");
+                    }
+                    break;
+                default:
+                    throw new System.ComponentModel.InvalidEnumArgumentException(nameof(yun), (int)yun, typeof(ShiShen));
+            }
+        } else if (info.StrengthStatus == GeJu.ShenRuo) {
+            /* 計算哪個十神比較多 */
+            var allStars = new List<ShiShen>() {
+                info.YearZhu.ZhuXing,
+                info.MonthZhu.ZhuXing,
+                info.HourZhu.ZhuXing
+            };
+            allStars.AddRange(info.YearZhu.FuXing);
+            allStars.AddRange(info.MonthZhu.FuXing);
+            allStars.AddRange(info.DayZhu.FuXing);
+            allStars.AddRange(info.HourZhu.FuXing);
+            var counts = new Dictionary<ShiShen, int>() {
+                { ShiShen.ZhengCai, allStars.Count(s => (s == ShiShen.ZhengCai) || (s == ShiShen.PianCai))},
+                { ShiShen.ZhengGuan, allStars.Count(s => (s == ShiShen.ZhengGuan) || (s == ShiShen.QiSha))},
+                { ShiShen.ShihShen, allStars.Count(s => (s == ShiShen.ShihShen) || (s == ShiShen.ShangGuan))}
+            }.OrderByDescending(kvp => kvp.Value).First();
+            /* 依照十神多的去判斷優劣 */
+            if (counts.Key == ShiShen.ZhengCai) {
+                // 正財偏財多
+                switch (yun) {
+                    case ShiShen.PianYin:
+                    case ShiShen.ZhengYin:
+                    case ShiShen.BiJian:
+                    case ShiShen.JieCai:
+                        if (info.Gender == Sex.Male) {
+                            html.Append("得財容易、受男性長輩幫助、姻緣桃花佳(正緣)、婚姻順利，是個 <strong class=\"text-success\">好運</strong>");
+                        } else {
+                            html.Append("得財容易、受男性長輩幫助、婚姻順利，是個 <strong class=\"text-success\">好運</strong>");
+                        }
+                        info.CurrentDaYun.IsGoodYun = true;
+                        break;
+                    case ShiShen.ZhengCai:
+                    case ShiShen.PianCai:
+                        if (info.Gender == Sex.Male) {
+                            html.Append("破財、因財惹禍、男性長輩易給壓力、感情不順，是個 <strong class=\"text-danger\">壞運</strong>");
+                        } else {
+                            html.Append("破財、因財惹禍、男性長輩易給壓力，是個 <strong class=\"text-danger\">壞運</strong>");
+                        }
+                        break;
+                    case ShiShen.ZhengGuan:
+                    case ShiShen.QiSha:
+                        html.Append("工作壓力大、官司纏身，是個 <strong class=\"text-danger\">壞運</strong>");
+                        break;
+                    case ShiShen.ShihShen:
+                    case ShiShen.ShangGuan:
+                        html.Append("想太多、鑽牛角尖、精神狀態差、禍從口出，是個 <strong class=\"text-danger\">壞運</strong>");
+                        break;
+                    default:
+                        throw new System.ComponentModel.InvalidEnumArgumentException(nameof(yun), (int)yun, typeof(ShiShen));
+                }
+            } else if (counts.Key == ShiShen.ZhengGuan) {
+                // 正官七殺多
+                switch (yun) {
+                    case ShiShen.PianYin:
+                    case ShiShen.ZhengYin:
+                    case ShiShen.BiJian:
+                    case ShiShen.JieCai:
+                        if (info.Gender == Sex.Male) {
+                            html.Append("升官、工作順利、貴人相助、子息運好，是個 <strong class=\"text-success\">好運</strong>");
+                        } else {
+                            html.Append("升官、工作順利、貴人相助、姻緣加分，是個 <strong class=\"text-success\">好運</strong>");
+                        }
+                        info.CurrentDaYun.IsGoodYun = true;
+                        break;
+                    case ShiShen.ZhengCai:
+                    case ShiShen.PianCai:
+                        if (info.Gender == Sex.Male) {
+                            html.Append("破財、因財惹禍、男性長輩易給壓力、感情不順，是個 <strong class=\"text-danger\">壞運</strong>");
+                        } else {
+                            html.Append("破財、因財惹禍、男性長輩易給壓力、婚姻感情困擾，是個 <strong class=\"text-danger\">壞運</strong>");
+                        }
+                        break;
+                    case ShiShen.ZhengGuan:
+                    case ShiShen.QiSha:
+                        html.Append("工作壓力大、官司纏身，是個 <strong class=\"text-danger\">壞運</strong>");
+                        break;
+                    case ShiShen.ShihShen:
+                    case ShiShen.ShangGuan:
+                        html.Append("想太多、鑽牛角尖、精神狀態差、禍從口出，是個 <strong class=\"text-danger\">壞運</strong>");
+                        break;
+                    default:
+                        throw new System.ComponentModel.InvalidEnumArgumentException(nameof(yun), (int)yun, typeof(ShiShen));
+                }
+            } else if (counts.Key == ShiShen.ShihShen) {
+                // 正官七殺多
+                switch (yun) {
+                    case ShiShen.PianYin:
+                    case ShiShen.ZhengYin:
+                    case ShiShen.BiJian:
+                    case ShiShen.JieCai:
+                        if (info.Gender == Sex.Male) {
+                            html.Append("易得功名、得到好的下屬，是個 <strong class=\"text-success\">好運</strong>");
+                        } else {
+                            html.Append("易得功名、得到好的下屬、子息運好，是個 <strong class=\"text-success\">好運</strong>");
+                        }
+                        info.CurrentDaYun.IsGoodYun = true;
+                        break;
+                    case ShiShen.ZhengCai:
+                    case ShiShen.PianCai:
+                        if (info.Gender == Sex.Male) {
+                            html.Append("破財、因財惹禍、男性長輩易給壓力、感情不順，是個 <strong class=\"text-danger\">壞運</strong>");
+                        } else {
+                            html.Append("破財、因財惹禍、男性長輩易給壓力、婚姻感情困擾，是個 <strong class=\"text-danger\">壞運</strong>");
+                        }
+                        break;
+                    case ShiShen.ZhengGuan:
+                    case ShiShen.QiSha:
+                        html.Append("工作壓力大、官司纏身，是個 <strong class=\"text-danger\">壞運</strong>");
+                        break;
+                    case ShiShen.ShihShen:
+                    case ShiShen.ShangGuan:
+                        html.Append("想太多、鑽牛角尖、精神狀態差、禍從口出，是個 <strong class=\"text-danger\">壞運</strong>");
+                        break;
+                    default:
+                        throw new System.ComponentModel.InvalidEnumArgumentException(nameof(yun), (int)yun, typeof(ShiShen));
+                }
+            }
+        } else if (info.StrengthStatus == GeJu.CongQiang) {
+            switch (yun) {
+                case ShiShen.PianYin:
+                case ShiShen.ZhengYin:
+                case ShiShen.BiJian:
+                case ShiShen.JieCai:
+                    html.Append("運勢加分、做事整體順暢，是個 <strong class=\"text-success\">好運</strong>");
+                    info.CurrentDaYun.IsGoodYun = true;
+                    break;
+                case ShiShen.ZhengCai:
+                case ShiShen.PianCai:
+                case ShiShen.ZhengGuan:
+                case ShiShen.QiSha:
+                case ShiShen.ShihShen:
+                case ShiShen.ShangGuan:
+                    html.Append("破格、運勢相對不順，是個 <strong class=\"text-warning\">相對較差的運</strong>");
+                    break;
+                default:
+                    throw new System.ComponentModel.InvalidEnumArgumentException(nameof(yun), (int)yun, typeof(ShiShen));
+            }
+        } else if (info.StrengthStatus == GeJu.CongRuo) {
+            switch (yun) {
+                case ShiShen.PianYin:
+                case ShiShen.ZhengYin:
+                case ShiShen.BiJian:
+                case ShiShen.JieCai:
+                    html.Append("破格、運勢相對不順，是個 <strong class=\"text-warning\">相對較差的運</strong>");
+                    break;
+                case ShiShen.ZhengCai:
+                case ShiShen.PianCai:
+                case ShiShen.ZhengGuan:
+                case ShiShen.QiSha:
+                case ShiShen.ShihShen:
+                case ShiShen.ShangGuan:
+                    html.Append("運勢加分、做事整體順暢，是個 <strong class=\"text-success\">好運</strong>");
+                    info.CurrentDaYun.IsGoodYun = true;
+                    break;
+                default:
+                    throw new System.ComponentModel.InvalidEnumArgumentException(nameof(yun), (int)yun, typeof(ShiShen));
+            }
+        }
+        html.Append("</span>");
+    }
+
+    private string CreateNianByGoodYun(Sex gender, ShiShen ganYun, ShiShen zhiYun, bool qiang) {
+        /* 因 ganYun 跟 zhiYun 是 `|` 過的兩個十神 */
+        switch (ganYun) {
+            case ShiShen.Cai: {
+                    switch (zhiYun) {
+                        case ShiShen.Cai:   //兩個都是財運。身強/從弱為好流年；身弱/從強為壞流年
+                            if (qiang) {
+                                return (gender == Sex.Male) ? "得財機會多、感情運好" : "得財機會多";
+                            } else {
+                                return (gender == Sex.Male) ? "破財、因財惹禍、男性長輩易給壓力、感情不順" : "破財、因財惹禍、男性長輩易給壓力";
+                            }
+                        case ShiShen.GuanSha:   //(財)(官殺)身強/從弱為好流年；身弱/從強為壞流年。  財的事、工作果
+                            if (qiang) {
+                                return "事業攀升，名利齊來。代表這一年你的經濟實力足以撐起你的野心，容易獲得實權職位，或是創業規模擴大並獲得社會認可";
+                            } else {
+                                return (gender == Sex.Male) ? "容易因為貪財、貪玩或過度追求物質而引發身體疾病、法律糾紛或職場壓迫。可能因為感情問題而導致事業受損或名譽掃地。這一年應「棄財保身」，不宜承擔過度風險" : "容易因為貪財、貪玩或過度追求物質而引發身體疾病、法律糾紛或職場壓迫。這一年應「棄財保身」，不宜承擔過度風險";
+                            }
+                        case ShiShen.ShihShang: //(財)(食傷)身強/從弱為好流年；身弱/從強為壞流年。  財的事、才華果
+                            if (qiang) {
+                                return "你的創意與技術非常有價值，投資眼光精準，適合開發新市場、推出新產品，金錢收益會超出預期";
+                            } else {
+                                return "心有餘而力不足。雖然有很多賺錢的想法，但實際執行起來卻體力不支或資金斷線。容易發生「財多身弱」，看得到賺不到，或為了賺錢而嚴重損害健康";
+                            }
+                        case ShiShen.BiJie: //(財)身強/從弱為好流年；身弱/從強為壞流年。(比劫)身強/從弱為壞流年；身弱/從強為好流年。  財的事、朋友果
+                            if (qiang) {
+                                return "容易發生朋友借錢不還、被小人劫財、或是感情上出現競爭對手。這一年應避免任何形式的擔保、借貸，也不宜進行大額合資";
+                            } else {
+                                return "這一年適合與他人合作，雖然需要將獲利分出去，但整體進帳會比自己單幹更多。這也代表能透過人際關係獲得賺錢的消息";
+                            }
+                        case ShiShen.Yin:   //(財)身強/從弱為好流年；身弱/從強為壞流年。(印)身強/從弱為壞流年；身弱/從強為好流年。  財的事、長輩果
+                            if (qiang) {
+                                return "你能將腦中的想法付諸實現，或是透過房地產、長輩資助、買賣合約獲得實質收益。這是一種將「虛名」轉化為「實財」的過程";
+                            } else {
+                                return "名譽受損，學業/健康受阻。容易因為貪小便宜、短視近利而做出違背原則的事，導致長輩不滿、職位不保或合約糾紛。對於學生來說，代表因玩樂而荒廢學業";
+                            }
+                        default:
+                            throw new System.ComponentModel.InvalidEnumArgumentException(nameof(zhiYun), (int)zhiYun, typeof(ShiShen));
+                    }
+                }
+            case ShiShen.GuanSha: {
+                    switch (zhiYun) {
+                        case ShiShen.Cai:   //(官殺)(財)身強/從弱為好流年；身弱/從強為壞流年。  工作的事、財果
+                            if (qiang) {
+                                return "名利雙收、經濟實力能轉化為社會地位，容易獲得升遷、掌權，或是創業成功並建立良好的品牌聲望";
+                            } else {
+                                return "容易發生「因錢招災」或「過勞生病」。在職場上可能為了業績而承擔超過負荷的責任，導致身心俱疲。這一年不宜投機，應保守求穩";
+                            }
+                        case ShiShen.GuanSha:   // 兩個都是官殺。身強/從弱為好流年；身弱/從強為壞流年
+                            if (qiang) {
+                                return (gender == Sex.Male) ? "工作運佳(被賞識、機會多)、子息運好" : "工作運佳(被賞識、機會多)、桃花感情好";
+                            } else {
+                                return (gender == Sex.Male) ? "工作壓力大、官司纏身" : "工作壓力大、官司纏身、感情容易有爛桃花";
+                            }
+                        case ShiShen.ShihShang: //(官殺)(食傷)身強/從弱為好流年；身弱/從強為壞流年。  工作的事、才華果
+                            if (qiang) {
+                                return "大刀闊斧、威震四方，能用智慧和手段化解難題，在競爭中取得勝利。這一年你的表現會極具攻擊性且有成效，能開創出屬於自己的局面";
+                            } else {
+                                return "極度焦慮與是非。容易在極大壓力下做出衝動的錯誤判斷，或是因為口舌是非惹上官司。要注意官司糾紛或被職場霸凌。這一年最忌諱與體制對抗，應低調尋求長輩的幫助";
+                            }
+                        case ShiShen.BiJie: //(官殺)身強/從弱為好流年；身弱/從強為壞流年。(比劫)身強/從弱為壞流年；身弱/從強為好流年。  工作的事、朋友果
+                            if (qiang) {
+                                return "能在團隊或同儕競爭中脫穎而出，獲得領導權或管理權。這是一個建立名譽、整頓的絕佳時機";
+                            } else {
+                                return "容易遇到「遇人不淑」的情況。雖然身邊有朋友，但大家一起面對困難時容易互相拖累，甚至因為利益分配不均而反目。這一年應防範朋友帶來的連累";
+                            }
+                        case ShiShen.Yin:   //(官殺)身強/從弱為好流年；身弱/從強為壞流年。(印)身強/從弱為壞流年；身弱/從強為好流年。  工作的事、長輩果
+                            if (qiang) {
+                                return "名大於實、停滯不前。雖然名聲好聽或職位高，但其實只是虛職，且會讓你變得更加固執、不願變通。容易陷入「自以為是」的陷阱，或是被各種虛名所累，反而限制了發展空間";
+                            } else {
+                                return "逢凶化吉、手握實權、壓力轉化為名譽，原本艱難的任務反而讓你獲得長輩或上司的信任，進而獲得升遷、學位或權力。這是一個非常利於考試與職涯晉升的年份";
+                            }
+                        default:
+                            throw new System.ComponentModel.InvalidEnumArgumentException(nameof(zhiYun), (int)zhiYun, typeof(ShiShen));
+                    }
+                }
+            case ShiShen.ShihShang: {
+                    switch (zhiYun) {
+                        case ShiShen.Cai:   //(食傷)(財)身強/從弱為好流年；身弱/從強為壞流年。  才華的事、財果
+                            if (qiang) {
+                                return "財源廣進。這是一個非常適合創業、開發新產品、業務擴張的年份。你的點子能精準變現，投資眼光也較準確";
+                            } else {
+                                return "容易發生「財多身弱」的情況。看得到吃不到，或是為了賺錢而把身體搞垮。容易為了利益而奔波勞累，卻留不住財富";
+                            }
+                        case ShiShen.GuanSha:   //(食傷)(官殺)身強/從弱為好流年；身弱/從強為壞流年。  才華的事、工作果
+                            if (qiang) {
+                                return "你有能力解決別人解決不了的難題，能抗住壓力並反制對手。這是一個破繭而出、獲得社會地位提升、展現領導魄力的年份";
+                            } else {
+                                return "容易因為一時口快或行為不檢點而觸犯法規、惹怒上司，導致工作丟失或名譽受損。這一年務必謹言慎行，低調做人";
+                            }
+                        case ShiShen.ShihShang: // 兩個都是食傷。身強/從弱為好流年；身弱/從強為壞流年
+                            if (qiang) {
+                                return (gender == Sex.Male) ? "才華被看見、被肯定、有機會出名、文昌(考試)運好" : "才華被看見、被肯定、有機會出名、文昌(考試)運好、子息運好(容易懷孕、教子佳)";
+                            } else {
+                                return (gender == Sex.Male) ? "想太多、鑽牛角尖、精神狀態差、禍從口出" : "想太多、鑽牛角尖、精神狀態差、禍從口出、子息運差(不易懷孕、孩子叛逆)";
+                            }
+                        case ShiShen.BiJie: //(食傷)身強/從弱為好流年；身弱/從強為壞流年。(比劫)身強/從弱為壞流年；身弱/從強為好流年。  工作的事、朋友果
+                            if (qiang) {
+                                return "適合技術合作或團體表演。你的影響力會透過朋友或社群擴散出去。行動力極強，只要想做的目標，通常能靠著團隊力量推動成功";
+                            } else {
+                                return "容易受朋友煽動而去做一些消耗自己的事。雖然有人陪你一起忙，但最終成果有限，且會讓你感到疲憊不堪";
+                            }
+                        case ShiShen.Yin:   //(食傷)身強/從弱為好流年；身弱/從強為壞流年。(印)身強/從弱為壞流年；身弱/從強為好流年。  工作的事、長輩果
+                            if (qiang) {
+                                return "懷才不遇、悶悶不樂。容易感到被束縛，說話沒人聽，或是計畫被臨時喊卡。這一年要注意心理健康，避免鑽牛角尖，且要防範長輩或合約帶來的困擾";
+                            } else {
+                                return "這一年你會變得冷靜，不再盲目衝動。雖然可能會停止一些計畫，但這是為了更好的調整。在學習與沉澱中，你會找到新的方向";
+                            }
+                        default:
+                            throw new System.ComponentModel.InvalidEnumArgumentException(nameof(zhiYun), (int)zhiYun, typeof(ShiShen));
+                    }
+                }
+            case ShiShen.BiJie: {
+                    switch (zhiYun) {
+                        case ShiShen.Cai:   //(比劫)身強/從弱為壞流年；身弱/從強為好流年。(財)身強/從弱為好流年；身弱/從強為壞流年。  朋友的事、財果
+                            if (qiang) {
+                                return "極易發生破財、受騙或投資失利。容易因為面子問題借錢給人而收不回來，或是感情上出現競爭者。這一年應嚴守錢袋，切忌合夥";
+                            } else {
+                                return "適合團隊合作或合夥創業。這一年會因為朋友、同事的引薦或協力而賺到錢。雖然賺到的錢需要分紅給他人，但整體收入會比自己單打獨鬥更多";
+                            }
+                        case ShiShen.GuanSha:   //(比劫)身強/從弱為壞流年；身弱/從強為好流年。(官殺)身強/從弱為好流年；身弱/從強為壞流年。  朋友的事、工作果
+                            if (qiang) {
+                                return "雖然競爭激烈，但你具備戰勝競爭者、獲得職位提升的機會。這是一個展現領導力、在眾多競爭者中脫穎而出的年份";
+                            } else {
+                                return "在艱難的環境中會遇到同舟共濟的戰友。雖然環境嚴苛、職責沉重，但因為有同事或朋友分擔，能平安度過危機";
+                            }
+                        case ShiShen.ShihShang: //(比劫)身強/從弱為壞流年；身弱/從強為好流年。(食傷)身強/從弱為好流年；身弱/從強為壞流年。  朋友的事、才華果
+                            if (qiang) {
+                                return "容易變為好大喜功或思慮過重。想法非常多但容易流於空談，或是因為過度自信而口無遮攔，導致口舌是非。這一年雖然很忙碌，但往往是瞎忙，成就感不高";
+                            } else {
+                                return "行動力增強，原本想做但不敢做的事，現在有了勇氣與體力去執行。雖然依舊辛苦，但產出會變多、勞而有獲";
+                            }
+                        case ShiShen.BiJie: // 兩個都是比劫。身強/從弱為壞流年；身弱/從強為好流年
+                            if (qiang) {
+                                return (gender == Sex.Male) ? "朋友手足關係煩惱、犯小人、因朋友惹禍、財運不佳、爛桃花" : "朋友手足關係煩惱、犯小人、因朋友惹禍、財運不佳";
+                            } else {
+                                return (gender == Sex.Male) ? "得財容易、受男性長輩幫助、姻緣桃花佳(正緣)、婚姻順利" : "得財容易、受男性長輩幫助、婚姻順利";
+                            }
+                        case ShiShen.Yin:   //(比劫)(印)身強/從弱為壞流年；身弱/從強為好流年。  朋友的事、長輩果
+                            if (qiang) {
+                                return "容易變得固執己見、剛愎自用。因為長輩的保護與自我都太強，會聽不進任何建議，導致人際關係孤立。這一年也容易出現懶散、不想工作的狀態，因為「能量太飽和」而失去前進的動力";
+                            } else {
+                                return "能量值補滿。非常適合學習、深造或創業初期的擴張。身體健康會改善，心情也會變得自信樂觀。這是一個蓄勢待發、廣積糧草的年份";
+                            }
+                        default:
+                            throw new System.ComponentModel.InvalidEnumArgumentException(nameof(zhiYun), (int)zhiYun, typeof(ShiShen));
+                    }
+                }
+            case ShiShen.Yin: {
+                    switch (zhiYun) {
+                        case ShiShen.Cai:   //(印)身強/從弱為壞流年；身弱/從強為好流年。(財)身強/從弱為好流年；身弱/從強為壞流年。  長輩的事、財果
+                            if (qiang) {
+                                return "能夠將腦中的想法轉化為實際的收益、學以致用、知識變現，或是透過買賣房地產、長輩資助而獲得財富";
+                            } else {
+                                return "容易因小失大，或是因為貪圖小利而毀掉名譽。在學業上容易因玩樂分心，在職場上則可能因為合約與金錢處理不當而產生糾紛";
+                            }
+                        case ShiShen.GuanSha:   //(印)身強/從弱為壞流年；身弱/從強為好流年。(官殺)身強/從弱為好流年；身弱/從強為壞流年。  長輩的事、工作果
+                            if (qiang) {
+                                return "容易感到懷才不遇。雖然有職位或名聲，但壓力巨大且缺乏實質收益。容易變得過於自負，聽不進建言，導致事業停滯或決策失誤";
+                            } else {
+                                return "容易獲得提拔、升遷或考運極佳。長輩與長官會成為你的貴人，幫助你化解危機";
+                            }
+                        case ShiShen.ShihShang: //(印)身強/從弱為壞流年；身弱/從強為好流年。(食傷)身強/從弱為好流年；身弱/從強為壞流年。  長輩的事、才華果
+                            if (qiang) {
+                                return "容易閉門造車、過度保守、不願變通，導致才華被埋沒";
+                            } else {
+                                return "容易有志難伸，想做的很多但實踐力不足。心靈層面容易感到壓抑、憂鬱，或是因為過度思考而錯失良機。要注意消化系統或健康上的小毛病";
+                            }
+                        case ShiShen.BiJie: //(印)(比劫)身強/從弱為壞流年；身弱/從強為好流年。  長輩的事、朋友果
+                            if (qiang) {
+                                return "容易出現「群眾分財」或「貴人變小人」的情況。長輩的關心變成壓力，朋友的出現是為了分你的資源或造成你的損耗。這一年應保持低調，避免大規模的社交與金錢借貸";
+                            } else {
+                                return "這是合作創業或尋求支援的好時機。長輩會引薦同輩來幫你，或是你與朋友共同學習某項技能。你會感到充滿底氣，不再孤軍奮戰";
+                            }
+                        case ShiShen.Yin:   //兩個都是印。身強/從弱為壞流年；身弱/從強為好流年
+                            if (qiang) {
+                                return "女性長輩的壓力、女性長輩身體不好、思考較弱、創意不佳、員工/小孩容易出狀況";
+                            } else {
+                                return (gender == Sex.Male) ? "得財容易、受男性長輩幫助、姻緣桃花佳(正緣)、婚姻順利" : "得財容易、受男性長輩幫助、婚姻順利";
+                            }
+                        default:
+                            throw new System.ComponentModel.InvalidEnumArgumentException(nameof(zhiYun), (int)zhiYun, typeof(ShiShen));
+                    }
+                }
+            default:
+                throw new System.ComponentModel.InvalidEnumArgumentException(nameof(ganYun), (int)ganYun, typeof(ShiShen));
+        }
+    }
+
+    private void CreateNianDesc(BaZiInfo info, ShiShen ganYun, ShiShen zhiYun, System.Text.StringBuilder html) {
+        if (info.CurrentDaYun is null) return;
+        html.Append("<span>");
+        /* 取得此流年是走什麼運 */
+        var gy = ganYun.ToCombined();
+        var zy = zhiYun.ToCombined();
+        /* 依照格局來判斷是否好運 */
+        if (info.CurrentDaYun.IsGoodYun) {
+            if (info.StrengthStatus == GeJu.ShenQiang) {
+                var goodGy = (gy == ShiShen.Cai) || (gy == ShiShen.GuanSha) || (gy == ShiShen.ShihShang);
+                var goodZy = (zy == ShiShen.Cai) || (zy == ShiShen.GuanSha) || (zy == ShiShen.ShihShang);
+                html.Append(CreateNianByGoodYun(info.Gender, gy, zy, info.StrengthStatus == GeJu.ShenQiang));
+                if (!goodGy && !goodZy) html.Append("。今年流年運勢不佳，但因處在好的十年大運中，可以降低不順感，只要撐過今年相信就會好轉！");
+                else if (!goodGy || !goodZy) html.Append("。今年流年運勢有高也有低，但因處在好的十年大運中，可以降低不順感，只要撐過今年相信就會好轉！");
+            } else if (info.StrengthStatus == GeJu.ShenRuo) {
+                var goodGy = (gy == ShiShen.Yin) || (gy == ShiShen.BiJie);
+                var goodZy = (zy == ShiShen.Yin) || (zy == ShiShen.BiJie);
+                html.Append(CreateNianByGoodYun(info.Gender, gy, zy, info.StrengthStatus == GeJu.ShenQiang));
+                if (!goodGy && !goodZy) html.Append("。今年流年運勢不佳，但因處在好的十年大運中，可以降低不順感，只要撐過今年相信就會好轉！");
+                else if (!goodGy || !goodZy) html.Append("。今年流年運勢有高也有低，但因處在好的十年大運中，可以降低不順感，只要撐過今年相信就會好轉！");
+            } else if (info.StrengthStatus == GeJu.CongQiang) {
+                var goodGy = (gy == ShiShen.Yin) || (gy == ShiShen.BiJie);
+                var goodZy = (zy == ShiShen.Yin) || (zy == ShiShen.BiJie);
+                if (goodGy && goodZy) html.Append("流年能量持續加強你的運，整體做什麼都順");
+                else if (!goodGy && !goodZy) html.Append("流年能量削弱運勢，做什麼都感覺卡卡、不順，只要撐過今年一切就會好轉");
+                else html.Append("流年能量有加強也有削弱，偶爾好運偶爾壞運，但整體來說運勢平穩");
+            } else if (info.StrengthStatus == GeJu.CongRuo) {
+                var goodGy = (gy == ShiShen.Cai) || (gy == ShiShen.GuanSha) || (gy == ShiShen.ShihShang);
+                var goodZy = (zy == ShiShen.Cai) || (zy == ShiShen.GuanSha) || (zy == ShiShen.ShihShang);
+                if (goodGy && goodZy) html.Append("流年能量持續加強你的運，整體做什麼都順");
+                else if (!goodGy && !goodZy) html.Append("流年能量削弱運勢，做什麼都感覺卡卡、不順，只要撐過今年一切就會好轉");
+                else html.Append("流年能量有加強也有削弱，偶爾好運偶爾壞運，但整體來說運勢平穩");
+            }
+        } else {
+            if (info.StrengthStatus == GeJu.ShenQiang) {
+                var goodGy = (gy == ShiShen.Cai) || (gy == ShiShen.GuanSha) || (gy == ShiShen.ShihShang);
+                var goodZy = (zy == ShiShen.Cai) || (zy == ShiShen.GuanSha) || (zy == ShiShen.ShihShang);
+                html.Append(CreateNianByGoodYun(info.Gender, gy, zy, info.StrengthStatus == GeJu.ShenQiang));
+                if (goodGy && goodZy) html.Append("。雖處在壞的十年大運中，但今年流年運勢不錯，好好記住身體與心靈的感覺，未來遇到低潮時可更有力氣度過！");
+                else if (!goodGy && !goodZy) html.Append("。今年流年運勢不佳，且處在壞的十年大運中，不順感會較為嚴重，多注意身心靈健康");
+                else html.Append("。今年流年運勢有高也有低，但因處在壞的十年大運中，低潮時多沉澱並學習，未來再次遇到低潮時便知如何度過！");
+            } else if (info.StrengthStatus == GeJu.ShenRuo) {
+                var goodGy = (gy == ShiShen.Yin) || (gy == ShiShen.BiJie);
+                var goodZy = (zy == ShiShen.Yin) || (zy == ShiShen.BiJie);
+                html.Append(CreateNianByGoodYun(info.Gender, gy, zy, info.StrengthStatus == GeJu.ShenQiang));
+                if (goodGy && goodZy) html.Append("。雖處在壞的十年大運中，但今年流年運勢不錯，好好記住身體與心靈的感覺，未來遇到低潮時可更有力氣度過！");
+                else if (!goodGy && !goodZy) html.Append("。今年流年運勢不佳，且處在壞的十年大運中，不順感會較為嚴重，多注意身心靈健康");
+                else html.Append("。今年流年運勢有高也有低，但因處在壞的十年大運中，低潮時多沉澱並學習，未來再次遇到低潮時便知如何度過！");
+            } else if (info.StrengthStatus == GeJu.CongQiang) {
+                var goodGy = (gy == ShiShen.Yin) || (gy == ShiShen.BiJie);
+                var goodZy = (zy == ShiShen.Yin) || (zy == ShiShen.BiJie);
+                if (goodGy && goodZy) html.Append("。雖處在壞的十年大運中，但流年能量持續加強你的運，今年做什麼都順");
+                else if (!goodGy && !goodZy) html.Append("。流年能量削弱運勢，且處在壞的十年大運中，做什麼都感覺卡卡、不順，多注意身心靈健康");
+                else html.Append("。流年能量有加強也有削弱，但因處在壞的十年大運中，低潮時多沉澱並學習，未來再次遇到低潮時便知如何度過！");
+            } else if (info.StrengthStatus == GeJu.CongRuo) {
+                var goodGy = (gy == ShiShen.Cai) || (gy == ShiShen.GuanSha) || (gy == ShiShen.ShihShang);
+                var goodZy = (zy == ShiShen.Cai) || (zy == ShiShen.GuanSha) || (zy == ShiShen.ShihShang);
+                if (goodGy && goodZy) html.Append("。雖處在壞的十年大運中，但流年能量持續加強你的運，今年做什麼都順");
+                else if (!goodGy && !goodZy) html.Append("。流年能量削弱運勢，且處在壞的十年大運中，做什麼都感覺卡卡、不順，多注意身心靈健康");
+                else html.Append("。流年能量有加強也有削弱，但因處在壞的十年大運中，低潮時多沉澱並學習，未來再次遇到低潮時便知如何度過！");
+            }
+        }
+        html.Append("</span>");
+    }
+
+    private MarkupString DaYunAnalysis(BaZiInfo info) {
+        if (info.CurrentDaYun is null) return new MarkupString("查無大運資料");
+        var html = new System.Text.StringBuilder();
+        html.AppendLine("<div class=\"card p-3 mt-3\">");
+        html.AppendLine("    <h5 class=\"card-title border-bottom pb-2\">大運分析</h5>");
+        /* 先列出是否有衝突 */
+        var conflict = new System.Text.StringBuilder();
+        var bad = HasDaYunConflict(info, conflict);
+        if (bad) {
+            html.AppendLine(@"    <div class=""row ms-1 me-1 py-3 border-bottom-dash"">");
+            html.AppendLine(conflict.ToString());
+            html.AppendLine(@"    </div>");
+        }
+        /* 前五年走天干的運，後五年走地支的運
+        * 但地支的力量是大於天干，這邊就單純用地支來判斷吧! */
+        html.AppendLine(@"    <div class=""row ms-1 me-1 py-3"">");
+        var curYun = info.CurrentDaYun.Zhi.ToShiShen(info.DayZhu.Gan);
+        html.Append($"<span>{info.CurrentDaYun.StartYear} 年 ~ {(info.CurrentDaYun.StartYear + 10)} 年走 <strong class=\"text-info\">{curYun.ToYunString()}</strong></span>");
+        CreateYunDesc(info, curYun, html);
+        html.AppendLine(@"    </div>");
+        html.AppendLine(@"</div>");
+        return new MarkupString(html.ToString());
+    }
+
+    private MarkupString LiuNianAnalysis(BaZiInfo info) {
+        if (info.CurrentDaYun is null) return new MarkupString("查無大運資料");
+        var html = new System.Text.StringBuilder();
+        html.AppendLine("<div class=\"card p-3 mt-3\">");
+        html.AppendLine("    <h5 class=\"card-title border-bottom pb-2\">流年分析</h5>");
+        /* 取得當前的流年 */
+        var curYear = DateTime.Now.Year;
+        var ln = info.CurrentDaYun.LiuNianList.First(l => l.Year == curYear);
+        /* 先列出是否有衝突 */
+        var conflict = new System.Text.StringBuilder();
+        var (bad, heHui) = HasNianConflict(info, conflict);
+        if (conflict.Length > 0) {
+            html.AppendLine(@"    <div class=""row ms-1 me-1 py-3 border-bottom-dash"">");
+            html.AppendLine(conflict.ToString());
+            html.AppendLine(@"    </div>");
+        }
+        /* 流年天干、地支的運都要判斷。要注意是否有三合、六合、三會會改變屬性 */
+        var ganYun = ln.Gan.ToShiShen(info.DayZhu.Gan);
+        ShiShen zhiYun; //會是兩者合併的十神，例如 '比肩+劫財'
+        if (heHui.ContainsKey(HeHui.ThreeHui)) {
+            zhiYun = heHui[HeHui.ThreeHui].ToShiShen(info.RiZhu);
+        } else if (heHui.ContainsKey(HeHui.ThreeHe)) {
+            zhiYun = heHui[HeHui.ThreeHe].ToShiShen(info.RiZhu);
+        } else if (heHui.ContainsKey(HeHui.SixHe)) {
+            zhiYun = heHui[HeHui.SixHe].ToShiShen(info.RiZhu);
+        } else {    //沒有合會時，以地支的 '主氣' 為主
+            zhiYun = ln.Zhi.ToWuXing().ToShiShen(info.RiZhu);
+        }
+        html.AppendLine(@"    <div class=""row ms-1 me-1 py-3"">");
+        if (zhiYun.HasFlag(ganYun)) {
+            html.Append($"<span>{ln.Year} <strong class=\"text-info\">{ln.Gan.ToGanString()}{ln.Zhi.ToZhiString()}</strong> 年 ({ln.Age} 歲) 走 <strong class=\"text-info\">{zhiYun.ToYunString()}</strong></span>");
+        } else {
+            html.Append($"<span>{ln.Year} <strong class=\"text-info\">{ln.Gan.ToGanString()}{ln.Zhi.ToZhiString()}</strong> 年 ({ln.Age} 歲) 走 <strong class=\"text-info\">{ganYun.ToYunString()}、{zhiYun.ToYunString()}</strong></span>");
+        }
+        CreateNianDesc(info, ganYun, zhiYun, html);
+        html.AppendLine(@"    </div>");
+        html.AppendLine(@"</div>");
+        return new MarkupString(html.ToString());
     }
 }

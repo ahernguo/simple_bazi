@@ -4,6 +4,10 @@ namespace BaZi.Models {
 
     public static class BaZiDefine {
 
+        /// <summary>取得五行清單</summary>
+        public static IList<WuXing> WuXingList { get; }
+            = [WuXing.Jin, WuXing.Mu, WuXing.Shui, WuXing.Huo, WuXing.Tu];
+
         /// <summary>取得五行的相生關係，即 '我生'</summary>
         public static IDictionary<WuXing, WuXing> Generation { get; }
             = new ConcurrentDictionary<WuXing, WuXing> {
@@ -44,8 +48,18 @@ namespace BaZi.Models {
                 [WuXing.Shui] = WuXing.Tu
             };
 
+        /// <summary>取得天干五合</summary>
+        public static IList<IList<TianGan>> FiveHe { get; }
+            = [
+                [TianGan.Jia, TianGan.Ji],      // 甲己
+                [TianGan.Yi, TianGan.Geng],     // 乙庚
+                [TianGan.Bing, TianGan.Xin],    // 丙辛
+                [TianGan.Ding, TianGan.Ren],    // 丁壬
+                [TianGan.Wu, TianGan.Gui]       // 戊癸
+            ];
+
         /// <summary>取得地支六合</summary>
-        public static IDictionary<WuXing, DiZhi[]> LiuHe { get; }
+        public static IDictionary<WuXing, DiZhi[]> SixHe { get; }
             = new ConcurrentDictionary<WuXing, DiZhi[]> {
                 [WuXing.Huo | WuXing.Tu] = [DiZhi.Wu, DiZhi.Wei],   // 午未 = 陽火/陰土
                 [WuXing.Shui] = [DiZhi.Si, DiZhi.Shen],             // 巳申 = 陰水
@@ -56,7 +70,7 @@ namespace BaZi.Models {
             };
 
         /// <summary>取得地支三會</summary>
-        public static IDictionary<WuXing, DiZhi[]> SanHui { get; }
+        public static IDictionary<WuXing, DiZhi[]> ThreeHui { get; }
             = new ConcurrentDictionary<WuXing, DiZhi[]> {
                 [WuXing.Mu] = [DiZhi.Yin, DiZhi.Mao, DiZhi.Chen],   // 寅卯辰 = 三會木局
                 [WuXing.Huo] = [DiZhi.Si, DiZhi.Wu, DiZhi.Wei],     // 巳午未 = 三會火局
@@ -65,7 +79,7 @@ namespace BaZi.Models {
             };
 
         /// <summary>取得地支三合</summary>
-        public static IDictionary<WuXing, DiZhi[]> SanHe { get; }
+        public static IDictionary<WuXing, DiZhi[]> ThreeHe { get; }
             = new ConcurrentDictionary<WuXing, DiZhi[]> {
                 [WuXing.Shui] = [DiZhi.Shen, DiZhi.Zi, DiZhi.Chen], // 申子辰 = 三合水局
                 [WuXing.Mu] = [DiZhi.Hai, DiZhi.Mao, DiZhi.Wei],    // 亥卯未 = 三合木局
@@ -218,6 +232,57 @@ namespace BaZi.Models {
                     "學習謙卑。 練習理財與財務分配，避免與人發生金錢糾紛"
                 )
             };
-    }
+
+		/// <summary>取得相刑清單</summary>
+		public static IList<IList<DiZhi>> TwoXing { get; }
+			= [
+				[DiZhi.Yin, DiZhi.Si, DiZhi.Shen],  // 無恩之刑 = 寅巳申(外在, 力度強)
+				[DiZhi.Chou, DiZhi.Xu, DiZhi.Wei],  // 恃勢之刑 = 丑戌未(外在, 力度強)
+                [DiZhi.Zi, DiZhi.Mao],              // 恩愛之刑 = 子卯
+            ];
+
+		/// <summary>取得三刑清單</summary>
+		public static IList<IList<DiZhi>> ThreeXing { get; }
+			= [
+				[DiZhi.Yin, DiZhi.Si, DiZhi.Shen],  // 無恩之刑 = 寅巳申(外在, 力度強)
+				[DiZhi.Chou, DiZhi.Xu, DiZhi.Wei],  // 恃勢之刑 = 丑戌未(外在, 力度強)
+            ];
+
+		/// <summary>取得自刑清單</summary>
+		public static IList<DiZhi> SelfXing { get; } = [ DiZhi.Chen, DiZhi.Wu, DiZhi.You, DiZhi.Xu ];   //辰辰, 午午, 酉酉, 戌戌
+
+        /// <summary>取得相沖清單</summary>
+        public static IList<IList<DiZhi>> Chong { get; }
+            = [
+                [DiZhi.Zi, DiZhi.Wu],     // 子午
+                [DiZhi.Chou, DiZhi.Wei],  // 丑未
+                [DiZhi.Yin, DiZhi.Shen],  // 寅申
+                [DiZhi.Mao, DiZhi.You],   // 卯酉
+                [DiZhi.Chen, DiZhi.Xu],   // 辰戌
+                [DiZhi.Si, DiZhi.Hai]     // 巳亥
+            ];
+
+		/// <summary>取得破清單</summary>
+		public static IList<IList<DiZhi>> Po { get; }
+			= [
+				[DiZhi.Yin, DiZhi.Hai],     // 寅亥
+                [DiZhi.Si, DiZhi.Shen],     // 巳申
+                [DiZhi.Zi, DiZhi.You],      // 子酉
+                [DiZhi.Wu, DiZhi.Mao],      // 午卯
+                [DiZhi.Xu, DiZhi.Wei],      // 戌未
+                [DiZhi.Chou, DiZhi.Chen]    // 丑辰
+            ];
+
+		/// <summary>取得害清單</summary>
+		public static IList<IList<DiZhi>> Hai { get; }
+			= [
+				[DiZhi.Mao, DiZhi.Chen],    // 卯辰
+                [DiZhi.Yin, DiZhi.Si],      // 寅巳
+                [DiZhi.Wu, DiZhi.Chou],     // 午丑
+                [DiZhi.Zi, DiZhi.Wei],      // 子未
+                [DiZhi.You, DiZhi.Xu],      // 酉戌
+                [DiZhi.Shen, DiZhi.Hai]     // 申亥
+            ];
+	}
 
 }

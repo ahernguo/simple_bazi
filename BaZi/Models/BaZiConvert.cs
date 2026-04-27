@@ -63,6 +63,59 @@ namespace BaZi.Models {
                 _ => throw new InvalidEnumArgumentException(nameof(gan), (int)gan, typeof(TianGan))
             };
         }
+
+        /// <summary>取得 <see cref="TianGan"/> 對應的 <see cref="JiXing"/></summary>
+        /// <param name="gan">欲轉換的天干</param>
+        /// <returns>極性</returns>
+        /// <exception cref="InvalidEnumArgumentException">無法解析的天干</exception>
+        public static JiXing ToJiXing(this TianGan gan) {
+            return gan switch {
+                TianGan.Jia => JiXing.Yang,
+                TianGan.Yi => JiXing.Yin,
+                TianGan.Bing => JiXing.Yang,
+                TianGan.Ding => JiXing.Yin,
+                TianGan.Wu => JiXing.Yang,
+                TianGan.Ji => JiXing.Yin,
+                TianGan.Geng => JiXing.Yang,
+                TianGan.Xin => JiXing.Yin,
+                TianGan.Ren => JiXing.Yang,
+                TianGan.Gui => JiXing.Yin,
+                _ => throw new InvalidEnumArgumentException(nameof(gan), (int)gan, typeof(TianGan))
+            };
+        }
+
+        /// <summary>取得 <see cref="TianGan"/> 對應的 <see cref="ShiShen"/></summary>
+        /// <param name="gan">欲轉換的天干</param>
+        /// <param name="riZhuGan">日柱天干</param>
+        /// <returns>十神</returns>
+        /// <exception cref="InvalidEnumArgumentException">無法解析的天干</exception>
+        public static ShiShen ToShiShen(this TianGan gan, TianGan riZhuGan) {
+            /* 先取得日主的極性與五行 */
+            var srcJiXing = riZhuGan.ToJiXing();
+            var srcWuXing = riZhuGan.ToWuXing();
+            /* 取得要判斷的天干極性與五行 */
+            var tarJiXing = gan.ToJiXing();
+            var tarWuXing = gan.ToWuXing();
+            /* 依照五行相生相剋，再搭配極性來判斷 */
+            if (tarWuXing == BaZiDefine.Restricting[srcWuXing]) {
+                // 我剋。 同性=偏財, 異性=正財
+                return (srcJiXing == tarJiXing) ? ShiShen.PianCai : ShiShen.ZhengCai;
+            } else if (tarWuXing == BaZiDefine.RestrictBy[srcWuXing]) {
+                // 剋我。 同性=七殺, 異性=正官
+                return (srcJiXing == tarJiXing) ? ShiShen.QiSha : ShiShen.ZhengGuan;
+            } else if (tarWuXing == BaZiDefine.Generation[srcWuXing]) {
+                // 我生。 同性=食神, 異性=傷官
+                return (srcJiXing == tarJiXing) ? ShiShen.ShihShen : ShiShen.ShangGuan;
+            } else if (tarWuXing == BaZiDefine.GenerateBy[srcWuXing]) {
+                // 生我。 同性=偏印, 異性=正印
+                return (srcJiXing == tarJiXing) ? ShiShen.PianYin : ShiShen.ZhengYin;
+            } else if (tarWuXing == srcWuXing) {
+                // 同我。 同性=比肩, 異性=劫財
+                return (srcJiXing == tarJiXing) ? ShiShen.BiJian : ShiShen.JieCai;
+            } else {
+                throw new ArgumentException("無法判斷的極性與五行");
+            }
+        }
         #endregion
 
         #region 地支
@@ -131,6 +184,84 @@ namespace BaZi.Models {
                 _ => throw new InvalidEnumArgumentException(nameof(zhi), (int)zhi, typeof(DiZhi))
             };
         }
+
+        /// <summary>取得 <see cref="DiZhi"/> 對應的所有 <see cref="WuXing"/></summary>
+        /// <param name="zhi">欲轉換的地支</param>
+        /// <returns>五行</returns>
+        /// <exception cref="InvalidEnumArgumentException">無法解析的地支</exception>
+        public static IDictionary<WuXing, int> ToFullWuXing(this DiZhi zhi) {
+            return zhi switch {
+                DiZhi.Zi => new Dictionary<WuXing, int>() { { WuXing.Shui, 100 } },
+                DiZhi.Chou => new Dictionary<WuXing, int>() { { WuXing.Tu, 33 }, { WuXing.Shui, 33 }, { WuXing.Jin, 33 } },
+                DiZhi.Yin => new Dictionary<WuXing, int>() { { WuXing.Mu, 50 }, { WuXing.Huo, 40 }, { WuXing.Tu, 10 } },
+                DiZhi.Mao => new Dictionary<WuXing, int>() { { WuXing.Mu, 100 } },
+                DiZhi.Chen => new Dictionary<WuXing, int>() { { WuXing.Tu, 33 }, { WuXing.Mu, 33 }, { WuXing.Shui, 33 } },
+                DiZhi.Si => new Dictionary<WuXing, int>() { { WuXing.Huo, 50 }, { WuXing.Tu, 40 }, { WuXing.Jin, 10 } },
+                DiZhi.Wu => new Dictionary<WuXing, int>() { { WuXing.Huo, 50 }, { WuXing.Tu, 50 } },
+                DiZhi.Wei => new Dictionary<WuXing, int>() { { WuXing.Tu, 40 }, { WuXing.Huo, 40 }, { WuXing.Mu, 20 } },
+                DiZhi.Shen => new Dictionary<WuXing, int>() { { WuXing.Jin, 50 }, { WuXing.Shui, 40 }, { WuXing.Tu, 10 } },
+                DiZhi.You => new Dictionary<WuXing, int>() { { WuXing.Jin, 100 } },
+                DiZhi.Xu => new Dictionary<WuXing, int>() { { WuXing.Tu, 45 }, { WuXing.Huo, 45 }, { WuXing.Jin, 10 } },
+                DiZhi.Hai => new Dictionary<WuXing, int>() { { WuXing.Shui, 60 }, { WuXing.Mu, 40 } },
+                _ => throw new InvalidEnumArgumentException(nameof(zhi), (int)zhi, typeof(DiZhi))
+            };
+        }
+
+        /// <summary>取得 <see cref="DiZhi"/> 對應的 <see cref="JiXing"/></summary>
+        /// <param name="zhi">欲轉換的地支</param>
+        /// <returns>極性</returns>
+        /// <exception cref="InvalidEnumArgumentException">無法解析的地支</exception>
+        public static JiXing ToJiXing(this DiZhi zhi) {
+            return zhi switch {
+                DiZhi.Zi => JiXing.Yang,
+                DiZhi.Chou => JiXing.Yin,
+                DiZhi.Yin => JiXing.Yang,
+                DiZhi.Mao => JiXing.Yin,
+                DiZhi.Chen => JiXing.Yang,
+                DiZhi.Si => JiXing.Yin,
+                DiZhi.Wu => JiXing.Yang,
+                DiZhi.Wei => JiXing.Yin,
+                DiZhi.Shen => JiXing.Yang,
+                DiZhi.You => JiXing.Yin,
+                DiZhi.Xu => JiXing.Yang,
+                DiZhi.Hai => JiXing.Yin,
+                _ => throw new InvalidEnumArgumentException(nameof(zhi), (int)zhi, typeof(DiZhi))
+            };
+        }
+
+        /// <summary>取得 <see cref="DiZhi"/> 對應的 <see cref="TianGan"/> (支藏干)</summary>
+        /// <param name="zhi">欲轉換的地支</param>
+        /// <returns>支藏干</returns>
+        /// <exception cref="InvalidEnumArgumentException">無法解析的地支</exception>
+        public static TianGan ToTianGan(this DiZhi zhi) {
+            return zhi switch {
+                DiZhi.Zi => TianGan.Gui,
+                DiZhi.Chou => TianGan.Ji,
+                DiZhi.Yin => TianGan.Jia,
+                DiZhi.Mao => TianGan.Yi,
+                DiZhi.Chen => TianGan.Wu,
+                DiZhi.Si => TianGan.Bing,
+                DiZhi.Wu => TianGan.Ding,
+                DiZhi.Wei => TianGan.Ji,
+                DiZhi.Shen => TianGan.Geng,
+                DiZhi.You => TianGan.Xin,
+                DiZhi.Xu => TianGan.Wu,
+                DiZhi.Hai => TianGan.Ren,
+                _ => throw new InvalidEnumArgumentException(nameof(zhi), (int)zhi, typeof(DiZhi))
+            };
+        }
+
+        /// <summary>取得 <see cref="DiZhi"/> 對應的 <see cref="ShiShen"/></summary>
+        /// <param name="zhi">欲轉換的地支</param>
+        /// <param name="riZhuGan">日柱天干</param>
+        /// <returns>十神</returns>
+        /// <exception cref="InvalidEnumArgumentException">無法解析的地支</exception>
+        public static ShiShen ToShiShen(this DiZhi zhi, TianGan riZhuGan) {
+            /* 取得要判斷的支藏干 */
+            var hideGan = zhi.ToTianGan();
+            /* 以支藏干來跟日主做判斷 */
+            return hideGan.ToShiShen(riZhuGan);
+        }
         #endregion
 
         #region 五行
@@ -162,6 +293,57 @@ namespace BaZi.Models {
                 WuXing.Shui => "水",
                 _ => throw new InvalidEnumArgumentException(nameof(wx), (int)wx, typeof(WuXing))
             };
+        }
+
+        /// <summary>將 <see cref="WuXing"/> 轉為對應的 <see cref="ShiShen"/></summary>
+        /// <param name="wx">欲轉換的五行</param>
+        /// <returns>十神</returns>
+        /// <exception cref="InvalidEnumArgumentException">無法解析的五行</exception>
+        public static ShiShen ToShiShen(this WuXing wx, WuXing riZhu) {
+            if (BaZiDefine.Restricting[riZhu] == wx) {
+                return ShiShen.ZhengCai | ShiShen.PianCai;
+            } else if (BaZiDefine.RestrictBy[riZhu] == wx) {
+                return ShiShen.ZhengGuan | ShiShen.QiSha;
+            } else if (BaZiDefine.Generation[riZhu] == wx) {
+                return ShiShen.ShangGuan | ShiShen.ShihShen;
+            } else if (BaZiDefine.GenerateBy[riZhu] == wx) {
+                return ShiShen.ZhengYin | ShiShen.PianYin;
+            } else {
+                return ShiShen.JieCai | ShiShen.BiJian;
+            }
+        }
+
+        /// <summary>取得天干地支對應的五行</summary>
+        /// <param name="gan">天干</param>
+        /// <param name="zhi">地支</param>
+        /// <returns>五行</returns>
+        public static WuXing[] GetWuXing(TianGan gan, DiZhi zhi) {
+            /* 取得天干的五行 */
+            var ganWuXing = gan.ToWuXing();
+            /* 取得地支的完整五行 */
+            var zhiWuXing = zhi.ToFullWuXing();
+            /* 如果天干的五行有剋地支的五行，對應的地支要扣分 */
+            var meKe = BaZiDefine.Restricting[ganWuXing];
+            if (zhiWuXing.ContainsKey(meKe)) {
+                zhiWuXing[meKe] -= 20;
+            }
+            /* 如果天干的五行有生地支的五行，對應的地支要加分 */
+            var meShen = BaZiDefine.Generation[ganWuXing];
+            if (zhiWuXing.ContainsKey(meShen)) {
+                zhiWuXing[meShen] += 20;
+            }
+            /* 開始合併 */
+            if (zhiWuXing.ContainsKey(ganWuXing)) {
+                zhiWuXing[ganWuXing] += 100;
+            } else {
+                zhiWuXing.Add(ganWuXing, 100);
+            }
+            /* 取出大於 40 分的最多三個 */
+            return zhiWuXing
+                .Where(kvp => kvp.Value > 40)
+                .OrderByDescending(kvp => kvp.Value)
+                .Select(kvp => kvp.Key)
+                .Take(3).ToArray();
         }
         #endregion
 
@@ -230,11 +412,41 @@ namespace BaZi.Models {
                 ShiShen.ZhengGuan => "正官",
                 ShiShen.PianYin => "偏印",
                 ShiShen.ZhengYin => "正印",
-                ShiShen.ZhengGuan | ShiShen.QiSha => "官殺",
-                ShiShen.ShihShen | ShiShen.ShangGuan => "食傷",
-                ShiShen.ZhengCai | ShiShen.PianCai => "財星",
-                ShiShen.ZhengYin | ShiShen.PianYin => "印星",
-                ShiShen.BiJian | ShiShen.JieCai => "比劫",
+                ShiShen.BiJie => "比劫",
+                ShiShen.ShihShang => "食傷",
+                ShiShen.Cai => "財星",
+                ShiShen.GuanSha => "官殺",
+                ShiShen.Yin => "印星",
+                _ => throw new InvalidEnumArgumentException(nameof(shen), (int)shen, typeof(ShiShen))
+            };
+        }
+
+        /// <summary>將 <see cref="ShiShen"/> 轉為對應的運名稱</summary>
+        /// <param name="shen">欲轉換的十神</param>
+        /// <returns>運</returns>
+        /// <exception cref="InvalidEnumArgumentException">無法解析的十神</exception>
+        public static string ToYunString(this ShiShen shen) {
+            return shen switch {
+                ShiShen.BiJian or ShiShen.JieCai or ShiShen.BiJie => "比劫運",
+                ShiShen.ShihShen or ShiShen.ShangGuan or ShiShen.ShihShang => "食傷運",
+                ShiShen.PianCai or ShiShen.ZhengCai or ShiShen.Cai => "財運",
+                ShiShen.QiSha or ShiShen.ZhengGuan or ShiShen.GuanSha => "官殺運",
+                ShiShen.PianYin or ShiShen.ZhengYin or ShiShen.Yin => "印運",
+                _ => throw new InvalidEnumArgumentException(nameof(shen), (int)shen, typeof(ShiShen))
+            };
+        }
+
+        /// <summary>將 <see cref="ShiShen"/> 轉為對應的兩神物件</summary>
+        /// <param name="shen">欲轉換的十神</param>
+        /// <returns>兩神</returns>
+        /// <exception cref="InvalidEnumArgumentException">無法解析的十神</exception>
+        public static ShiShen ToCombined(this ShiShen shen) {
+            return shen switch {
+                ShiShen.BiJian or ShiShen.JieCai or ShiShen.BiJie => ShiShen.BiJie,
+                ShiShen.ShihShen or ShiShen.ShangGuan or ShiShen.ShihShang => ShiShen.ShihShang,
+                ShiShen.PianCai or ShiShen.ZhengCai or ShiShen.Cai => ShiShen.Cai,
+                ShiShen.QiSha or ShiShen.ZhengGuan or ShiShen.GuanSha => ShiShen.GuanSha,
+                ShiShen.PianYin or ShiShen.ZhengYin or ShiShen.Yin => ShiShen.Yin,
                 _ => throw new InvalidEnumArgumentException(nameof(shen), (int)shen, typeof(ShiShen))
             };
         }

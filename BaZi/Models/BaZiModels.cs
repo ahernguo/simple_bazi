@@ -1,9 +1,25 @@
 namespace BaZi.Models {
 
-    /// <summary>柱</summary>
-    public class Zhu {
+    /// <summary>描述包含天干、地支之類別</summary>
+    public interface IGanZhi {
+
+		#region Properties
+		/// <summary>取得名稱</summary>
+		public string Id { get; }
+		/// <summary>取得天干</summary>
+		public TianGan Gan { get; }
+		/// <summary>取得地支</summary>
+		public DiZhi Zhi { get; }
+		#endregion
+
+	}
+
+	/// <summary>柱</summary>
+	public class Zhu : IGanZhi {
 
         #region Properties
+        /// <summary>取得此柱的名稱</summary>
+        public string Id { get; }
         /// <summary>取得天干</summary>
         public TianGan Gan { get; }
         /// <summary>取得地支</summary>
@@ -16,21 +32,29 @@ namespace BaZi.Models {
         public WuXing GanWuXing { get; }
         /// <summary>取得地支對應的五行</summary>
         public WuXing ZhiWuXing { get; }
-        #endregion
+        /// <summary>取得或設定在計算格局時，天干是否為加分項</summary>
+        public bool IsGanBonus { get; set; }
+		/// <summary>取得或設定在計算格局時，地支是否為加分項</summary>
+		public bool IsZhiBonus { get; set; }
+		#endregion
 
-        #region Constructor
-        /// <summary>建構 '柱' 資訊</summary>
-        /// <param name="gan">天干文字</param>
-        /// <param name="zhi">地支文字</param>
-        /// <param name="zhuXing">主星</param>
-        /// <param name="fuXing">副星</param>
-        public Zhu(string gan, string zhi, string zhuXing, IList<string> fuXing) {
+		#region Constructor
+		/// <summary>建構 '柱' 資訊</summary>
+		/// <param name="id">此柱的名稱</param>
+		/// <param name="gan">天干文字</param>
+		/// <param name="zhi">地支文字</param>
+		/// <param name="zhuXing">主星</param>
+		/// <param name="fuXing">副星</param>
+		public Zhu(string id, string gan, string zhi, string zhuXing, IList<string> fuXing) {
+            Id = id;
             Gan = gan.ToTianGan();
             GanWuXing = Gan.ToWuXing();
             Zhi = zhi.ToDiZhi();
             ZhiWuXing = Zhi.ToWuXing();
             ZhuXing = zhuXing.ToShiShen();
             FuXing = fuXing.Select(s => s.ToShiShen()).ToList();
+            IsGanBonus = false;
+            IsZhiBonus = false;
         }
         #endregion
 
@@ -42,9 +66,11 @@ namespace BaZi.Models {
     }
 
     /// <summary>流年</summary>
-    public class LiuNian {
+    public class LiuNian : IGanZhi {
 
         #region Properties
+        /// <summary>取得此流年對應的名稱</summary>
+        public string Id { get; } = "流年";
         /// <summary>取得天干</summary>
         public TianGan Gan { get; }
         /// <summary>取得地支</summary>
@@ -71,9 +97,11 @@ namespace BaZi.Models {
     }
 
     /// <summary>大運</summary>
-    public class DaYun {
+    public class DaYun : IGanZhi {
 
         #region Properties
+        /// <summary>取得此大運對應的名稱</summary>
+        public string Id { get; } = "大運";
         /// <summary>取得天干</summary>
         public TianGan Gan { get; }
         /// <summary>取得地支</summary>
@@ -86,6 +114,8 @@ namespace BaZi.Models {
         public ShiShen Shen { get; }
         /// <summary>取得此運的流年</summary>
         public IReadOnlyList<LiuNian> LiuNianList { get; }
+        /// <summary>取得或設定是否為好運 (僅供註記)</summary>
+        public bool IsGoodYun { get; set; }
         #endregion
 
         #region Constructor
@@ -95,7 +125,8 @@ namespace BaZi.Models {
             StartAge = daYun.StartAge;
             StartYear = daYun.StartYear;
             LiuNianList = [.. daYun.GetLiuNian().Select(ln => new LiuNian(ln))];
-        }
+            IsGoodYun = false;
+		}
         #endregion
 
     }
@@ -136,6 +167,12 @@ namespace BaZi.Models {
         public GeJu StrengthStatus { get; }
         /// <summary>取得大運清單</summary>
         public IReadOnlyList<DaYun> DaYunList { get; }
+        /// <summary>取得當前的大運</summary>
+        public DaYun? CurrentDaYun { get; }
+        /// <summary>取得喜用神</summary>
+        public IReadOnlyList<WuXing> LikeWuXing { get; }
+		/// <summary>取得忌神</summary>
+		public IReadOnlyList<WuXing> UnlikeWuXing { get; }
         #endregion
 
         #region Constructor
@@ -153,6 +190,7 @@ namespace BaZi.Models {
             LunarDate = new DateTime(lunar.Year, lunar.Month, lunar.Day);
             ShengXiao = lunar.YearShengXiao;
             YearZhu = new Zhu(
+                "年柱",
                 eightChar.YearGan,
                 eightChar.YearZhi,
                 eightChar.YearShiShenGan,
@@ -160,6 +198,7 @@ namespace BaZi.Models {
             );
             LOG4N.Info($"年柱為 '{YearZhu}'");
             MonthZhu = new Zhu(
+                "月柱",
                 eightChar.MonthGan,
                 eightChar.MonthZhi,
                 eightChar.MonthShiShenGan,
@@ -167,6 +206,7 @@ namespace BaZi.Models {
             );
             LOG4N.Info($"月柱為 '{MonthZhu}'");
             DayZhu = new Zhu(
+                "日柱",
                 eightChar.DayGan,
                 eightChar.DayZhi,
                 eightChar.DayShiShenGan,
@@ -174,6 +214,7 @@ namespace BaZi.Models {
             );
             LOG4N.Info($"日柱為 '{DayZhu}'");
             HourZhu = new Zhu(
+                "時柱",
                 eightChar.TimeGan,
                 eightChar.TimeZhi,
                 eightChar.TimeShiShenGan,
@@ -188,11 +229,15 @@ namespace BaZi.Models {
             var yun = eightChar.GetYun(lunarGender, 2);
             var daYuns = yun.GetDaYun();
             var daYunList = new List<DaYun>();
+            var curYear = DateTime.Now.Year;
             foreach (var daYun in daYuns) {
                 /* 排除大運之前，從 1 開始 */
                 if (daYun.Index == 0) continue;
                 var y = new DaYun(daYun);
                 daYunList.Add(y);
+                if ((y.StartYear <= curYear) && (curYear <= (y.StartYear + 10))) {
+                    CurrentDaYun = y;
+                }
             }
             DaYunList = daYunList;
             var score = CalculateGeJu();
@@ -210,7 +255,17 @@ namespace BaZi.Models {
                 StrengthStatus = GeJu.CongRuo;
                 LOG4N.Info($"分數 ≦ 20，從弱");
             }
-        }
+            LikeWuXing = StrengthStatus switch {
+                GeJu.ShenQiang or GeJu.CongRuo => [BaZiDefine.Restricting[RiZhu], BaZiDefine.RestrictBy[RiZhu], BaZiDefine.Generation[RiZhu]],
+                GeJu.ShenRuo or GeJu.CongQiang => [BaZiDefine.GenerateBy[RiZhu], RiZhu],
+                _ => throw new System.ComponentModel.InvalidEnumArgumentException(nameof(StrengthStatus), (int)StrengthStatus, typeof(GeJu))
+            };
+			UnlikeWuXing = StrengthStatus switch {
+				GeJu.ShenQiang or GeJu.CongRuo => [BaZiDefine.GenerateBy[RiZhu], RiZhu],
+				GeJu.ShenRuo or GeJu.CongQiang => [BaZiDefine.Restricting[RiZhu], BaZiDefine.RestrictBy[RiZhu], BaZiDefine.Generation[RiZhu]],
+				_ => throw new System.ComponentModel.InvalidEnumArgumentException(nameof(StrengthStatus), (int)StrengthStatus, typeof(GeJu))
+			};
+		}
         #endregion
 
         #region Methods
@@ -301,7 +356,7 @@ namespace BaZi.Models {
             /* ----- Step4. 三會。三會的能量強，一但形成就會改變地支的五行，要用新的五行來算 ----- */
             (string key, string tip)[] zhiList = [("YearZhi", "年柱地支"), ("MonthZhi", "月柱地支"), ("DayZhi", "日柱地支"), ("HourZhi", "時柱地支")];
             LOG4N.Info($"  檢查是否有三會...");
-            foreach (var kvp in BaZiDefine.SanHui) {
+            foreach (var kvp in BaZiDefine.ThreeHui) {
                 if (CheckHui(kvp.Value, kvp.Key, out var hui)) {
                     LOG4N.Info($"    觸發 '{string.Join("", kvp.Value.Select(v => v.ToZhiString()))}' 三會{kvp.Key.ToWuXingString()}局");
                     //當此地支是三會之一時，則此地支強迫變成目標五行，重新計算是否達成
@@ -326,7 +381,7 @@ namespace BaZi.Models {
             }
             /* ----- Step5. 三合/半合/暗拱。能量不如三會，如果改變的新五行沒有加分，那就維持原來的，不強制複寫 ----- */
             LOG4N.Info($"  檢查是否有三合/半合/暗拱...");
-            foreach (var kvp in BaZiDefine.SanHe) {
+            foreach (var kvp in BaZiDefine.ThreeHe) {
                 if (SameOrGenerate(RiZhu, kvp.Key) && CheckHe(kvp.Value, kvp.Key, out var he)) {
                     LOG4N.Info($"    觸發 '{string.Join("", kvp.Value.Select(v => v.ToZhiString()))}' {kvp.Key.ToWuXingString()}局");
                     if (he[0] > 0) {
@@ -352,42 +407,49 @@ namespace BaZi.Models {
             LOG4N.Info($"  計算最終分數...");
             if (points["YearGan"]) {
                 score += 5;
+                YearZhu.IsGanBonus = true;
                 LOG4N.Info($"    年柱天干 +5");
             } else {
                 LOG4N.Info($"    年柱天干 +0");
             }
             if (points["YearZhi"]) {
                 score += 20;
-                LOG4N.Info($"    年柱地支 +20");
+                YearZhu.IsZhiBonus = true;
+				LOG4N.Info($"    年柱地支 +20");
             } else {
                 LOG4N.Info($"    年柱地支 +0");
             }
             if (points["MonthGan"]) {
                 score += 5;
+                MonthZhu.IsGanBonus = true;
                 LOG4N.Info($"    月柱天干 +5");
             } else {
                 LOG4N.Info($"    月柱天干 +0");
             }
             if (points["MonthZhi"]) {
                 score += 35;
-                LOG4N.Info($"    月柱地支 +35");
+                MonthZhu.IsZhiBonus = true;
+				LOG4N.Info($"    月柱地支 +35");
             } else {
                 LOG4N.Info($"    月柱地支 +0");
             }
             if (points["DayZhi"]) {
                 score += 20;
+                DayZhu.IsZhiBonus = true;
                 LOG4N.Info($"    日柱地支 +20");
             } else {
                 LOG4N.Info($"    日柱地支 +0");
             }
             if (points["HourGan"]) {
                 score += 5;
+                HourZhu.IsGanBonus = true;
                 LOG4N.Info($"    時柱天干 +5");
             } else {
                 LOG4N.Info($"    時柱天干 +0");
             }
             if (points["HourZhi"]) {
                 score += 10;
+                HourZhu.IsZhiBonus = true;
                 LOG4N.Info($"    時柱地支 +10");
             } else {
                 LOG4N.Info($"    時柱地支 +0");
@@ -447,7 +509,7 @@ namespace BaZi.Models {
         /// <param name="wuXing">若為六合，回傳對應的五行</param>
         /// <returns>(true)六合之一 (false)無</returns>
         private static bool CheckLiuHe(DiZhi[] neibZhi, out WuXing wuXing) {
-            var match = BaZiDefine.LiuHe.FirstOrDefault(kvp => neibZhi.All(z => kvp.Value.Contains(z)));
+            var match = BaZiDefine.SixHe.FirstOrDefault(kvp => neibZhi.All(z => kvp.Value.Contains(z)));
             if ((match.Value != null) && (match.Value.Length > 0)) {
                 wuXing = match.Key;
                 return true;

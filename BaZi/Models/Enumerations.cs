@@ -102,7 +102,17 @@
         /// <summary>偏印</summary>
         PianYin = 0x0100,
         /// <summary>正印</summary>
-        ZhengYin = 0x0200
+        ZhengYin = 0x0200,
+        /// <summary>比劫</summary>
+        BiJie = 0x0003,
+        /// <summary>食傷</summary>
+        ShihShang = 0x000C,
+        /// <summary>財</summary>
+        Cai = 0x0030,
+        /// <summary>官殺</summary>
+        GuanSha = 0x00C0,
+        /// <summary>印</summary>
+        Yin = 0x0300
     }
 
     /// <summary>性別</summary>
@@ -128,5 +138,17 @@
         CongQiang = 0x21,
         /// <summary>從弱</summary>
         CongRuo = 0x22
+    }
+
+    /// <summary>合、會結果</summary>
+    public enum HeHui {
+        /// <summary>地支三合</summary>
+        ThreeHe = 1,
+        /// <summary>地支三會</summary>
+        ThreeHui = 2,
+        /// <summary>天干五合</summary>
+        FiveHe = 3,
+        /// <summary>地支六合</summary>
+        SixHe = 4
     }
 }
