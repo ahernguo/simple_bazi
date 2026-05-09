@@ -480,23 +480,20 @@
         return bad;
     }
 
-    private (bool bad, IDictionary<HeHui, WuXing> heHui) HasNianConflict(BaZiInfo info, System.Text.StringBuilder html) {
+    private (bool bad, IDictionary<HeHui, WuXing> heHui) HasNianConflict(BaZiInfo info, DaYun daYun, LiuNian ln, System.Text.StringBuilder html) {
         /* 如果當前沒有大運，直接離開。可能是系統出錯或排盤有誤 */
-        if (info.CurrentDaYun is null) return (false, new Dictionary<HeHui, WuXing>());
-        /* 取得當前的流年 */
-        var curYear = DateTime.Now.Year;
-        var ln = info.CurrentDaYun.LiuNianList.First(l => l.Year == curYear);
+        if (daYun is null) return (false, new Dictionary<HeHui, WuXing>());
         /* 這邊是判斷大運，所以最後一個一定要放流年，在 CheckConflict 裡面會有 mustLast，也就是跟流年有合、有刑沖破害的才會記錄
         * 天干部分，有可能會是大運干+流年干合，這樣就有可能形成忌神被合走 */
         var ganPair = new List<IList<IGanZhi>> {
-            new List<IGanZhi>() { info.YearZhu, info.CurrentDaYun, ln },
-            new List<IGanZhi>() { info.MonthZhu, info.CurrentDaYun, ln },
-            new List<IGanZhi>() { info.DayZhu, info.CurrentDaYun, ln },
-            new List<IGanZhi>() { info.HourZhu, info.CurrentDaYun, ln }
+            new List<IGanZhi>() { info.YearZhu, daYun, ln },
+            new List<IGanZhi>() { info.MonthZhu, daYun, ln },
+            new List<IGanZhi>() { info.DayZhu, daYun, ln },
+            new List<IGanZhi>() { info.HourZhu, daYun, ln }
         };
         var threePair = new List<IList<IGanZhi>> {
-            new List<IGanZhi>() { info.DayZhu, info.MonthZhu, info.CurrentDaYun, ln },
-            new List<IGanZhi>() { info.DayZhu, info.HourZhu, info.CurrentDaYun, ln }
+            new List<IGanZhi>() { info.DayZhu, info.MonthZhu, daYun, ln },
+            new List<IGanZhi>() { info.DayZhu, info.HourZhu, daYun, ln }
         };
         var twoPair = new List<IList<IGanZhi>> {
             new List<IGanZhi>() { info.YearZhu, ln },
@@ -507,8 +504,8 @@
         return CheckConflict(info, ganPair, threePair, twoPair, html);
     }
 
-    private void CreateYunDesc(BaZiInfo info, ShiShen yun, System.Text.StringBuilder html) {
-        if (info.CurrentDaYun is null) return;
+    private void CreateYunDesc(BaZiInfo info, DaYun daYun, ShiShen yun, System.Text.StringBuilder html) {
+        if (daYun is null) return;
         html.Append("<span>");
         /* 依照格局來判斷是否好運 */
         if (info.StrengthStatus == GeJu.ShenQiang) {
@@ -520,7 +517,7 @@
                     } else {
                         html.Append("易得財，是個 <strong class=\"text-success\">好運</strong>");
                     }
-                    info.CurrentDaYun.IsGoodYun = true;
+                    daYun.IsGoodYun = true;
                     break;
                 case ShiShen.ZhengGuan:
                 case ShiShen.QiSha:
@@ -529,7 +526,7 @@
                     } else {
                         html.Append("工作運好、受賞識升職、姻緣桃花佳(正緣、旺夫)，是個 <strong class=\"text-success\">好運</strong>");
                     }
-                    info.CurrentDaYun.IsGoodYun = true;
+                    daYun.IsGoodYun = true;
                     break;
                 case ShiShen.ShihShen:
                 case ShiShen.ShangGuan:
@@ -538,7 +535,7 @@
                     } else {
                         html.Append("容易出名、才華被看見、文昌(考試)運好、易懷孕、育兒教兒好，是個 <strong class=\"text-success\">好運</strong>");
                     }
-                    info.CurrentDaYun.IsGoodYun = true;
+                    daYun.IsGoodYun = true;
                     break;
                 case ShiShen.PianYin:
                 case ShiShen.ZhengYin:
@@ -584,7 +581,7 @@
                         } else {
                             html.Append("得財容易、受男性長輩幫助、婚姻順利，是個 <strong class=\"text-success\">好運</strong>");
                         }
-                        info.CurrentDaYun.IsGoodYun = true;
+                        daYun.IsGoodYun = true;
                         break;
                     case ShiShen.ZhengCai:
                     case ShiShen.PianCai:
@@ -617,7 +614,7 @@
                         } else {
                             html.Append("升官、工作順利、貴人相助、姻緣加分，是個 <strong class=\"text-success\">好運</strong>");
                         }
-                        info.CurrentDaYun.IsGoodYun = true;
+                        daYun.IsGoodYun = true;
                         break;
                     case ShiShen.ZhengCai:
                     case ShiShen.PianCai:
@@ -650,7 +647,7 @@
                         } else {
                             html.Append("易得功名、得到好的下屬、子息運好，是個 <strong class=\"text-success\">好運</strong>");
                         }
-                        info.CurrentDaYun.IsGoodYun = true;
+                        daYun.IsGoodYun = true;
                         break;
                     case ShiShen.ZhengCai:
                     case ShiShen.PianCai:
@@ -679,7 +676,7 @@
                 case ShiShen.BiJian:
                 case ShiShen.JieCai:
                     html.Append("運勢加分、做事整體順暢，是個 <strong class=\"text-success\">好運</strong>");
-                    info.CurrentDaYun.IsGoodYun = true;
+                    daYun.IsGoodYun = true;
                     break;
                 case ShiShen.ZhengCai:
                 case ShiShen.PianCai:
@@ -707,7 +704,7 @@
                 case ShiShen.ShihShen:
                 case ShiShen.ShangGuan:
                     html.Append("運勢加分、做事整體順暢，是個 <strong class=\"text-success\">好運</strong>");
-                    info.CurrentDaYun.IsGoodYun = true;
+                    daYun.IsGoodYun = true;
                     break;
                 default:
                     throw new System.ComponentModel.InvalidEnumArgumentException(nameof(yun), (int)yun, typeof(ShiShen));
@@ -904,14 +901,14 @@
         }
     }
 
-    private void CreateNianDesc(BaZiInfo info, ShiShen ganYun, ShiShen zhiYun, System.Text.StringBuilder html) {
-        if (info.CurrentDaYun is null) return;
+    private void CreateNianDesc(BaZiInfo info, DaYun daYun, ShiShen ganYun, ShiShen zhiYun, System.Text.StringBuilder html) {
+        if (daYun is null) return;
         html.Append("<span>");
         /* 取得此流年是走什麼運 */
         var gy = ganYun.ToCombined();
         var zy = zhiYun.ToCombined();
         /* 依照格局來判斷是否好運 */
-        if (info.CurrentDaYun.IsGoodYun) {
+        if (daYun.IsGoodYun) {
             if (info.StrengthStatus == GeJu.ShenQiang) {
                 var goodGy = (gy == ShiShen.Cai) || (gy == ShiShen.GuanSha) || (gy == ShiShen.ShihShang);
                 var goodZy = (zy == ShiShen.Cai) || (zy == ShiShen.GuanSha) || (zy == ShiShen.ShihShang);
@@ -987,23 +984,44 @@
         html.AppendLine(@"    <div class=""row ms-1 me-1 py-3"">");
         var curYun = info.CurrentDaYun.Zhi.ToShiShen(info.DayZhu.Gan);
         html.Append($"<span>{info.CurrentDaYun.StartYear} 年 ~ {(info.CurrentDaYun.StartYear + 10)} 年走 <strong class=\"text-info\">{curYun.ToYunString()}</strong></span>");
-        CreateYunDesc(info, curYun, html);
+        CreateYunDesc(info, info.CurrentDaYun, curYun, html);
         html.AppendLine(@"    </div>");
+
+        int currentYear = DateTime.Now.Year;
+        var nextDaYun = info.DaYunList.FirstOrDefault(x => x.StartYear > info.CurrentDaYun.StartYear);
+        if (nextDaYun != null && currentYear == nextDaYun.StartYear - 1) {
+            html.AppendLine(@"    <hr />");
+            html.AppendLine(@"    <div class=""row ms-1 me-1 py-3"">");
+            var nextYun = nextDaYun.Zhi.ToShiShen(info.DayZhu.Gan);
+            html.Append($"<span><strong class=\"text-danger\">[明年切換大運]</strong> {nextDaYun.StartYear} 年 ~ {(nextDaYun.StartYear + 10)} 年走 <strong class=\"text-info\">{nextYun.ToYunString()}</strong></span>");
+            CreateYunDesc(info, nextDaYun, nextYun, html);
+            html.AppendLine(@"    </div>");
+        }
+
         html.AppendLine(@"</div>");
         return new MarkupString(html.ToString());
     }
 
     private MarkupString LiuNianAnalysis(BaZiInfo info) {
-        if (info.CurrentDaYun is null) return new MarkupString("查無大運資料");
+        var html = new System.Text.StringBuilder();
+        int curYear = DateTime.Now.Year;
+        html.AppendLine(GetLiuNianHtml(info, curYear, $"{curYear} 流年分析"));
+        html.AppendLine(GetLiuNianHtml(info, curYear + 1, $"{curYear + 1} 流年分析"));
+        return new MarkupString(html.ToString());
+    }
+
+    private string GetLiuNianHtml(BaZiInfo info, int targetYear, string title) {
+        var daYun = info.DaYunList.LastOrDefault(y => y.StartYear <= targetYear);
+        if (daYun is null) return "";
+        var ln = daYun.LiuNianList.FirstOrDefault(l => l.Year == targetYear);
+        if (ln is null) return "";
+
         var html = new System.Text.StringBuilder();
         html.AppendLine("<div class=\"card p-3 mt-3\">");
-        html.AppendLine("    <h5 class=\"card-title border-bottom pb-2\">流年分析</h5>");
-        /* 取得當前的流年 */
-        var curYear = DateTime.Now.Year;
-        var ln = info.CurrentDaYun.LiuNianList.First(l => l.Year == curYear);
+        html.AppendLine($"    <h5 class=\"card-title border-bottom pb-2\">{title}</h5>");
         /* 先列出是否有衝突 */
         var conflict = new System.Text.StringBuilder();
-        var (bad, heHui) = HasNianConflict(info, conflict);
+        var (bad, heHui) = HasNianConflict(info, daYun, ln, conflict);
         if (conflict.Length > 0) {
             html.AppendLine(@"    <div class=""row ms-1 me-1 py-3 border-bottom-dash"">");
             html.AppendLine(conflict.ToString());
@@ -1022,14 +1040,27 @@
             zhiYun = ln.Zhi.ToWuXing().ToShiShen(info.RiZhu);
         }
         html.AppendLine(@"    <div class=""row ms-1 me-1 py-3"">");
+        var ganColor = GetElementColorClass(ln.Gan.ToWuXing());
+        var zhiColor = GetElementColorClass(ln.Zhi.ToWuXing());
         if (zhiYun.HasFlag(ganYun)) {
-            html.Append($"<span>{ln.Year} <strong class=\"text-info\">{ln.Gan.ToGanString()}{ln.Zhi.ToZhiString()}</strong> 年 ({ln.Age} 歲) 走 <strong class=\"text-info\">{zhiYun.ToYunString()}</strong></span>");
+            html.Append($"<span>{ln.Year} <strong><span class=\"{ganColor}\">{ln.Gan.ToGanString()}</span><span class=\"{zhiColor}\">{ln.Zhi.ToZhiString()}</span></strong> 年 ({ln.Age} 歲) 走 <strong class=\"text-info\">{zhiYun.ToYunString()}</strong></span>");
         } else {
-            html.Append($"<span>{ln.Year} <strong class=\"text-info\">{ln.Gan.ToGanString()}{ln.Zhi.ToZhiString()}</strong> 年 ({ln.Age} 歲) 走 <strong class=\"text-info\">{ganYun.ToYunString()}、{zhiYun.ToYunString()}</strong></span>");
+            html.Append($"<span>{ln.Year} <strong><span class=\"{ganColor}\">{ln.Gan.ToGanString()}</span><span class=\"{zhiColor}\">{ln.Zhi.ToZhiString()}</span></strong> 年 ({ln.Age} 歲) 走 <strong class=\"text-info\">{ganYun.ToYunString()}、{zhiYun.ToYunString()}</strong></span>");
         }
-        CreateNianDesc(info, ganYun, zhiYun, html);
+        CreateNianDesc(info, daYun, ganYun, zhiYun, html);
         html.AppendLine(@"    </div>");
         html.AppendLine(@"</div>");
-        return new MarkupString(html.ToString());
+        return html.ToString();
+    }
+
+    private string GetElementColorClass(WuXing element) {
+        return element switch {
+            WuXing.Mu => "element-wood",
+            WuXing.Huo => "element-fire",
+            WuXing.Tu => "element-earth",
+            WuXing.Jin => "element-metal",
+            WuXing.Shui => "element-water",
+            _ => ""
+        };
     }
 }

@@ -6,6 +6,7 @@
 @inject IState<BaZiState> BaZiState
 @inject NavigationManager Navigation
 @inject SecurityService SecurityService
+@inject IState<ThemeState> ThemeState
 
 @* ... rest of UI code ... *@
 <div class="container mt-4">
@@ -107,7 +108,7 @@
         }
 
         <div class="d-grid gap-2">
-            <button class="btn btn-primary btn-lg" @onclick="Calculate" disabled="@BaZiState.Value.IsLoading">
+            <button class="btn btn-primary btn-lg" @onclick="ShowWarning" disabled="@BaZiState.Value.IsLoading">
                 @if (BaZiState.Value.IsLoading) {
                     <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                 }
@@ -116,6 +117,31 @@
         </div>
     </div>
 </div>
+
+@if (mShowWarningModal) {
+    <div class="modal fade show" tabindex="-1" style="display: block; background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content @(ThemeState.Value.IsDarkMode ? "bg-dark text-light border-secondary" : "")">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title"><i class="fa-solid fa-triangle-exclamation me-2"></i>分析前須知</h5>
+                    <button type="button" class="btn-close" @onclick="CloseWarning"></button>
+                </div>
+                <div class="modal-body">
+                    <p>此命理程式為固定邏輯所設計，僅供參考，欲求準確仍需請命理師推論。</p>
+                    @if (mHour == 25 || mMinute == 61) {
+                        <div class="alert alert-danger mt-3 mb-0">
+                            <strong>注意：</strong>由於缺少準確的生辰時、分，準確度僅有 60%~75%，請勿過度相信結果。
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseWarning">取消</button>
+                    <button type="button" class="btn btn-primary" @onclick="ConfirmCalculate">我同意</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     private int mYear = 1990;
@@ -127,8 +153,16 @@
     private bool mShowImport = false;
     private string? mImportText;
     private string? mExportText;
+    private bool mShowWarningModal = false;
 
     private void SetGender(int gender) => Dispatcher.Dispatch(new SetGenderAction(gender));
+
+    private void ShowWarning() => mShowWarningModal = true;
+    private void CloseWarning() => mShowWarningModal = false;
+    private void ConfirmCalculate() {
+        mShowWarningModal = false;
+        Calculate();
+    }
 
     private void ShowImport() => mShowImport = true;
 
