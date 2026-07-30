@@ -41,11 +41,59 @@
 
         @DaYunAnalysis(info)
 
-        @LiuNianAnalysis(info)
+        <div class="card p-3 mt-3">
+            <h5 class="card-title border-bottom pb-2">流年查詢</h5>
+            @{
+                var liuNianYears = GetLiuNianYears(info);
+            }
+            @if (liuNianYears.Count == 0) {
+                <div class="alert alert-warning mb-0">查無可供查詢的流年資料。</div>
+            } else {
+                <div class="row g-3 align-items-end">
+                    <div class="col-sm-8 col-md-6">
+                        <label class="form-label" for="liu-nian-year">年份</label>
+                        <select id="liu-nian-year" class="form-select" @bind="selectedLiuNianYear">
+                            <option value="">請選擇年份</option>
+                            @foreach (var year in liuNianYears) {
+                                <option value="@year">@year 年</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-sm-4 col-md-3">
+                        <button type="button"
+                                class="btn btn-primary w-100"
+                                disabled="@(selectedLiuNianYear is null)"
+                                @onclick="QueryLiuNian">
+                            <i class="fa-solid fa-magnifying-glass me-2"></i>查詢
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (queriedLiuNianYear is int targetYear) {
+            @LiuNianAnalysis(info, targetYear)
+        }
     </div>
 }
 
 @code {
+    private int? selectedLiuNianYear = DateTime.Now.Year;
+    private int? queriedLiuNianYear;
+
+    private static IReadOnlyList<int> GetLiuNianYears(BaZiInfo info) {
+        return info.DaYunList
+            .SelectMany(daYun => daYun.LiuNianList)
+            .Select(liuNian => liuNian.Year)
+            .Distinct()
+            .Order()
+            .ToArray();
+    }
+
+    private void QueryLiuNian() {
+        queriedLiuNianYear = selectedLiuNianYear;
+    }
+
     private bool IsCurrentDaYun(DaYun dy, BaZiInfo info) {
         int currentYear = DateTime.Now.Year;
         var nextDaYun = info.DaYunList.FirstOrDefault(x => x.StartYear > dy.StartYear);
@@ -1002,12 +1050,9 @@
         return new MarkupString(html.ToString());
     }
 
-    private MarkupString LiuNianAnalysis(BaZiInfo info) {
-        var html = new System.Text.StringBuilder();
-        int curYear = DateTime.Now.Year;
-        html.AppendLine(GetLiuNianHtml(info, curYear, $"{curYear} 流年分析"));
-        html.AppendLine(GetLiuNianHtml(info, curYear + 1, $"{curYear + 1} 流年分析"));
-        return new MarkupString(html.ToString());
+    private MarkupString LiuNianAnalysis(BaZiInfo info, int targetYear) {
+        var html = GetLiuNianHtml(info, targetYear, $"{targetYear} 流年分析");
+        return new MarkupString(html);
     }
 
     private string GetLiuNianHtml(BaZiInfo info, int targetYear, string title) {
