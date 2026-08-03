@@ -64,6 +64,7 @@ namespace BaZi {
 
             // 註冊服務，後續就可以從 Dispatcher 來呼叫、存取
             builder.Services.AddSingleton<BaZiService>();
+            builder.Services.AddSingleton<FortuneService>();
             builder.Services.AddSingleton<SecurityService>();
             builder.Services.AddScoped<Store.BaZiEffects>();
 
