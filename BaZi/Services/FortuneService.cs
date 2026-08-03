@@ -3,8 +3,13 @@ using Microsoft.AspNetCore.Components;
 
 namespace BaZi.Services;
 
-/// <summary>提供大運與流年分析服務</summary>
+/// <summary>提供大運、流年與流月分析服務</summary>
 public class FortuneService {
+    private enum PeriodScope {
+        LiuNian,
+        LiuYue
+    }
+
     public IReadOnlyList<int> GetLiuNianYears(BaZiInfo info) {
         return info.DaYunList
             .SelectMany(daYun => daYun.LiuNianList)
@@ -12,6 +17,13 @@ public class FortuneService {
             .Distinct()
             .Order()
             .ToArray();
+    }
+
+    public IReadOnlyList<LiuYue> GetLiuYueMonths(BaZiInfo info, int? targetYear) {
+        if (targetYear is null) return [];
+
+        var (_, liuNian) = FindLiuNian(info, targetYear.Value);
+        return liuNian?.LiuYueList ?? [];
     }
 
     public bool IsCurrentDaYun(DaYun dy, BaZiInfo info) {
@@ -23,130 +35,107 @@ public class FortuneService {
         return currentYear >= dy.StartYear && currentYear < nextDaYun.StartYear;
     }
 
-    private bool Gte2(IList<IGanZhi> src, IList<DiZhi> tar, bool mustLast) {
-        var temp = tar.ToDictionary(
-            d => d,
-            d => src.Count(tp => tp.Zhi == d)
-        );
-        if (mustLast) {
-            return (temp.Count(kvp => kvp.Value > 0) >= 2) && temp.ContainsKey(src.Last().Zhi) && (temp[src.Last().Zhi] > 0);
-        } else {
-            return temp.Count(kvp => kvp.Value > 0) >= 2;
-        }
-    }
-
-    private bool Gte2(IList<IGanZhi> src, IList<TianGan> tar, bool mustLast) {
-        var temp = tar.ToDictionary(
-            d => d,
-            d => src.Count(tp => tp.Gan == d)
-        );
-        if (mustLast) {
-            return (temp.Count(kvp => kvp.Value > 0) >= 2) && temp.ContainsKey(src.Last().Gan) && (temp[src.Last().Gan] > 0);
-        } else {
-            return temp.Count(kvp => kvp.Value > 0) >= 2;
-        }
-    }
-
-    private bool Gte3(IList<IGanZhi> src, IList<DiZhi> tar, bool mustLast) {
-        var temp = tar.ToDictionary(
-            d => d,
-            d => src.Count(tp => tp.Zhi == d)
-        );
-        if (mustLast) {
-            return (temp.Count(kvp => kvp.Value > 0) >= 3) && temp.ContainsKey(src.Last().Zhi) && (temp[src.Last().Zhi] > 0);
-        } else {
-            return temp.Count(kvp => kvp.Value > 0) >= 3;
-        }
-    }
-
-    private bool AllSame(IList<IGanZhi> src, DiZhi tar) {
-        return src.All(dz => dz.Zhi == tar);
-    }
-
-    private bool FindGte2Index(IList<IList<IGanZhi>> src, IList<DiZhi> tar, bool mustLast, out int idx) {
-        var found = false;
-        var curIdx = 0;
-        var tarIdx = -1;
-        foreach (var item in src) {
-            if (Gte2(item, tar, mustLast)) {
-                tarIdx = curIdx;
-                found = true;
-                break;
+    private static bool TryFindInteraction<T>(
+        IList<IList<IGanZhi>> sources,
+        IList<T> target,
+        Func<IGanZhi, T> valueSelector,
+        int requiredCount,
+        bool mustIncludeLast,
+        out IList<IGanZhi> participants,
+        out int sourceIndex
+    ) where T : notnull {
+        for (var index = 0; index < sources.Count; index++) {
+            if (TrySelectParticipants(sources[index], target, valueSelector, requiredCount, mustIncludeLast, out participants)) {
+                sourceIndex = index;
+                return true;
             }
-            curIdx++;
         }
-        idx = tarIdx;
-        return found;
+
+        participants = [];
+        sourceIndex = -1;
+        return false;
     }
 
-    private bool FindGte2Index(IList<IList<IGanZhi>> src, IList<IList<DiZhi>> tar, bool mustLast, out int idx) {
-        var found = false;
-        var curIdx = 0;
-        var tarIdx = -1;
-        foreach (var tp in src) {
-            foreach (var zhi in tar) {
-                if (Gte2(tp, zhi, mustLast)) {
-                    tarIdx = curIdx;
-                    found = true;
-                    break;
+    private static bool TryFindAnyInteraction<T>(
+        IList<IList<IGanZhi>> sources,
+        IList<IList<T>> targets,
+        Func<IGanZhi, T> valueSelector,
+        int requiredCount,
+        bool mustIncludeLast,
+        out IList<IGanZhi> participants,
+        out int sourceIndex
+    ) where T : notnull {
+        for (var index = 0; index < sources.Count; index++) {
+            foreach (var target in targets) {
+                if (TrySelectParticipants(sources[index], target, valueSelector, requiredCount, mustIncludeLast, out participants)) {
+                    sourceIndex = index;
+                    return true;
                 }
             }
-            curIdx++;
         }
-        idx = tarIdx;
-        return found;
+
+        participants = [];
+        sourceIndex = -1;
+        return false;
     }
 
-    private bool FindGte2Index(IList<IList<IGanZhi>> src, IList<IList<TianGan>> tar, bool mustLast, out int idx) {
-        var found = false;
-        var curIdx = 0;
-        var tarIdx = -1;
-        foreach (var tp in src) {
-            foreach (var gan in tar) {
-                if (Gte2(tp, gan, mustLast)) {
-                    tarIdx = curIdx;
-                    found = true;
-                    break;
-                }
+    private static bool TrySelectParticipants<T>(
+        IList<IGanZhi> source,
+        IList<T> target,
+        Func<IGanZhi, T> valueSelector,
+        int requiredCount,
+        bool mustIncludeLast,
+        out IList<IGanZhi> participants
+    ) where T : notnull {
+        participants = [];
+        if (source.Count == 0) return false;
+
+        var matchedValues = new HashSet<T>();
+        var matches = new List<IGanZhi>();
+        foreach (var item in source) {
+            var value = valueSelector(item);
+            if (target.Contains(value) && matchedValues.Add(value)) {
+                matches.Add(item);
             }
-            curIdx++;
         }
-        idx = tarIdx;
-        return found;
+
+        if (matchedValues.Count < requiredCount) return false;
+
+        var last = source[^1];
+        var lastValue = valueSelector(last);
+        if (mustIncludeLast && !target.Contains(lastValue)) return false;
+
+        if (!mustIncludeLast) {
+            participants = matches.Take(requiredCount).ToList();
+            return true;
+        }
+
+        participants = matches
+            .Where(item => !EqualityComparer<T>.Default.Equals(valueSelector(item), lastValue))
+            .Take(requiredCount - 1)
+            .Append(last)
+            .ToList();
+        return participants.Count == requiredCount;
     }
 
-    private bool FindGte3Index(IList<IList<IGanZhi>> src, IList<DiZhi> tar, bool mustLast, out int idx) {
-        var found = false;
-        var curIdx = 0;
-        var tarIdx = -1;
-        foreach (var item in src) {
-            if (Gte3(item, tar, mustLast)) {
-                tarIdx = curIdx;
-                found = true;
-                break;
+    private static bool TryFindSelfInteraction(
+        IList<IList<IGanZhi>> sources,
+        IList<DiZhi> targets,
+        out IList<IGanZhi> participants,
+        out int sourceIndex
+    ) {
+        for (var index = 0; index < sources.Count; index++) {
+            var source = sources[index];
+            if (source.Count >= 2 && targets.Contains(source[0].Zhi) && source.All(item => item.Zhi == source[0].Zhi)) {
+                participants = source.Take(2).ToList();
+                sourceIndex = index;
+                return true;
             }
-            curIdx++;
         }
-        idx = tarIdx;
-        return found;
-    }
 
-    private bool FindAllSameIndex(IList<IList<IGanZhi>> src, IList<DiZhi> tar, out int idx) {
-        var found = false;
-        var curIdx = 0;
-        var tarIdx = -1;
-        foreach (var tp in src) {
-            foreach (var zhi in tar) {
-                if (AllSame(tp, zhi)) {
-                    tarIdx = curIdx;
-                    found = true;
-                    break;
-                }
-            }
-            curIdx++;
-        }
-        idx = tarIdx;
-        return found;
+        participants = [];
+        sourceIndex = -1;
+        return false;
     }
 
     private void CreateThreeHeDesc(IList<IGanZhi> a, WuXing wuXing, System.Text.StringBuilder html) {
@@ -256,25 +245,26 @@ public class FortuneService {
         var heHui = new Dictionary<HeHui, WuXing>();
         if (info.CurrentDaYun is null) return (bad, heHui);
         // 天干五合
-        if ((ganPair != null) && FindGte2Index(ganPair, BaZiDefine.FiveHe, true, out var ganIdx)) {
-            //檢查這個被合走的天干是喜用神還是忌神。由於
+        if ((ganPair != null) && TryFindAnyInteraction(ganPair, BaZiDefine.FiveHe, item => item.Gan, 2, true, out var ganInteraction, out _)) {
+            // 檢查這個被合走的天干是喜用神還是忌神
             var type = 0;
-            var zhu = (Zhu)ganPair[ganIdx][0];
-            if (info.LikeWuXing.Contains(zhu.GanWuXing)) {
-                // 原本是喜用神，被合走反而反而會變不順
+            var sourceElement = ganInteraction[0].Gan.ToWuXing();
+            if (info.LikeWuXing.Contains(sourceElement)) {
+                // 原本是喜用神，被合走反而會變不順
                 type = 1;
             } else {
                 // 原本是忌神，被合走反而會比較順
                 type = 2;
             }
-            CreateFiveHeDesc(ganPair[ganIdx], type, html);  //原本是加分項，被合走變成不加分了
-            heHui.Add(HeHui.FiveHe, zhu.GanWuXing);
+            CreateFiveHeDesc(ganInteraction, type, html);
+            heHui.Add(HeHui.FiveHe, sourceElement);
         }
         // 地支三合
         if (threePair != null) {
             foreach (var wx in BaZiDefine.WuXingList) {
-                if (BaZiDefine.ThreeHe.ContainsKey(wx) && FindGte3Index(threePair, BaZiDefine.ThreeHe[wx], true, out var heIdx)) {
-                    CreateThreeHeDesc(threePair[heIdx], wx, html);   //三合沒有說會有合絆的狀況，只有說天干五合跟地支六合
+                if (BaZiDefine.ThreeHe.ContainsKey(wx)
+                    && TryFindInteraction(threePair, BaZiDefine.ThreeHe[wx], item => item.Zhi, 3, true, out var heInteraction, out _)) {
+                    CreateThreeHeDesc(heInteraction, wx, html);   // 三合沒有說會有合絆的狀況，只有說天干五合跟地支六合
                     if (!heHui.ContainsKey(HeHui.ThreeHe)) heHui.Add(HeHui.ThreeHe, wx);
                     break;
                 }
@@ -285,26 +275,28 @@ public class FortuneService {
             /* 由於六合裡有兩個是包含在三會裡，優先檢查三會，如果用走了，從清單移除，不要再被六合 */
             var copiedThreePair = threePair.Select(p => p).ToList();
             foreach (var wx in BaZiDefine.WuXingList) {
-                if (BaZiDefine.ThreeHui.ContainsKey(wx) && FindGte3Index(copiedThreePair, BaZiDefine.ThreeHui[wx], true, out var huiIdx)) {
+                if (BaZiDefine.ThreeHui.ContainsKey(wx)
+                    && TryFindInteraction(copiedThreePair, BaZiDefine.ThreeHui[wx], item => item.Zhi, 3, true, out _, out var huiIdx)) {
                     // 三會沒有要特別什麼狀況，理論上只跟判讀大運、流年時，看五行會不會很不平衡之類，所以這邊就不做 CreateThreeHuiDesc 了!
                     if (!heHui.ContainsKey(HeHui.ThreeHui)) heHui.Add(HeHui.ThreeHui, wx);
                     // 從 copiedThreePair 移除，避免再被六合比對到
                     copiedThreePair.RemoveAt(huiIdx);
                 }
-                if (BaZiDefine.SixHe.ContainsKey(wx) && FindGte2Index(copiedThreePair, BaZiDefine.SixHe[wx], true, out var heIdx)) {
-                    //判斷這個被用走的地支是好的還壞的
+                if (BaZiDefine.SixHe.ContainsKey(wx)
+                    && TryFindInteraction(copiedThreePair, BaZiDefine.SixHe[wx], item => item.Zhi, 2, true, out var heInteraction, out _)) {
+                    // 判斷這個被用走的地支是好的還壞的
                     var type = 0;
-                    var z1 = (Zhu)copiedThreePair[heIdx][0];
-                    var z2 = (Zhu)copiedThreePair[heIdx][1];
-                    if (info.LikeWuXing.Contains(z1.ZhiWuXing) || info.LikeWuXing.Contains(z2.ZhiWuXing)) {
-                        // 原本是喜用神，被合走反而反而會變不順
+                    var firstElement = heInteraction[0].Zhi.ToWuXing();
+                    var secondElement = heInteraction[1].Zhi.ToWuXing();
+                    if (info.LikeWuXing.Contains(firstElement) || info.LikeWuXing.Contains(secondElement)) {
+                        // 原本是喜用神，被合走反而會變不順
                         type = 1;
                     } else {
                         // 原本是忌神，被合走反而會比較順
                         type = 2;
                         if (!heHui.ContainsKey(HeHui.SixHe)) heHui.Add(HeHui.SixHe, wx);
                     }
-                    CreateSixHeDesc(copiedThreePair[heIdx], type, html);
+                    CreateSixHeDesc(heInteraction, type, html);
                 }
             }
         }
@@ -317,30 +309,35 @@ public class FortuneService {
             || (heHui.ContainsKey(HeHui.SixHe) && info.UnlikeWuXing.Contains(heHui[HeHui.SixHe]));
         var helpStr = "，但因有合相補分，會讓不順感降低一些";
         var worseStr = "，且因合相能量過強，會讓不順感更加嚴重";
+        IList<IGanZhi> threeXingInteraction;
+        IList<IGanZhi> twoXingInteraction;
+        int idx;
         // 無恩之刑 = 寅巳申 (外在, 力度強)
-        if ((threePair != null) && FindGte3Index(threePair, BaZiDefine.ThreeXing[0], true, out var idx)) {
+        if ((threePair != null)
+            && TryFindInteraction(threePair, BaZiDefine.ThreeXing[0], item => item.Zhi, 3, true, out threeXingInteraction, out idx)) {
             var msg = "談判破局、反覆失誤、衝動行事";
             if (help) msg += helpStr;
             if (worse) msg += worseStr;
-            CreateThreeXingDesc(threePair[idx], msg, "三思後行、注意車關", html);
+            CreateThreeXingDesc(threeXingInteraction, msg, "三思後行、注意車關", html);
             bad = true;
-        } else if (FindGte2Index(twoPair, BaZiDefine.ThreeXing[0], true, out idx)) {
+        } else if (TryFindInteraction(twoPair, BaZiDefine.ThreeXing[0], item => item.Zhi, 2, true, out twoXingInteraction, out idx)) {
             var msg = "談判受挫、容易失誤、容易衝動";
             if (help) msg += helpStr;
             if (worse) msg += worseStr;
-            CreateTwoXingDesc(twoPair[idx], msg, "三思後行", "強", html);
+            CreateTwoXingDesc(twoXingInteraction, msg, "三思後行", "強", html);
             bad = true;
         }
         // 恃勢之刑 = 丑戌未 (外在, 力度強)
-        if ((threePair != null) && FindGte3Index(threePair, BaZiDefine.ThreeXing[1], true, out idx)) {
+        if ((threePair != null)
+            && TryFindInteraction(threePair, BaZiDefine.ThreeXing[1], item => item.Zhi, 3, true, out threeXingInteraction, out idx)) {
             var msg = (idx == 0)
                 ? "與父母緣薄、協助調停家庭內鬥或房產糾紛、捲入官司 (心中糾結累積、不開心)"
                 : "與子女緣薄、子女紛爭、房產糾紛 (心中糾結累積、不開心)";
             if (help) msg += helpStr;
             if (worse) msg += worseStr;
-            CreateThreeXingDesc(threePair[idx], msg, "注意車關、不動產問題", html);
+            CreateThreeXingDesc(threeXingInteraction, msg, "注意車關、不動產問題", html);
             bad = true;
-        } else if (FindGte2Index(twoPair, BaZiDefine.TwoXing[1], true, out idx)) {
+        } else if (TryFindInteraction(twoPair, BaZiDefine.TwoXing[1], item => item.Zhi, 2, true, out twoXingInteraction, out idx)) {
             var msg = idx switch {
                 0 => "家族問題、祖業糾紛 (心中糾結累積、不開心)",
                 1 => "與父母關係較差、協助調停家庭內鬥或房產糾紛、捲入官司 (心中糾結累積、不開心)",
@@ -350,11 +347,11 @@ public class FortuneService {
             };
             if (help) msg += helpStr;
             if (worse) msg += worseStr;
-            CreateTwoXingDesc(twoPair[idx], msg, "注意情緒性用詞", "強", html);
+            CreateTwoXingDesc(twoXingInteraction, msg, "注意情緒性用詞", "強", html);
             bad = true;
         }
         // 恩愛之刑 = 子卯 (外在, 力度小)
-        if (FindGte2Index(twoPair, [DiZhi.Zi, DiZhi.Mao], true, out idx)) {
+        if (TryFindInteraction(twoPair, [DiZhi.Zi, DiZhi.Mao], item => item.Zhi, 2, true, out twoXingInteraction, out idx)) {
             var msg = idx switch {
                 0 => "與長輩較容易想法不同",
                 1 => "與父母較容易想法不同",
@@ -364,19 +361,19 @@ public class FortuneService {
             };
             if (help) msg += helpStr;
             if (worse) msg += worseStr;
-            CreateTwoXingDesc(twoPair[idx], msg, "注意溝通", "小", html);
+            CreateTwoXingDesc(twoXingInteraction, msg, "注意溝通", "小", html);
             bad = true;
         }
         // 自刑 = 辰辰, 午午, 酉酉, 戌戌 (內在)
-        if (FindAllSameIndex(twoPair, BaZiDefine.SelfXing, out idx)) {
+        if (TryFindSelfInteraction(twoPair, BaZiDefine.SelfXing, out var selfXingInteraction, out idx)) {
             var msg = "內耗、情緒糾結、鑽牛角尖";
             if (help) msg += helpStr;
             if (worse) msg += worseStr;
-            CreateSelfXingDesc(twoPair[idx], msg, html);
+            CreateSelfXingDesc(selfXingInteraction, msg, html);
             bad = true;
         }
         // 沖 = 子午、丑未、寅申、卯酉、辰戌、巳亥
-        if (FindGte2Index(twoPair, BaZiDefine.Chong, true, out idx)) {
+        if (TryFindAnyInteraction(twoPair, BaZiDefine.Chong, item => item.Zhi, 2, true, out var pairInteraction, out idx)) {
             var msg = idx switch {
                 0 => "跟長輩聚少離多、易口角衝突",
                 1 => "跟父母聚少離多、晚婚、易口角衝突、住所不穩定",
@@ -386,19 +383,19 @@ public class FortuneService {
             };
             if (help) msg += helpStr;
             if (worse) msg += worseStr;
-            CreateChongDesc(twoPair[idx], msg, html);
+            CreateChongDesc(pairInteraction, msg, html);
             bad = true;
         }
         // 破 = 寅亥、巳申、子酉、午卯、戌未、丑辰
-        if (FindGte2Index(twoPair, BaZiDefine.Po, true, out idx)) {
+        if (TryFindAnyInteraction(twoPair, BaZiDefine.Po, item => item.Zhi, 2, true, out pairInteraction, out idx)) {
             var msg = "做事有阻力、破局、容易受傷";
             if (help) msg += helpStr;
             if (worse) msg += worseStr;
-            CreatePoDesc(twoPair[idx], msg, html);
+            CreatePoDesc(pairInteraction, msg, html);
             bad = true;
         }
         // 害 = 卯辰、寅巳、午丑、子未、酉戌、申亥
-        if (FindGte2Index(twoPair, BaZiDefine.Hai, true, out idx)) {
+        if (TryFindAnyInteraction(twoPair, BaZiDefine.Hai, item => item.Zhi, 2, true, out pairInteraction, out idx)) {
             var msg = idx switch {
                 0 => "人際壓力、與長輩相處易有摩擦、情緒不悅",
                 1 => "人際壓力、與父母相處易有摩擦、情緒不悅",
@@ -408,7 +405,7 @@ public class FortuneService {
             };
             if (help) msg += helpStr;
             if (worse) msg += worseStr;
-            CreateHaiDesc(twoPair[idx], msg, html);
+            CreateHaiDesc(pairInteraction, msg, html);
             bad = true;
         }
         return (bad, heHui);
@@ -467,7 +464,36 @@ public class FortuneService {
             new List<IGanZhi>() { info.YearZhu, ln },
             new List<IGanZhi>() { info.MonthZhu, ln },
             new List<IGanZhi>() { info.DayZhu, ln },
-            new List<IGanZhi>() { info.HourZhu, ln }
+            new List<IGanZhi>() { info.HourZhu, ln },
+            new List<IGanZhi>() { daYun, ln }
+        };
+        return CheckConflict(info, ganPair, threePair, twoPair, html);
+    }
+
+    private (bool bad, IDictionary<HeHui, WuXing> heHui) HasYueConflict(
+        BaZiInfo info,
+        DaYun daYun,
+        LiuNian liuNian,
+        LiuYue liuYue,
+        System.Text.StringBuilder html
+    ) {
+        var ganPair = new List<IList<IGanZhi>> {
+            new List<IGanZhi>() { info.YearZhu, daYun, liuNian, liuYue },
+            new List<IGanZhi>() { info.MonthZhu, daYun, liuNian, liuYue },
+            new List<IGanZhi>() { info.DayZhu, daYun, liuNian, liuYue },
+            new List<IGanZhi>() { info.HourZhu, daYun, liuNian, liuYue }
+        };
+        var threePair = new List<IList<IGanZhi>> {
+            new List<IGanZhi>() { info.DayZhu, info.MonthZhu, daYun, liuNian, liuYue },
+            new List<IGanZhi>() { info.DayZhu, info.HourZhu, daYun, liuNian, liuYue }
+        };
+        var twoPair = new List<IList<IGanZhi>> {
+            new List<IGanZhi>() { info.YearZhu, liuYue },
+            new List<IGanZhi>() { info.MonthZhu, liuYue },
+            new List<IGanZhi>() { info.DayZhu, liuYue },
+            new List<IGanZhi>() { info.HourZhu, liuYue },
+            new List<IGanZhi>() { daYun, liuYue },
+            new List<IGanZhi>() { liuNian, liuYue }
         };
         return CheckConflict(info, ganPair, threePair, twoPair, html);
     }
@@ -681,7 +707,7 @@ public class FortuneService {
         html.Append("</span>");
     }
 
-    private string CreateNianByGoodYun(Sex gender, ShiShen ganYun, ShiShen zhiYun, bool qiang) {
+    private string CreatePeriodByGoodYun(Sex gender, ShiShen ganYun, ShiShen zhiYun, bool qiang) {
         /* 因 ganYun 跟 zhiYun 是 `|` 過的兩個十神 */
         switch (ganYun) {
             case ShiShen.Cai: {
@@ -869,10 +895,18 @@ public class FortuneService {
         }
     }
 
-    private void CreateNianDesc(BaZiInfo info, DaYun daYun, ShiShen ganYun, ShiShen zhiYun, System.Text.StringBuilder html) {
+    private void CreatePeriodDesc(
+        BaZiInfo info,
+        DaYun daYun,
+        ShiShen ganYun,
+        ShiShen zhiYun,
+        PeriodScope period,
+        System.Text.StringBuilder html
+    ) {
         if (daYun is null) return;
-        html.Append("<span>");
-        /* 取得此流年是走什麼運 */
+        var description = new System.Text.StringBuilder();
+        description.Append("<span>");
+        /* 取得此期間是走什麼運 */
         var gy = ganYun.ToCombined();
         var zy = zhiYun.ToCombined();
         /* 依照格局來判斷是否好運 */
@@ -880,58 +914,69 @@ public class FortuneService {
             if (info.StrengthStatus == GeJu.ShenQiang) {
                 var goodGy = (gy == ShiShen.Cai) || (gy == ShiShen.GuanSha) || (gy == ShiShen.ShihShang);
                 var goodZy = (zy == ShiShen.Cai) || (zy == ShiShen.GuanSha) || (zy == ShiShen.ShihShang);
-                html.Append(CreateNianByGoodYun(info.Gender, gy, zy, info.StrengthStatus == GeJu.ShenQiang));
-                if (!goodGy && !goodZy) html.Append("。今年流年運勢不佳，但因處在好的十年大運中，可以降低不順感，只要撐過今年相信就會好轉！");
-                else if (!goodGy || !goodZy) html.Append("。今年流年運勢有高也有低，但因處在好的十年大運中，可以降低不順感，只要撐過今年相信就會好轉！");
+                description.Append(CreatePeriodByGoodYun(info.Gender, gy, zy, info.StrengthStatus == GeJu.ShenQiang));
+                if (!goodGy && !goodZy) description.Append("。今年流年運勢不佳，但因處在好的十年大運中，可以降低不順感，只要撐過今年相信就會好轉！");
+                else if (!goodGy || !goodZy) description.Append("。今年流年運勢有高也有低，但因處在好的十年大運中，可以降低不順感，只要撐過今年相信就會好轉！");
             } else if (info.StrengthStatus == GeJu.ShenRuo) {
                 var goodGy = (gy == ShiShen.Yin) || (gy == ShiShen.BiJie);
                 var goodZy = (zy == ShiShen.Yin) || (zy == ShiShen.BiJie);
-                html.Append(CreateNianByGoodYun(info.Gender, gy, zy, info.StrengthStatus == GeJu.ShenQiang));
-                if (!goodGy && !goodZy) html.Append("。今年流年運勢不佳，但因處在好的十年大運中，可以降低不順感，只要撐過今年相信就會好轉！");
-                else if (!goodGy || !goodZy) html.Append("。今年流年運勢有高也有低，但因處在好的十年大運中，可以降低不順感，只要撐過今年相信就會好轉！");
+                description.Append(CreatePeriodByGoodYun(info.Gender, gy, zy, info.StrengthStatus == GeJu.ShenQiang));
+                if (!goodGy && !goodZy) description.Append("。今年流年運勢不佳，但因處在好的十年大運中，可以降低不順感，只要撐過今年相信就會好轉！");
+                else if (!goodGy || !goodZy) description.Append("。今年流年運勢有高也有低，但因處在好的十年大運中，可以降低不順感，只要撐過今年相信就會好轉！");
             } else if (info.StrengthStatus == GeJu.CongQiang) {
                 var goodGy = (gy == ShiShen.Yin) || (gy == ShiShen.BiJie);
                 var goodZy = (zy == ShiShen.Yin) || (zy == ShiShen.BiJie);
-                if (goodGy && goodZy) html.Append("流年能量持續加強你的運，整體做什麼都順");
-                else if (!goodGy && !goodZy) html.Append("流年能量削弱運勢，做什麼都感覺卡卡、不順，只要撐過今年一切就會好轉");
-                else html.Append("流年能量有加強也有削弱，偶爾好運偶爾壞運，但整體來說運勢平穩");
+                if (goodGy && goodZy) description.Append("流年能量持續加強你的運，整體做什麼都順");
+                else if (!goodGy && !goodZy) description.Append("流年能量削弱運勢，做什麼都感覺卡卡、不順，只要撐過今年一切就會好轉");
+                else description.Append("流年能量有加強也有削弱，偶爾好運偶爾壞運，但整體來說運勢平穩");
             } else if (info.StrengthStatus == GeJu.CongRuo) {
                 var goodGy = (gy == ShiShen.Cai) || (gy == ShiShen.GuanSha) || (gy == ShiShen.ShihShang);
                 var goodZy = (zy == ShiShen.Cai) || (zy == ShiShen.GuanSha) || (zy == ShiShen.ShihShang);
-                if (goodGy && goodZy) html.Append("流年能量持續加強你的運，整體做什麼都順");
-                else if (!goodGy && !goodZy) html.Append("流年能量削弱運勢，做什麼都感覺卡卡、不順，只要撐過今年一切就會好轉");
-                else html.Append("流年能量有加強也有削弱，偶爾好運偶爾壞運，但整體來說運勢平穩");
+                if (goodGy && goodZy) description.Append("流年能量持續加強你的運，整體做什麼都順");
+                else if (!goodGy && !goodZy) description.Append("流年能量削弱運勢，做什麼都感覺卡卡、不順，只要撐過今年一切就會好轉");
+                else description.Append("流年能量有加強也有削弱，偶爾好運偶爾壞運，但整體來說運勢平穩");
             }
         } else {
             if (info.StrengthStatus == GeJu.ShenQiang) {
                 var goodGy = (gy == ShiShen.Cai) || (gy == ShiShen.GuanSha) || (gy == ShiShen.ShihShang);
                 var goodZy = (zy == ShiShen.Cai) || (zy == ShiShen.GuanSha) || (zy == ShiShen.ShihShang);
-                html.Append(CreateNianByGoodYun(info.Gender, gy, zy, info.StrengthStatus == GeJu.ShenQiang));
-                if (goodGy && goodZy) html.Append("。雖處在壞的十年大運中，但今年流年運勢不錯，好好記住身體與心靈的感覺，未來遇到低潮時可更有力氣度過！");
-                else if (!goodGy && !goodZy) html.Append("。今年流年運勢不佳，且處在壞的十年大運中，不順感會較為嚴重，多注意身心靈健康");
-                else html.Append("。今年流年運勢有高也有低，但因處在壞的十年大運中，低潮時多沉澱並學習，未來再次遇到低潮時便知如何度過！");
+                description.Append(CreatePeriodByGoodYun(info.Gender, gy, zy, info.StrengthStatus == GeJu.ShenQiang));
+                if (goodGy && goodZy) description.Append("。雖處在壞的十年大運中，但今年流年運勢不錯，好好記住身體與心靈的感覺，未來遇到低潮時可更有力氣度過！");
+                else if (!goodGy && !goodZy) description.Append("。今年流年運勢不佳，且處在壞的十年大運中，不順感會較為嚴重，多注意身心靈健康");
+                else description.Append("。今年流年運勢有高也有低，但因處在壞的十年大運中，低潮時多沉澱並學習，未來再次遇到低潮時便知如何度過！");
             } else if (info.StrengthStatus == GeJu.ShenRuo) {
                 var goodGy = (gy == ShiShen.Yin) || (gy == ShiShen.BiJie);
                 var goodZy = (zy == ShiShen.Yin) || (zy == ShiShen.BiJie);
-                html.Append(CreateNianByGoodYun(info.Gender, gy, zy, info.StrengthStatus == GeJu.ShenQiang));
-                if (goodGy && goodZy) html.Append("。雖處在壞的十年大運中，但今年流年運勢不錯，好好記住身體與心靈的感覺，未來遇到低潮時可更有力氣度過！");
-                else if (!goodGy && !goodZy) html.Append("。今年流年運勢不佳，且處在壞的十年大運中，不順感會較為嚴重，多注意身心靈健康");
-                else html.Append("。今年流年運勢有高也有低，但因處在壞的十年大運中，低潮時多沉澱並學習，未來再次遇到低潮時便知如何度過！");
+                description.Append(CreatePeriodByGoodYun(info.Gender, gy, zy, info.StrengthStatus == GeJu.ShenQiang));
+                if (goodGy && goodZy) description.Append("。雖處在壞的十年大運中，但今年流年運勢不錯，好好記住身體與心靈的感覺，未來遇到低潮時可更有力氣度過！");
+                else if (!goodGy && !goodZy) description.Append("。今年流年運勢不佳，且處在壞的十年大運中，不順感會較為嚴重，多注意身心靈健康");
+                else description.Append("。今年流年運勢有高也有低，但因處在壞的十年大運中，低潮時多沉澱並學習，未來再次遇到低潮時便知如何度過！");
             } else if (info.StrengthStatus == GeJu.CongQiang) {
                 var goodGy = (gy == ShiShen.Yin) || (gy == ShiShen.BiJie);
                 var goodZy = (zy == ShiShen.Yin) || (zy == ShiShen.BiJie);
-                if (goodGy && goodZy) html.Append("。雖處在壞的十年大運中，但流年能量持續加強你的運，今年做什麼都順");
-                else if (!goodGy && !goodZy) html.Append("。流年能量削弱運勢，且處在壞的十年大運中，做什麼都感覺卡卡、不順，多注意身心靈健康");
-                else html.Append("。流年能量有加強也有削弱，但因處在壞的十年大運中，低潮時多沉澱並學習，未來再次遇到低潮時便知如何度過！");
+                if (goodGy && goodZy) description.Append("。雖處在壞的十年大運中，但流年能量持續加強你的運，今年做什麼都順");
+                else if (!goodGy && !goodZy) description.Append("。流年能量削弱運勢，且處在壞的十年大運中，做什麼都感覺卡卡、不順，多注意身心靈健康");
+                else description.Append("。流年能量有加強也有削弱，但因處在壞的十年大運中，低潮時多沉澱並學習，未來再次遇到低潮時便知如何度過！");
             } else if (info.StrengthStatus == GeJu.CongRuo) {
                 var goodGy = (gy == ShiShen.Cai) || (gy == ShiShen.GuanSha) || (gy == ShiShen.ShihShang);
                 var goodZy = (zy == ShiShen.Cai) || (zy == ShiShen.GuanSha) || (zy == ShiShen.ShihShang);
-                if (goodGy && goodZy) html.Append("。雖處在壞的十年大運中，但流年能量持續加強你的運，今年做什麼都順");
-                else if (!goodGy && !goodZy) html.Append("。流年能量削弱運勢，且處在壞的十年大運中，做什麼都感覺卡卡、不順，多注意身心靈健康");
-                else html.Append("。流年能量有加強也有削弱，但因處在壞的十年大運中，低潮時多沉澱並學習，未來再次遇到低潮時便知如何度過！");
+                if (goodGy && goodZy) description.Append("。雖處在壞的十年大運中，但流年能量持續加強你的運，今年做什麼都順");
+                else if (!goodGy && !goodZy) description.Append("。流年能量削弱運勢，且處在壞的十年大運中，做什麼都感覺卡卡、不順，多注意身心靈健康");
+                else description.Append("。流年能量有加強也有削弱，但因處在壞的十年大運中，低潮時多沉澱並學習，未來再次遇到低潮時便知如何度過！");
             }
         }
-        html.Append("</span>");
+        description.Append("</span>");
+        html.Append(AdaptPeriodDescription(description.ToString(), period));
+    }
+
+    private static string AdaptPeriodDescription(string description, PeriodScope period) {
+        if (period == PeriodScope.LiuNian) return description;
+
+        return description
+            .Replace("這一年", "這個月", StringComparison.Ordinal)
+            .Replace("今年", "本月", StringComparison.Ordinal)
+            .Replace("年份", "月份", StringComparison.Ordinal)
+            .Replace("流年", "流月", StringComparison.Ordinal);
     }
 
     public MarkupString DaYunAnalysis(BaZiInfo info) {
@@ -971,29 +1016,74 @@ public class FortuneService {
     }
 
     public MarkupString LiuNianAnalysis(BaZiInfo info, int targetYear) {
-        var html = GetLiuNianHtml(info, targetYear, $"{targetYear} 流年分析");
+        var (daYun, liuNian) = FindLiuNian(info, targetYear);
+        if (daYun is null || liuNian is null) return new MarkupString();
+
+        var html = GetPeriodHtml(
+            info,
+            daYun,
+            liuNian,
+            $"{targetYear} 流年分析",
+            $"{liuNian.Year} ",
+            $" 年 ({liuNian.Age} 歲)",
+            PeriodScope.LiuNian,
+            conflict => HasNianConflict(info, daYun, liuNian, conflict)
+        );
         return new MarkupString(html);
     }
 
-    private string GetLiuNianHtml(BaZiInfo info, int targetYear, string title) {
-        var daYun = info.DaYunList.LastOrDefault(y => y.StartYear <= targetYear);
-        if (daYun is null) return "";
-        var ln = daYun.LiuNianList.FirstOrDefault(l => l.Year == targetYear);
-        if (ln is null) return "";
+    public MarkupString LiuYueAnalysis(BaZiInfo info, int targetYear, int targetMonthIndex) {
+        var (daYun, liuNian) = FindLiuNian(info, targetYear);
+        if (daYun is null || liuNian is null) return new MarkupString();
 
+        var liuYue = liuNian.LiuYueList.FirstOrDefault(month => month.Index == targetMonthIndex);
+        if (liuYue is null) return new MarkupString();
+
+        var html = GetPeriodHtml(
+            info,
+            daYun,
+            liuYue,
+            $"{targetYear} {liuYue.MonthInChinese}月流月分析",
+            $"{targetYear} 年 {liuYue.MonthInChinese}月 ",
+            "（節氣月）",
+            PeriodScope.LiuYue,
+            conflict => HasYueConflict(info, daYun, liuNian, liuYue, conflict)
+        );
+        return new MarkupString(html);
+    }
+
+    private static (DaYun? daYun, LiuNian? liuNian) FindLiuNian(BaZiInfo info, int targetYear) {
+        foreach (var daYun in info.DaYunList) {
+            var liuNian = daYun.LiuNianList.FirstOrDefault(item => item.Year == targetYear);
+            if (liuNian is not null) return (daYun, liuNian);
+        }
+
+        return (null, null);
+    }
+
+    private string GetPeriodHtml(
+        BaZiInfo info,
+        DaYun daYun,
+        IGanZhi periodGanZhi,
+        string title,
+        string displayPrefix,
+        string displaySuffix,
+        PeriodScope period,
+        Func<System.Text.StringBuilder, (bool bad, IDictionary<HeHui, WuXing> heHui)> checkConflict
+    ) {
         var html = new System.Text.StringBuilder();
         html.AppendLine("<div class=\"card p-3 mt-3\">");
         html.AppendLine($"    <h5 class=\"card-title border-bottom pb-2\">{title}</h5>");
         /* 先列出是否有衝突 */
         var conflict = new System.Text.StringBuilder();
-        var (bad, heHui) = HasNianConflict(info, daYun, ln, conflict);
+        var (_, heHui) = checkConflict(conflict);
         if (conflict.Length > 0) {
             html.AppendLine(@"    <div class=""row ms-1 me-1 py-3 border-bottom-dash"">");
             html.AppendLine(conflict.ToString());
             html.AppendLine(@"    </div>");
         }
-        /* 流年天干、地支的運都要判斷。要注意是否有三合、六合、三會會改變屬性 */
-        var ganYun = ln.Gan.ToShiShen(info.DayZhu.Gan);
+        /* 流年與流月的天干、地支都要判斷。要注意是否有三合、六合、三會改變屬性 */
+        var ganYun = periodGanZhi.Gan.ToShiShen(info.DayZhu.Gan);
         ShiShen zhiYun; //會是兩者合併的十神，例如 '比肩+劫財'
         if (heHui.ContainsKey(HeHui.ThreeHui)) {
             zhiYun = heHui[HeHui.ThreeHui].ToShiShen(info.RiZhu);
@@ -1002,17 +1092,17 @@ public class FortuneService {
         } else if (heHui.ContainsKey(HeHui.SixHe)) {
             zhiYun = heHui[HeHui.SixHe].ToShiShen(info.RiZhu);
         } else {    //沒有合會時，以地支的 '主氣' 為主
-            zhiYun = ln.Zhi.ToWuXing().ToShiShen(info.RiZhu);
+            zhiYun = periodGanZhi.Zhi.ToWuXing().ToShiShen(info.RiZhu);
         }
         html.AppendLine(@"    <div class=""row ms-1 me-1 py-3"">");
-        var ganColor = GetElementColorClass(ln.Gan.ToWuXing());
-        var zhiColor = GetElementColorClass(ln.Zhi.ToWuXing());
+        var ganColor = GetElementColorClass(periodGanZhi.Gan.ToWuXing());
+        var zhiColor = GetElementColorClass(periodGanZhi.Zhi.ToWuXing());
         if (zhiYun.HasFlag(ganYun)) {
-            html.Append($"<span>{ln.Year} <strong><span class=\"{ganColor}\">{ln.Gan.ToGanString()}</span><span class=\"{zhiColor}\">{ln.Zhi.ToZhiString()}</span></strong> 年 ({ln.Age} 歲) 走 <strong class=\"text-info\">{zhiYun.ToYunString()}</strong></span>");
+            html.Append($"<span>{displayPrefix}<strong><span class=\"{ganColor}\">{periodGanZhi.Gan.ToGanString()}</span><span class=\"{zhiColor}\">{periodGanZhi.Zhi.ToZhiString()}</span></strong>{displaySuffix} 走 <strong class=\"text-info\">{zhiYun.ToYunString()}</strong></span>");
         } else {
-            html.Append($"<span>{ln.Year} <strong><span class=\"{ganColor}\">{ln.Gan.ToGanString()}</span><span class=\"{zhiColor}\">{ln.Zhi.ToZhiString()}</span></strong> 年 ({ln.Age} 歲) 走 <strong class=\"text-info\">{ganYun.ToYunString()}、{zhiYun.ToYunString()}</strong></span>");
+            html.Append($"<span>{displayPrefix}<strong><span class=\"{ganColor}\">{periodGanZhi.Gan.ToGanString()}</span><span class=\"{zhiColor}\">{periodGanZhi.Zhi.ToZhiString()}</span></strong>{displaySuffix} 走 <strong class=\"text-info\">{ganYun.ToYunString()}、{zhiYun.ToYunString()}</strong></span>");
         }
-        CreateNianDesc(info, daYun, ganYun, zhiYun, html);
+        CreatePeriodDesc(info, daYun, ganYun, zhiYun, period, html);
         html.AppendLine(@"    </div>");
         html.AppendLine(@"</div>");
         return html.ToString();

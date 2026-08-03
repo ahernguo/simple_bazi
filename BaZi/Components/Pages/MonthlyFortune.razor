@@ -1,0 +1,81 @@
+@page "/monthly-fortune"
+@inherits Fluxor.Blazor.Web.Components.FluxorComponent
+@inject IState<BaZiState> BaZiState
+@inject FortuneService FortuneService
+@inject NavigationManager Navigation
+
+@if (BaZiState.Value.Info == null) {
+    <div class="alert alert-info">請先回首頁輸入生日。</div>
+    <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/")'>回首頁</button>
+} else {
+    var info = BaZiState.Value.Info;
+    var years = FortuneService.GetLiuNianYears(info);
+    <div class="container mt-4">
+        <h2 class="mb-4 text-center"><i class="fa-solid fa-calendar-week me-2"></i>流月</h2>
+
+        <div class="card p-3">
+            <h5 class="card-title border-bottom pb-2">流月查詢</h5>
+            @if (years.Count == 0) {
+                <div class="alert alert-warning mb-0">查無可供查詢的流月資料。</div>
+            } else {
+                var months = FortuneService.GetLiuYueMonths(info, _page.SelectedYear);
+                <div class="row g-3 align-items-end">
+                    <div class="col-sm-6 col-md-4">
+                        <label class="form-label" for="liu-yue-year">年份</label>
+                        <select id="liu-yue-year"
+                                class="form-select"
+                                @bind="_page.SelectedYear"
+                                @bind:after="YearChanged">
+                            <option value="">請選擇年份</option>
+                            @foreach (var year in years) {
+                                <option @key="year" value="@year">@year 年</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-sm-6 col-md-4">
+                        <label class="form-label" for="liu-yue-month">節氣月</label>
+                        <select id="liu-yue-month"
+                                class="form-select"
+                                disabled="@(_page.SelectedYear is null)"
+                                @bind="_page.SelectedMonthIndex">
+                            <option value="">請選擇月份</option>
+                            @foreach (var month in months) {
+                                <option @key="month.Index" value="@month.Index">
+                                    @month.MonthInChinese 月（@month.Gan.ToGanString()@month.Zhi.ToZhiString()）
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-sm-12 col-md-3">
+                        <button type="button"
+                                class="btn btn-primary w-100"
+                                disabled="@(_page.SelectedYear is null || _page.SelectedMonthIndex is null)"
+                                @onclick="Query">
+                            <i class="fa-solid fa-magnifying-glass me-2"></i>查詢
+                        </button>
+                    </div>
+                </div>
+                <div class="form-text mt-2">流月以節氣切換，不以國曆每月 1 日或農曆初一切換。</div>
+            }
+        </div>
+
+        @if (_page.QueriedYear is int targetYear && _page.QueriedMonthIndex is int targetMonthIndex) {
+            @FortuneService.LiuYueAnalysis(info, targetYear, targetMonthIndex)
+        }
+    </div>
+}
+
+@code {
+    private readonly MonthlyFortunePageModel _page = new();
+
+    private void YearChanged() {
+        _page.SelectedMonthIndex = null;
+        _page.QueriedYear = null;
+        _page.QueriedMonthIndex = null;
+    }
+
+    private void Query() {
+        _page.QueriedYear = _page.SelectedYear;
+        _page.QueriedMonthIndex = _page.SelectedMonthIndex;
+    }
+}

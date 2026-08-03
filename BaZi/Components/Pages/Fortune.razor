@@ -9,6 +9,7 @@
     <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/")'>回首頁</button>
 } else {
     var info = BaZiState.Value.Info;
+    var liuNianYears = FortuneService.GetLiuNianYears(info);
     <div class="container mt-4">
         <h2 class="mb-4 text-center"><i class="fa-solid fa-road me-2"></i>大運與流年</h2>
 
@@ -25,7 +26,7 @@
                     </thead>
                     <tbody>
                         @foreach (var dy in info.DaYunList) {
-                            <tr class="@(FortuneService.IsCurrentDaYun(dy, info) ? "table-warning" : "")">
+                            <tr @key="dy" class="@(FortuneService.IsCurrentDaYun(dy, info) ? "table-warning" : "")">
                                 <td>@dy.StartYear</td>
                                 <td>@dy.StartAge</td>
                                 <td class="fw-bold">@dy.Gan.ToGanString()@dy.Zhi.ToZhiString()</td>
@@ -44,9 +45,6 @@
 
         <div class="card p-3 mt-3">
             <h5 class="card-title border-bottom pb-2">流年查詢</h5>
-            @{
-                var liuNianYears = FortuneService.GetLiuNianYears(info);
-            }
             @if (liuNianYears.Count == 0) {
                 <div class="alert alert-warning mb-0">查無可供查詢的流年資料。</div>
             } else {
@@ -56,7 +54,7 @@
                         <select id="liu-nian-year" class="form-select" @bind="_fortunePage.SelectedLiuNianYear">
                             <option value="">請選擇年份</option>
                             @foreach (var year in liuNianYears) {
-                                <option value="@year">@year 年</option>
+                                <option @key="year" value="@year">@year 年</option>
                             }
                         </select>
                     </div>

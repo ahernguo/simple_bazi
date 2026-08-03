@@ -249,7 +249,7 @@ namespace BaZi.Models {
             ];
 
 		/// <summary>取得自刑清單</summary>
-		public static IList<DiZhi> SelfXing { get; } = [ DiZhi.Chen, DiZhi.Wu, DiZhi.You, DiZhi.Xu ];   //辰辰, 午午, 酉酉, 戌戌
+		public static IList<DiZhi> SelfXing { get; } = [DiZhi.Chen, DiZhi.Wu, DiZhi.You, DiZhi.Hai];   // 辰辰、午午、酉酉、亥亥
 
         /// <summary>取得相沖清單</summary>
         public static IList<IList<DiZhi>> Chong { get; }

@@ -65,7 +65,36 @@ namespace BaZi.Models {
         #endregion
     }
 
-    /// <summary>流年</summary>
+	/// <summary>流月</summary>
+	public class LiuYue : IGanZhi {
+
+        #region Properties
+        /// <summary>取得此流月對應的名稱</summary>
+        public string Id { get; } = "流月";
+        /// <summary>取得天干</summary>
+        public TianGan Gan { get; }
+        /// <summary>取得地支</summary>
+        public DiZhi Zhi { get; }
+        /// <summary>取得流月序號，範圍為 0 到 11</summary>
+        public int Index { get; }
+        /// <summary>取得農曆月份中文名稱</summary>
+        public string MonthInChinese { get; }
+        #endregion
+
+        #region Constructor
+        /// <summary>從 <see cref="Lunar.EightChar.LiuYue"/> 建構資訊</summary>
+        /// <param name="liuYue">欲建構的流月來源</param>
+        public LiuYue(Lunar.EightChar.LiuYue liuYue) {
+            Gan = liuYue.GanZhi.Substring(0, 1).ToTianGan();
+            Zhi = liuYue.GanZhi.Substring(1, 1).ToDiZhi();
+            Index = liuYue.Index;
+            MonthInChinese = liuYue.MonthInChinese;
+        }
+        #endregion
+
+    }
+
+	/// <summary>流年</summary>
     public class LiuNian : IGanZhi {
 
         #region Properties
@@ -81,6 +110,8 @@ namespace BaZi.Models {
         public int Year { get; }
         /// <summary>取得此流年對應的十神</summary>
         public ShiShen Shen { get; }
+        /// <summary>取得此流年的流月</summary>
+        public IReadOnlyList<LiuYue> LiuYueList { get; }
         #endregion
 
         #region Constructor
@@ -91,6 +122,7 @@ namespace BaZi.Models {
             Zhi = liuNian.GanZhi.Substring(1, 1).ToDiZhi();
             Age = liuNian.Age;
             Year = liuNian.Year;
+            LiuYueList = [.. liuNian.GetLiuYue().Select(ly => new LiuYue(ly))];
         }
         #endregion
 
