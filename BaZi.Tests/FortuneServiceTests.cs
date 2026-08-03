@@ -35,6 +35,88 @@ public class FortuneServiceTests {
     }
 
     [Fact]
+    public void GetLiuYueStartInfo_FirstMonth_ReturnsLiChunTime() {
+        var info = new BaZiInfo(BirthDate, 2);
+        var service = new FortuneService();
+
+        var startInfo = service.GetLiuYueStartInfo(info, 2026, 0);
+
+        Assert.NotNull(startInfo);
+        LiuYueStartInfo actual = startInfo!;
+        Assert.Equal("立春", actual.JieQiName);
+        Assert.Equal(new DateTime(2026, 2, 4, 4, 2, 8), actual.StartDate);
+        Assert.Equal("驚蟄", actual.EndJieQiName);
+        Assert.Equal(new DateTime(2026, 3, 5, 21, 59, 0), actual.EndDate);
+        Assert.Equal(TianGan.Geng, actual.Month.Gan);
+        Assert.Equal(DiZhi.Yin, actual.Month.Zhi);
+    }
+
+    [Fact]
+    public void GetLiuYueStartInfo_LastMonth_ReturnsNextYearXiaoHanTime() {
+        var info = new BaZiInfo(BirthDate, 2);
+        var service = new FortuneService();
+
+        var startInfo = service.GetLiuYueStartInfo(info, 2026, 11);
+
+        Assert.NotNull(startInfo);
+        LiuYueStartInfo actual = startInfo!;
+        Assert.Equal("小寒", actual.JieQiName);
+        Assert.Equal(new DateTime(2027, 1, 5, 22, 9, 58), actual.StartDate);
+        Assert.Equal("立春", actual.EndJieQiName);
+        Assert.Equal(2027, actual.EndDate.Year);
+        Assert.Equal(2, actual.EndDate.Month);
+        Assert.True(actual.EndDate > actual.StartDate);
+        Assert.Equal(TianGan.Xin, actual.Month.Gan);
+        Assert.Equal(DiZhi.Chou, actual.Month.Zhi);
+    }
+
+    [Fact]
+    public void GetLiuYueStartInfo_SixthMonth_ReturnsYiWeiDateRange() {
+        var info = new BaZiInfo(BirthDate, 2);
+        var service = new FortuneService();
+
+        var startInfo = service.GetLiuYueStartInfo(info, 2026, 5);
+
+        Assert.NotNull(startInfo);
+        LiuYueStartInfo actual = startInfo!;
+        Assert.Equal(new DateTime(2026, 7, 7, 9, 56, 57), actual.StartDate);
+        Assert.Equal(new DateTime(2026, 8, 7, 19, 42, 43), actual.EndDate);
+        Assert.Equal(TianGan.Yi, actual.Month.Gan);
+        Assert.Equal(DiZhi.Wei, actual.Month.Zhi);
+    }
+
+    [Fact]
+    public void GetLiuYueStartInfo_AllMonths_ReturnsOrderedJieQi() {
+        string[] expectedNames = ["立春", "驚蟄", "清明", "立夏", "芒種", "小暑", "立秋", "白露", "寒露", "立冬", "大雪", "小寒"];
+        var info = new BaZiInfo(BirthDate, 2);
+        var service = new FortuneService();
+        DateTime? previousEndDate = null;
+
+        for (var index = 0; index < expectedNames.Length; index++) {
+            var startInfo = service.GetLiuYueStartInfo(info, 2026, index);
+
+            Assert.NotNull(startInfo);
+            LiuYueStartInfo actual = startInfo!;
+            Assert.Equal(expectedNames[index], actual.JieQiName);
+            if (previousEndDate is not null) {
+                Assert.Equal(previousEndDate.Value, actual.StartDate);
+            }
+            Assert.True(actual.EndDate > actual.StartDate);
+            previousEndDate = actual.EndDate;
+        }
+    }
+
+    [Fact]
+    public void GetLiuYueStartInfo_InvalidMonth_ReturnsNull() {
+        var info = new BaZiInfo(BirthDate, 2);
+        var service = new FortuneService();
+
+        var startInfo = service.GetLiuYueStartInfo(info, 2026, 12);
+
+        Assert.Null(startInfo);
+    }
+
+    [Fact]
     public void SelfXing_UsesHaiInsteadOfXu() {
         Assert.Contains(DiZhi.Hai, BaZiDefine.SelfXing);
         Assert.DoesNotContain(DiZhi.Xu, BaZiDefine.SelfXing);

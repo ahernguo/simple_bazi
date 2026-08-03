@@ -10,6 +10,21 @@ public class FortuneService {
         LiuYue
     }
 
+    private static readonly (string Key, string Name, int Month, int YearOffset)[] LiuYueStartTerms = [
+        ("立春", "立春", 2, 0),
+        ("惊蛰", "驚蟄", 3, 0),
+        ("清明", "清明", 4, 0),
+        ("立夏", "立夏", 5, 0),
+        ("芒种", "芒種", 6, 0),
+        ("小暑", "小暑", 7, 0),
+        ("立秋", "立秋", 8, 0),
+        ("白露", "白露", 9, 0),
+        ("寒露", "寒露", 10, 0),
+        ("立冬", "立冬", 11, 0),
+        ("大雪", "大雪", 12, 0),
+        ("小寒", "小寒", 1, 1)
+    ];
+
     public IReadOnlyList<int> GetLiuNianYears(BaZiInfo info) {
         return info.DaYunList
             .SelectMany(daYun => daYun.LiuNianList)
@@ -24,6 +39,52 @@ public class FortuneService {
 
         var (_, liuNian) = FindLiuNian(info, targetYear.Value);
         return liuNian?.LiuYueList ?? [];
+    }
+
+    /// <summary>取得指定流月正式生效的起訖節氣與日期時間。</summary>
+    /// <param name="info">八字命盤資料。</param>
+    /// <param name="targetYear">流年年份。</param>
+    /// <param name="targetMonthIndex">流月序號，範圍為 0 到 11。</param>
+    /// <returns>流月起訖資訊；找不到對應資料時傳回 <see langword="null"/>。</returns>
+    public LiuYueStartInfo? GetLiuYueStartInfo(BaZiInfo info, int targetYear, int targetMonthIndex) {
+        if (targetMonthIndex < 0 || targetMonthIndex >= LiuYueStartTerms.Length) return null;
+
+        var month = GetLiuYueMonths(info, targetYear)
+            .FirstOrDefault(item => item.Index == targetMonthIndex);
+        if (month is null) return null;
+
+        var startTerm = LiuYueStartTerms[targetMonthIndex];
+        int endTermIndex = (targetMonthIndex + 1) % LiuYueStartTerms.Length;
+        var endTerm = LiuYueStartTerms[endTermIndex];
+        int startYear = targetYear + startTerm.YearOffset;
+        int endYear = targetMonthIndex == LiuYueStartTerms.Length - 1
+            ? targetYear + 1
+            : targetYear + endTerm.YearOffset;
+        DateTime? startDate = GetJieQiDate(startTerm.Key, startYear, startTerm.Month);
+        DateTime? endDate = GetJieQiDate(endTerm.Key, endYear, endTerm.Month);
+        if (startDate is null || endDate is null) return null;
+
+        return new LiuYueStartInfo(
+            month,
+            startTerm.Name,
+            startDate.Value,
+            endTerm.Name,
+            endDate.Value
+        );
+    }
+
+    private static DateTime? GetJieQiDate(string termKey, int solarYear, int solarMonth) {
+        var lunar = Lunar.Solar.FromYmdHms(solarYear, solarMonth, 15, 12, 0, 0).Lunar;
+        if (!lunar.JieQiTable.TryGetValue(termKey, out var solar)) return null;
+
+        return new DateTime(
+            solar.Year,
+            solar.Month,
+            solar.Day,
+            solar.Hour,
+            solar.Minute,
+            solar.Second
+        );
     }
 
     public bool IsCurrentDaYun(DaYun dy, BaZiInfo info) {
