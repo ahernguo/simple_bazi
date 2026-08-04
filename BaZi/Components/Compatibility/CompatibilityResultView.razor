@@ -1,0 +1,79 @@
+<div class="compatibility-result">
+    <div class="card p-4 mb-4">
+        <h5 class="card-title border-bottom pb-2">命盤摘要</h5>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="border rounded p-3 h-100">
+                    <h6>自己</h6>
+                    <div>@FormatBirth(Result.Self)</div>
+                    <div>日柱：@FormatDayPillar(Result.Self)</div>
+                    <div>日主／格局：@Result.Self.RiZhu.ToWuXingString()／@Result.Self.StrengthStatus.ToGeJuString()</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="border rounded p-3 h-100">
+                    <h6>對方</h6>
+                    <div>@FormatBirth(Result.Other)</div>
+                    <div>日柱：@FormatDayPillar(Result.Other)</div>
+                    <div>日主／格局：@Result.Other.RiZhu.ToWuXingString()／@Result.Other.StrengthStatus.ToGeJuString()</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @foreach (var section in Result.Sections) {
+        <div class="card p-4 mb-4 compatibility-section @GetToneClass(section.Tone)" @key="section.Title">
+            <h5 class="card-title border-bottom pb-2">
+                <i class="fa-solid @GetToneIcon(section.Tone) me-2"></i>@section.Title
+            </h5>
+            <p>@section.Summary</p>
+            @if (section.Details.Count > 0) {
+                <ul class="mb-0">
+                    @foreach (var detail in section.Details) {
+                        <li class="mb-2">@detail</li>
+                    }
+                </ul>
+            }
+        </div>
+    }
+
+    <div class="alert alert-secondary">
+        <h5><i class="fa-solid fa-shield-heart me-2"></i>使用限制</h5>
+        <ul class="mb-0">
+            @foreach (var limitation in Result.Limitations) {
+                <li class="mb-2">@limitation</li>
+            }
+        </ul>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public CompatibilityResult Result { get; set; } = default!;
+
+    private static string FormatBirth(BaZiInfo info) {
+        return $"{info.SolarDate:yyyy/MM/dd HH:mm}，{info.Gender.ToSexString()}";
+    }
+
+    private static string FormatDayPillar(BaZiInfo info) {
+        return $"{info.DayZhu.Gan.ToGanString()}{info.DayZhu.Zhi.ToZhiString()}";
+    }
+
+    private static string GetToneClass(CompatibilityTone tone) {
+        return tone switch {
+            CompatibilityTone.Positive => "border-success",
+            CompatibilityTone.Caution => "border-warning",
+            CompatibilityTone.Notice => "border-info",
+            _ => "border-secondary"
+        };
+    }
+
+    private static string GetToneIcon(CompatibilityTone tone) {
+        return tone switch {
+            CompatibilityTone.Positive => "fa-circle-check text-success",
+            CompatibilityTone.Caution => "fa-triangle-exclamation text-warning",
+            CompatibilityTone.Notice => "fa-circle-info text-info",
+            _ => "fa-compass"
+        };
+    }
+}

@@ -85,6 +85,23 @@
     display: none;
 }
 
+.nav-group-title {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12rem;
+    padding-bottom: 0.45rem;
+}
+
+.compatibility-nav-item {
+    padding-left: 1.35rem !important;
+}
+
+.compatibility-nav-item ::deep .nav-link {
+    height: 2.55rem;
+    line-height: 2.55rem;
+}
+
 .navbar-toggler:checked ~ .nav-scrollable {
     display: block;
 }

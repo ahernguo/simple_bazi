@@ -26,6 +26,9 @@
 
         @if (BaZiState.Value.IsCalculated)
         {
+            <div class="nav-group-title px-3 pt-3">
+                <i class="fa-solid fa-person me-2"></i>個人
+            </div>
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="analysis">
                     <i class="fa-solid fa-chart-line me-2"></i> 命盤分析
@@ -44,6 +47,40 @@
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="monthly-fortune">
                     <i class="fa-solid fa-calendar-week me-2"></i> 流月
+                </NavLink>
+            </div>
+
+            <div class="nav-group-title px-3 pt-3">
+                <i class="fa-solid fa-people-arrows me-2"></i>合盤
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="compatibility/romance">
+                    <i class="fa-solid fa-heart me-2"></i> 感情
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="compatibility/parent">
+                    <i class="fa-solid fa-person-cane me-2"></i> 父母
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="compatibility/child">
+                    <i class="fa-solid fa-child-reaching me-2"></i> 兒女
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="compatibility/sibling">
+                    <i class="fa-solid fa-people-roof me-2"></i> 手足
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="compatibility/friend">
+                    <i class="fa-solid fa-user-group me-2"></i> 朋友
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="compatibility/colleague">
+                    <i class="fa-solid fa-briefcase me-2"></i> 同事
                 </NavLink>
             </div>
         }

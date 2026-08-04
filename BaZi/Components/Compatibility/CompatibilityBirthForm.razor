@@ -1,0 +1,61 @@
+<EditForm Model="_input" OnValidSubmit="HandleSubmit" FormName="compatibility-birth">
+    <DataAnnotationsValidator />
+    <ValidationSummary class="text-danger" />
+
+    <div class="card p-4 mb-4">
+        <h5 class="card-title border-bottom pb-2 mb-3">輸入對方生辰</h5>
+
+        <div class="mb-3">
+            <label class="form-label">性別</label>
+            <InputRadioGroup @bind-Value="_input.Gender" class="d-flex gap-4">
+                <label class="form-check-label">
+                    <InputRadio class="form-check-input me-1" Value="2" /> 男
+                </label>
+                <label class="form-check-label">
+                    <InputRadio class="form-check-input me-1" Value="1" /> 女
+                </label>
+            </InputRadioGroup>
+            <ValidationMessage For="@(() => _input.Gender)" />
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="compatibility-birth-date">出生日期</label>
+                <InputDate id="compatibility-birth-date"
+                           class="form-control"
+                           @bind-Value="_input.BirthDate"
+                           max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                <ValidationMessage For="@(() => _input.BirthDate)" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="compatibility-birth-time">出生時間</label>
+                <InputDate id="compatibility-birth-time"
+                           class="form-control"
+                           @bind-Value="_input.BirthTime"
+                           Type="InputDateType.Time" />
+                <ValidationMessage For="@(() => _input.BirthTime)" />
+            </div>
+        </div>
+
+        <div class="form-text mt-3">
+            合盤會使用完整四柱，請輸入已確認的出生時間，不以 00:00 假設未知時辰。
+        </div>
+
+        <div class="d-grid mt-4">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fa-solid fa-magnifying-glass me-2"></i>查詢
+            </button>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    private readonly CompatibilityBirthInput _input = new();
+
+    [Parameter]
+    public EventCallback<CompatibilityBirthInput> OnSubmit { get; set; }
+
+    private Task HandleSubmit() {
+        return OnSubmit.InvokeAsync(_input);
+    }
+}

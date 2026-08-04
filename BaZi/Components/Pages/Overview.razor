@@ -2,13 +2,14 @@
 @inherits Fluxor.Blazor.Web.Components.FluxorComponent
 @inject IState<BaZiState> BaZiState
 @inject NavigationManager Navigation
+@inject TenGodAnalysisService TenGodService
 
 @if (BaZiState.Value.Info == null) {
     <div class="alert alert-info">請先回首頁輸入生日。</div>
     <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/")'>回首頁</button>
 } else {
     var info = BaZiState.Value.Info;
-    var stats = CalculateTenStarStats(info);
+    var stats = TenGodService.GetStatistics(info);
     
     <div class="container mt-4">
         <h2 class="mb-4 text-center"><i class="fa-solid fa-user-tag me-2"></i>個人概述</h2>
@@ -39,45 +40,6 @@
 }
 
 @code {
-    /// <summary>十神統計狀態</summary>
-    private class ShiShenState {
-        /// <summary>取得或設定星</summary>
-        public ShiShen Xing { get; set; }
-        /// <summary>取得或設定此星對應的數量</summary>
-        public int Count { get; set; }
-        /// <summary>取得或設定此星對應的百分比</summary>
-        public double Percentage { get; set; }
-    }
-
-    private List<ShiShenState> CalculateTenStarStats(BaZi.Models.BaZiInfo info) {
-        var allStars = new List<ShiShen>();
-        // 天干十神
-        allStars.Add(info.YearZhu.ZhuXing);
-        allStars.Add(info.MonthZhu.ZhuXing);
-        allStars.Add(info.HourZhu.ZhuXing);
-
-        // 支藏干十神
-        allStars.AddRange(info.YearZhu.FuXing);
-        allStars.AddRange(info.MonthZhu.FuXing);
-        allStars.AddRange(info.DayZhu.FuXing);
-        allStars.AddRange(info.HourZhu.FuXing);
-
-        var groups = allStars
-            .GroupBy(x => x)
-            .Select(
-                g => new ShiShenState {
-                    Xing = g.Key,
-                    Count = g.Count()
-                }
-            ).ToList();
-
-        double total = groups.Sum(s => s.Count);
-        foreach (var g in groups) {
-            g.Percentage = g.Count / total;
-        }
-        return groups;
-    }
-
     private MarkupString FormatShiShenHtml(ShiShen src, ShiShen aXing, ShiShen bXing, int a, int b) {
         var html = new System.Text.StringBuilder();
 
@@ -131,19 +93,10 @@
         return (MarkupString)html.ToString();
     }
 
-    private List<(MarkupString title, MarkupString content)> GetShiShenDesc(BaZiInfo info, List<ShiShenState> states) {
+    private List<(MarkupString title, MarkupString content)> GetShiShenDesc(BaZiInfo info, IReadOnlyList<TenGodStatistic> states) {
         var desc = new List<(MarkupString title, MarkupString content)>();
         /* 以各十神重新計算 */
-        var allStars = new List<ShiShen>();
-        // 天干十神
-        allStars.Add(info.YearZhu.ZhuXing);
-        allStars.Add(info.MonthZhu.ZhuXing);
-        allStars.Add(info.HourZhu.ZhuXing);
-        // 支藏干十神
-        allStars.AddRange(info.YearZhu.FuXing);
-        allStars.AddRange(info.MonthZhu.FuXing);
-        allStars.AddRange(info.DayZhu.FuXing);
-        allStars.AddRange(info.HourZhu.FuXing);
+        var allStars = TenGodService.GetAllStars(info);
         /* 先統計官殺、食傷等組合各自的數量 */
         var counting = new Dictionary<ShiShen, (ShiShen aXing, ShiShen bXing, int a, int b)>() {
             { ShiShen.ZhengGuan | ShiShen.QiSha, (ShiShen.ZhengGuan, ShiShen.QiSha, allStars.Count(s => s == ShiShen.ZhengGuan), allStars.Count(s => s == ShiShen.QiSha)) },

@@ -1,0 +1,352 @@
+using BaZi.Models;
+
+namespace BaZi.Services {
+    /// <summary>依課程筆記提供兩人命盤的分層合盤分析。</summary>
+    public sealed class CompatibilityService {
+        private static readonly IReadOnlyDictionary<(WuXing Element, GeJu Strength), (WuXing Element, GeJu Strength)[]> RomanceComplementTargets =
+            new Dictionary<(WuXing, GeJu), (WuXing, GeJu)[]> {
+                [(WuXing.Jin, GeJu.ShenQiang)] = [(WuXing.Huo, GeJu.ShenQiang), (WuXing.Mu, GeJu.ShenQiang), (WuXing.Jin, GeJu.ShenRuo)],
+                [(WuXing.Jin, GeJu.ShenRuo)] = [(WuXing.Tu, GeJu.ShenQiang), (WuXing.Jin, GeJu.ShenQiang)],
+                [(WuXing.Mu, GeJu.ShenQiang)] = [(WuXing.Mu, GeJu.ShenRuo), (WuXing.Tu, GeJu.ShenQiang), (WuXing.Jin, GeJu.ShenQiang)],
+                [(WuXing.Mu, GeJu.ShenRuo)] = [(WuXing.Shui, GeJu.ShenQiang), (WuXing.Mu, GeJu.ShenQiang)],
+                [(WuXing.Shui, GeJu.ShenQiang)] = [(WuXing.Shui, GeJu.ShenRuo), (WuXing.Huo, GeJu.ShenQiang), (WuXing.Tu, GeJu.ShenQiang)],
+                [(WuXing.Shui, GeJu.ShenRuo)] = [(WuXing.Shui, GeJu.ShenQiang), (WuXing.Jin, GeJu.ShenQiang)],
+                [(WuXing.Huo, GeJu.ShenQiang)] = [(WuXing.Jin, GeJu.ShenQiang), (WuXing.Shui, GeJu.ShenQiang), (WuXing.Huo, GeJu.ShenRuo)],
+                [(WuXing.Huo, GeJu.ShenRuo)] = [(WuXing.Mu, GeJu.ShenQiang), (WuXing.Huo, GeJu.ShenQiang)],
+                [(WuXing.Tu, GeJu.ShenQiang)] = [(WuXing.Shui, GeJu.ShenQiang), (WuXing.Tu, GeJu.ShenRuo)],
+                [(WuXing.Tu, GeJu.ShenRuo)] = [(WuXing.Huo, GeJu.ShenQiang), (WuXing.Tu, GeJu.ShenQiang)]
+            };
+
+        private static readonly IReadOnlyDictionary<(WuXing Element, GeJu Strength), (WuXing Element, GeJu Strength)[]> FriendComplementTargets =
+            new Dictionary<(WuXing, GeJu), (WuXing, GeJu)[]> {
+                [(WuXing.Huo, GeJu.ShenQiang)] = [(WuXing.Jin, GeJu.ShenQiang), (WuXing.Shui, GeJu.ShenQiang), (WuXing.Huo, GeJu.ShenRuo)],
+                [(WuXing.Mu, GeJu.ShenQiang)] = [(WuXing.Tu, GeJu.ShenQiang), (WuXing.Jin, GeJu.ShenQiang), (WuXing.Mu, GeJu.ShenRuo)],
+                [(WuXing.Jin, GeJu.ShenQiang)] = [(WuXing.Mu, GeJu.ShenQiang), (WuXing.Huo, GeJu.ShenQiang), (WuXing.Jin, GeJu.ShenRuo)],
+                [(WuXing.Shui, GeJu.ShenQiang)] = [(WuXing.Huo, GeJu.ShenQiang), (WuXing.Tu, GeJu.ShenQiang), (WuXing.Shui, GeJu.ShenRuo)],
+                [(WuXing.Tu, GeJu.ShenQiang)] = [(WuXing.Shui, GeJu.ShenQiang), (WuXing.Mu, GeJu.ShenQiang), (WuXing.Tu, GeJu.ShenRuo)],
+                [(WuXing.Huo, GeJu.ShenRuo)] = [(WuXing.Mu, GeJu.ShenQiang), (WuXing.Huo, GeJu.ShenQiang)],
+                [(WuXing.Mu, GeJu.ShenRuo)] = [(WuXing.Shui, GeJu.ShenQiang), (WuXing.Mu, GeJu.ShenQiang)],
+                [(WuXing.Shui, GeJu.ShenRuo)] = [(WuXing.Jin, GeJu.ShenQiang), (WuXing.Shui, GeJu.ShenQiang)],
+                [(WuXing.Jin, GeJu.ShenRuo)] = [(WuXing.Tu, GeJu.ShenQiang), (WuXing.Jin, GeJu.ShenQiang)],
+                [(WuXing.Tu, GeJu.ShenRuo)] = [(WuXing.Huo, GeJu.ShenQiang), (WuXing.Tu, GeJu.ShenQiang)]
+            };
+
+        private readonly BaZiService _baZiService;
+        private readonly TenGodAnalysisService _tenGodService;
+
+        public CompatibilityService(BaZiService baZiService, TenGodAnalysisService tenGodService) {
+            _baZiService = baZiService;
+            _tenGodService = tenGodService;
+        }
+
+        public CompatibilityResult Analyze(
+            BaZiInfo self,
+            CompatibilityBirthInput otherInput,
+            CompatibilityRelationship relationship
+        ) {
+            ArgumentNullException.ThrowIfNull(otherInput);
+            var other = _baZiService.GetBaZiInfo(otherInput.ToDateTime(), otherInput.Gender);
+            return Analyze(self, other, relationship);
+        }
+
+        public CompatibilityResult Analyze(
+            BaZiInfo self,
+            BaZiInfo other,
+            CompatibilityRelationship relationship
+        ) {
+            ArgumentNullException.ThrowIfNull(self);
+            ArgumentNullException.ThrowIfNull(other);
+
+            var sections = relationship switch {
+                CompatibilityRelationship.Romance => AnalyzeRomance(self, other),
+                CompatibilityRelationship.Parent => AnalyzeTenGodRelationship(other, relationship),
+                CompatibilityRelationship.Child => AnalyzeTenGodRelationship(other, relationship),
+                CompatibilityRelationship.Sibling => AnalyzeSibling(self, other),
+                CompatibilityRelationship.Friend => AnalyzeFriend(self, other),
+                CompatibilityRelationship.Colleague => AnalyzeTenGodRelationship(other, relationship),
+                _ => throw new ArgumentOutOfRangeException(nameof(relationship), relationship, null)
+            };
+
+            return new CompatibilityResult(relationship, self, other, sections, GetLimitations(relationship));
+        }
+
+        private static IReadOnlyList<CompatibilitySection> AnalyzeRomance(BaZiInfo self, BaZiInfo other) {
+            var selfZhi = self.YearZhu.Zhi;
+            var otherZhi = other.YearZhu.Zhi;
+            var sameTrineGroup = selfZhi != otherZhi
+                && BaZiDefine.ThreeHe.Values.Any(group => group.Contains(selfZhi) && group.Contains(otherZhi));
+            var isClash = selfZhi != otherZhi
+                && BaZiDefine.Chong.Any(group => group.Contains(selfZhi) && group.Contains(otherZhi));
+
+            var zodiacSummary = sameTrineGroup
+                ? $"{self.ShengXiao}與{other.ShengXiao}同屬一組生肖三合，課程視為氣場較易協調的加分參考。"
+                : isClash
+                    ? $"{self.ShengXiao}與{other.ShengXiao}形成六沖，宜把它視為變動與衝突修復提醒，不是關係失敗的結論。"
+                    : selfZhi == otherZhi
+                        ? $"兩人同為{self.ShengXiao}，不屬於六沖；生肖相同也不能單獨判定關係品質。"
+                        : "雙方生肖未落在本單元的同組三合或六沖初篩條件。";
+            var zodiacTone = sameTrineGroup
+                ? CompatibilityTone.Positive
+                : isClash ? CompatibilityTone.Caution : CompatibilityTone.Information;
+
+            var selfSpouse = GetSpouseElement(self);
+            var otherSpouse = GetSpouseElement(other);
+            var sameSpouse = selfSpouse == otherSpouse;
+            var selfMatchesOther = selfSpouse == other.RiZhu;
+            var otherMatchesSelf = otherSpouse == self.RiZhu;
+
+            var complement = EvaluateDirectionalRule(self, other, RomanceComplementTargets, true);
+            var reverseComplement = EvaluateDirectionalRule(other, self, RomanceComplementTargets, true);
+            var complementSummary = DescribeDirectionalMatches(complement, reverseComplement, "課程配對表列為本命五行能量互補。", "課程表未列為指定互補組合。");
+            var complementTone = GetRuleTone(complement, reverseComplement);
+
+            var exactDayPillar = self.DayZhu.Gan == other.DayZhu.Gan && self.DayZhu.Zhi == other.DayZhu.Zhi;
+            var sameStructure = GetVisibleElementCounts(self).OrderBy(item => item.Key)
+                .SequenceEqual(GetVisibleElementCounts(other).OrderBy(item => item.Key));
+            var structureSummary = exactDayPillar
+                ? "雙方日柱干支相同，課程視為較容易互相理解；也要留意喜忌與低潮可能同步。"
+                : sameStructure
+                    ? "雙方八個表層干支的五行數量相同，可作為結構相似的保守提示；仍不等於完整命局相同。"
+                    : "未偵測到日柱完全相同或八個表層干支五行數量完全一致。";
+
+            var selfSpouseInPalace = self.DayZhu.ZhiWuXing == selfSpouse;
+            var otherSpouseInPalace = other.DayZhu.ZhiWuXing == otherSpouse;
+            var palaceSummary = (selfSpouseInPalace, otherSpouseInPalace) switch {
+                (true, true) => "雙方表層日支五行都符合各自夫妻星坐夫妻宮的公式。",
+                (true, false) => "自己的表層日支五行符合夫妻星坐夫妻宮；對方未符合。",
+                (false, true) => "對方的表層日支五行符合夫妻星坐夫妻宮；自己未符合。",
+                _ => "雙方表層日支五行都未符合夫妻星坐夫妻宮公式。"
+            };
+
+            return [
+                new CompatibilitySection("生肖初篩", zodiacSummary, ["同組兩個生肖不等於完整三合局。", "六沖不可直接推成離婚或不適合。"], zodiacTone),
+                new CompatibilitySection(
+                    "共同姻緣五行",
+                    sameSpouse ? $"雙方夫妻星同為{selfSpouse.ToWuXingString()}，課程解讀為感情頻率與婚姻價值較可能同步。" : $"自己的夫妻星為{selfSpouse.ToWuXingString()}，對方為{otherSpouse.ToWuXingString()}，未形成共同姻緣五行。",
+                    ["男命依日主所剋的財星；女命依剋日主的官殺。"],
+                    sameSpouse ? CompatibilityTone.Positive : CompatibilityTone.Information
+                ),
+                new CompatibilitySection(
+                    "互為夫妻星",
+                    selfMatchesOther && otherMatchesSelf
+                        ? "雙方日主互為彼此夫妻星，課程視為吸引力較強的配對。"
+                        : selfMatchesOther || otherMatchesSelf
+                            ? $"目前只有{(selfMatchesOther ? "對方日主符合自己的夫妻星" : "自己的日主符合對方的夫妻星")}，屬單向符合，不稱為互為。"
+                            : "雙方日主未互為夫妻星；這不代表不是正緣或無法經營。",
+                    ["此處沿用課程以命主性別決定財星或官殺的二元口徑，不推定性別認同或關係品質。"],
+                    selfMatchesOther && otherMatchesSelf ? CompatibilityTone.Positive : CompatibilityTone.Information
+                ),
+                new CompatibilitySection("五行能量互補", complementSummary, ["只比較本命日主與身強／身弱，不混入目前大運。", "從強、從弱沒有完整指定表，因此不自動推論。"], complementTone),
+                new CompatibilitySection("結構相似度", structureSummary, ["僅比較各自命盤，不把兩張命盤的地支跨盤湊成刑、沖、破、害。"], exactDayPillar || sameStructure ? CompatibilityTone.Notice : CompatibilityTone.Information),
+                new CompatibilitySection("夫妻星坐夫妻宮", palaceSummary, ["這是表層日支五行公式；藏干未有固定權重，故不作等量推論。", "符合也不是關係永久穩定的保證。"], selfSpouseInPalace || otherSpouseInPalace ? CompatibilityTone.Positive : CompatibilityTone.Information)
+            ];
+        }
+
+        private IReadOnlyList<CompatibilitySection> AnalyzeTenGodRelationship(
+            BaZiInfo other,
+            CompatibilityRelationship relationship
+        ) {
+            var dominantGroups = _tenGodService.GetDominantGroups(other);
+            var mainStars = _tenGodService.GetMainStars(other);
+            var groupNames = string.Join("、", dominantGroups.Select(group => $"{group.Group.ToShenString()}（{group.Count}）"));
+            var mainStarNames = string.Join("、", mainStars.Select(star => star.ToShenString()).Distinct());
+            var details = dominantGroups.Select(group => GetAdvice(relationship, group)).ToArray();
+
+            return [
+                new CompatibilitySection(
+                    "對方的主要十神",
+                    $"五組合併統計以{groupNames}最多；外顯主星為{mainStarNames}。",
+                    ["並列最多的十神組全部保留，不強選唯一人格。", "主星與副星分層參考，最後以對方長期實際行為回驗。"],
+                    CompatibilityTone.Notice
+                ),
+                new CompatibilitySection("相處建議", "以下是依對方最多十神組轉成的溝通假設。", details, CompatibilityTone.Positive)
+            ];
+        }
+
+        private IReadOnlyList<CompatibilitySection> AnalyzeSibling(BaZiInfo self, BaZiInfo other) {
+            var siblingStars = _tenGodService.GetAllStars(self)
+                .Where(star => star is ShiShen.BiJian or ShiShen.JieCai)
+                .ToArray();
+            var locations = GetSiblingLocations(self);
+            var supportive = self.StrengthStatus is GeJu.ShenRuo or GeJu.CongQiang;
+            var signalSummary = siblingStars.Length == 0
+                ? "自己的命盤統計未見比肩或劫財；只能說手足訊號不突出，不能反推沒有感情。"
+                : $"自己的命盤共見 {siblingStars.Length} 個比肩／劫財訊號，出現在{string.Join("、", locations)}。";
+            var tendency = supportive
+                ? "依課程格局，比劫對身弱／從強較偏助力；仍須以對方能力與意願確認。"
+                : "依課程格局，身強／從弱遇比劫較需管理競爭、借貸與共同資源；不代表手足一定爭財。";
+            var dominantGroups = _tenGodService.GetDominantGroups(other);
+
+            return [
+                new CompatibilitySection("手足訊號", signalSummary, [tendency], supportive ? CompatibilityTone.Positive : CompatibilityTone.Caution),
+                new CompatibilitySection(
+                    "手足本人的互動入口",
+                    $"對方最多的十神組為{string.Join("、", dominantGroups.Select(group => group.Group.ToShenString()))}。",
+                    dominantGroups.Select(group => GetAdvice(CompatibilityRelationship.Sibling, group)).ToArray(),
+                    CompatibilityTone.Notice
+                )
+            ];
+        }
+
+        private static IReadOnlyList<CompatibilitySection> AnalyzeFriend(BaZiInfo self, BaZiInfo other) {
+            var forward = EvaluateDirectionalRule(self, other, FriendComplementTargets, false);
+            var reverse = EvaluateDirectionalRule(other, self, FriendComplementTargets, false);
+            var complementSummary = DescribeDirectionalMatches(forward, reverse, "課程朋友互補表列為可補足盲點的方向。", "課程表未列為指定互補組合。");
+            var prefersLead = self.StrengthStatus is GeJu.ShenQiang or GeJu.CongRuo;
+            var partnership = prefersLead
+                ? "課程傾向由自己保有主要決策權；若合夥仍要把授權、帳目與退出條件書面化。"
+                : "課程傾向善用團隊與夥伴力量；仍要確認能力、信用、權責與實際交付。";
+
+            return [
+                new CompatibilitySection("朋友五行互補", complementSummary, ["從格在選長期夥伴時著重降低共同盲點，但筆記沒有完整指定配對表，因此不自動判定。"], GetRuleTone(forward, reverse)),
+                new CompatibilitySection("合作方式", partnership, ["友誼不等於信用背書；借貸、投資、擔保或合夥須另查現金流、契約與風險。", "可先用小規模任務驗證溝通與交付，再決定是否擴大合作。"], CompatibilityTone.Caution)
+            ];
+        }
+
+        private static string GetAdvice(CompatibilityRelationship relationship, TenGodGroupStatistic group) {
+            var leading = group.LeadingStars.Count == 0
+                ? string.Empty
+                : $"（組內以{string.Join("、", group.LeadingStars.Select(star => star.ToShenString()))}較多）";
+            var advice = (relationship, group.Group) switch {
+                (CompatibilityRelationship.Parent, ShiShen.Cai) => "以具體投入、回報與預算溝通；涉及風險時把資料、成本及底線說清楚。",
+                (CompatibilityRelationship.Parent, ShiShen.GuanSha) => "重視承諾、計畫與責任；尊重成年子女的隱私與決定，不以秩序合理化控制。",
+                (CompatibilityRelationship.Parent, ShiShen.ShihShang) => "從興趣與討論切入，允許不同想法；把期待拆成可完成的小步驟。",
+                (CompatibilityRelationship.Parent, ShiShen.Yin) => "給空間並清楚表達需要與界線；尊重不是討好，關懷也不等於替對方決定。",
+                (CompatibilityRelationship.Parent, ShiShen.BiJie) => "重視平等、義氣與被認同；分歧宜私下談，金錢和人情仍保留明確界線。",
+                (CompatibilityRelationship.Child, ShiShen.Cai) => "用零用錢、儲蓄與選擇練習資源管理，也要說明價格不等於人的價值。",
+                (CompatibilityRelationship.Child, ShiShen.GuanSha) => "孩子可能自我要求高；降低羞辱式壓力，允許犯錯，將挑戰與可取得的支持一起說明。",
+                (CompatibilityRelationship.Child, ShiShen.ShihShang) => "提供探索與表達空間，用短時段、階段目標和明確收尾協助聚焦。",
+                (CompatibilityRelationship.Child, ShiShen.Yin) => "採低壓而具體的引導，說清楚開始、下一步與完成；若生活功能受影響應尋求專業協助。",
+                (CompatibilityRelationship.Child, ShiShen.BiJie) => "可透過同儕與團隊活動建立動機；用透明安全規則取代全面監控。",
+                (CompatibilityRelationship.Sibling, ShiShen.Cai) => "維持互惠並明確致謝；理財意見仍須自行查證，不當作投資保證。",
+                (CompatibilityRelationship.Sibling, ShiShen.GuanSha) => "尊重合理作息、角色與承諾；長幼秩序不能取代平等與自主。",
+                (CompatibilityRelationship.Sibling, ShiShen.ShihShang) => "從興趣與新點子開啟互動；提出的方案仍要做成本與安全驗證。",
+                (CompatibilityRelationship.Sibling, ShiShen.BiJie) => "可在自願下共享朋友圈或請其牽線；介紹不等於推薦、擔保或信用審查。",
+                (CompatibilityRelationship.Sibling, ShiShen.Yin) => "把需求、希望協助的內容與期限說清楚，同時尊重對方拒絕。",
+                (CompatibilityRelationship.Colleague, ShiShen.Cai) => "說清分工、投入、回報與長期效益；偏財重結果時仍要補齊細節與風險。",
+                (CompatibilityRelationship.Colleague, ShiShen.GuanSha) => "承諾前確認範圍與期限，做不到要及早透明；七殺型可用條列目標建立並肩感。",
+                (CompatibilityRelationship.Colleague, ShiShen.ShihShang) => "給創意與做法空間，同時定義里程碑、期限與驗收標準。",
+                (CompatibilityRelationship.Colleague, ShiShen.Yin) => "減少瑣碎干預並尊重私人領域，但交付仍用明確工作標準驗收。",
+                (CompatibilityRelationship.Colleague, ShiShen.BiJie) => "以平等、互助與信用建立合作；仍保留職業界線並揭露利益衝突。",
+                _ => "把命理分類視為待驗證的溝通假設，依對方回饋調整。"
+            };
+
+            return $"{group.Group.ToShenString()}{leading}：{advice}";
+        }
+
+        private static IReadOnlyList<string> GetSiblingLocations(BaZiInfo info) {
+            var pillars = new[] { info.YearZhu, info.MonthZhu, info.DayZhu, info.HourZhu };
+            return [.. pillars
+                .Where(pillar => pillar.ZhuXing is ShiShen.BiJian or ShiShen.JieCai
+                    || pillar.FuXing.Any(star => star is ShiShen.BiJian or ShiShen.JieCai))
+                .Select(pillar => pillar.Id)];
+        }
+
+        private static WuXing GetSpouseElement(BaZiInfo info) {
+            return info.Gender == Sex.Male
+                ? BaZiDefine.Restricting[info.RiZhu]
+                : BaZiDefine.RestrictBy[info.RiZhu];
+        }
+
+        private static IReadOnlyDictionary<WuXing, int> GetVisibleElementCounts(BaZiInfo info) {
+            var elements = new[] {
+                info.YearZhu.GanWuXing, info.YearZhu.ZhiWuXing,
+                info.MonthZhu.GanWuXing, info.MonthZhu.ZhiWuXing,
+                info.DayZhu.GanWuXing, info.DayZhu.ZhiWuXing,
+                info.HourZhu.GanWuXing, info.HourZhu.ZhiWuXing
+            };
+            return elements.GroupBy(element => element).ToDictionary(group => group.Key, group => group.Count());
+        }
+
+        private static DirectionResult EvaluateDirectionalRule(
+            BaZiInfo source,
+            BaZiInfo target,
+            IReadOnlyDictionary<(WuXing Element, GeJu Strength), (WuXing Element, GeJu Strength)[]> rules,
+            bool hasEarthDiscrepancy
+        ) {
+            var sourceKey = (source.RiZhu, source.StrengthStatus);
+            var targetKey = (target.RiZhu, target.StrengthStatus);
+            if (source.StrengthStatus is GeJu.CongQiang or GeJu.CongRuo
+                || target.StrengthStatus is GeJu.CongQiang or GeJu.CongRuo) {
+                return new DirectionResult(RuleMatch.NeedsReview, sourceKey, targetKey, "從格沒有完整指定配對表");
+            }
+
+            if (hasEarthDiscrepancy
+                && sourceKey == (WuXing.Tu, GeJu.ShenQiang)
+                && target.StrengthStatus == GeJu.ShenQiang
+                && target.RiZhu is WuXing.Mu or WuXing.Jin) {
+                return new DirectionResult(RuleMatch.NeedsReview, sourceKey, targetKey, "土身強配對在講義與旁白間有差異");
+            }
+
+            var matches = rules.TryGetValue(sourceKey, out var targets) && targets.Contains(targetKey);
+            return new DirectionResult(matches ? RuleMatch.Match : RuleMatch.NoMatch, sourceKey, targetKey, null);
+        }
+
+        private static string DescribeDirectionalMatches(
+            DirectionResult forward,
+            DirectionResult reverse,
+            string matchText,
+            string noMatchText
+        ) {
+            if (forward.Match == RuleMatch.NeedsReview || reverse.Match == RuleMatch.NeedsReview) {
+                var reasons = new[] { forward.Reason, reverse.Reason }.Where(reason => reason is not null).Distinct();
+                return $"此組合需要人工核對：{string.Join("；", reasons)}。目前不把未定義規則實作成既定結論。";
+            }
+
+            if (forward.Match == RuleMatch.Match && reverse.Match == RuleMatch.Match) {
+                return $"雙向都{matchText}";
+            }
+
+            if (forward.Match == RuleMatch.Match || reverse.Match == RuleMatch.Match) {
+                return $"只有{(forward.Match == RuleMatch.Match ? "自己看對方" : "對方看自己")}的方向{matchText}配對表具有方向性，因此保留單向結果。";
+            }
+
+            return noMatchText;
+        }
+
+        private static CompatibilityTone GetRuleTone(DirectionResult forward, DirectionResult reverse) {
+            if (forward.Match == RuleMatch.NeedsReview || reverse.Match == RuleMatch.NeedsReview) {
+                return CompatibilityTone.Notice;
+            }
+
+            return forward.Match == RuleMatch.Match || reverse.Match == RuleMatch.Match
+                ? CompatibilityTone.Positive
+                : CompatibilityTone.Information;
+        }
+
+        private static IReadOnlyList<string> GetLimitations(CompatibilityRelationship relationship) {
+            var limitations = new List<string> {
+                "出生年月日與時辰屬個人資料，應先取得對方知情同意。",
+                "分析依課程中的八字日元法整理，屬傳統文化參考，不是人格診斷、科學預測或關係保證。",
+                "命盤提示必須以雙方實際行為、溝通、意願、能力與長期互動回驗。"
+            };
+
+            if (relationship is CompatibilityRelationship.Friend or CompatibilityRelationship.Sibling) {
+                limitations.Add("借貸、投資、擔保、遺產或合夥應使用書面契約，並另做財務與法律查證。");
+            }
+
+            if (relationship == CompatibilityRelationship.Colleague) {
+                limitations.Add("招募、考核、薪酬、升遷與解僱仍須以能力、行為、績效、制度與法規為準，不可由命盤決定。");
+            }
+
+            if (relationship is CompatibilityRelationship.Parent or CompatibilityRelationship.Child) {
+                limitations.Add("健康、安全、教育與家庭衝突應依現實情況尋求合格的醫療、教育、法律或社福專業協助。");
+            }
+
+            return limitations;
+        }
+
+        private enum RuleMatch {
+            NoMatch,
+            Match,
+            NeedsReview
+        }
+
+        private sealed record DirectionResult(
+            RuleMatch Match,
+            (WuXing Element, GeJu Strength) Source,
+            (WuXing Element, GeJu Strength) Target,
+            string? Reason
+        );
+    }
+}

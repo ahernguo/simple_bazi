@@ -1,0 +1,64 @@
+@page "/compatibility/{Relationship}"
+@inherits Fluxor.Blazor.Web.Components.FluxorComponent
+@inject IState<BaZiState> BaZiState
+@inject CompatibilityService CompatibilityService
+@inject NavigationManager Navigation
+
+@if (BaZiState.Value.Info is null) {
+    <div class="alert alert-info mt-4">請先完成自己的八字排盤，再進行合盤。</div>
+    <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/")'>回首頁</button>
+} else {
+    <div class="compatibility-page container mt-4">
+        <header class="mb-4">
+            <div class="text-uppercase text-secondary small fw-bold">合盤</div>
+            <h1 class="h2 mb-2">@CompatibilityRelationshipCatalog.GetDisplayName(_relationship)</h1>
+            <p class="text-secondary mb-0">@CompatibilityRelationshipCatalog.GetDescription(_relationship)</p>
+        </header>
+
+        <CompatibilityBirthForm @key="_relationship" OnSubmit="HandleSubmit" />
+
+        @if (!string.IsNullOrWhiteSpace(_error)) {
+            <div class="alert alert-danger">@_error</div>
+        }
+
+        @if (_result is not null) {
+            <CompatibilityResultView Result="_result" />
+        }
+    </div>
+}
+
+@code {
+    private CompatibilityRelationship _relationship;
+    private CompatibilityRelationship? _loadedRelationship;
+    private CompatibilityResult? _result;
+    private string? _error;
+
+    [Parameter]
+    public string? Relationship { get; set; }
+
+    protected override void OnParametersSet() {
+        if (!CompatibilityRelationshipCatalog.TryParse(Relationship, out var relationship)) {
+            Navigation.NavigateTo("/not-found");
+            return;
+        }
+
+        _relationship = relationship;
+        if (_loadedRelationship != relationship) {
+            _loadedRelationship = relationship;
+            _result = null;
+            _error = null;
+        }
+    }
+
+    private Task HandleSubmit(CompatibilityBirthInput input) {
+        try {
+            _error = null;
+            _result = CompatibilityService.Analyze(BaZiState.Value.Info!, input, _relationship);
+        } catch (Exception ex) {
+            _result = null;
+            _error = $"分析失敗：{ex.Message}";
+        }
+
+        return Task.CompletedTask;
+    }
+}

@@ -1,0 +1,11 @@
+.compatibility-page {
+    max-width: 76rem;
+}
+
+.compatibility-page header p {
+    max-width: 46rem;
+}
+
+.compatibility-section {
+    border-left-width: 0.35rem;
+}
