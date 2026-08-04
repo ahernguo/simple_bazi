@@ -17,6 +17,7 @@
 
 .top-row {
     min-height: 3.5rem;
+    flex-shrink: 0;
     background-color: rgba(0,0,0,0.4);
 }
 
@@ -116,7 +117,9 @@
         display: block;
 
         /* Allow sidebar to scroll for tall menus */
-        height: calc(100vh - 3.5rem);
+        flex: 1;
+        min-height: 0;
         overflow-y: auto;
+        overscroll-behavior-y: contain;
     }
 }
