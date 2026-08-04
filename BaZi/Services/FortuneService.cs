@@ -542,20 +542,17 @@ public class FortuneService {
         return bad;
     }
 
-    private bool HasDaYunConflict(BaZiInfo info, System.Text.StringBuilder html) {
-        /* 如果當前沒有大運，直接離開。可能是系統出錯或排盤有誤 */
-        if (info.CurrentDaYun is null) return false;
+    private bool HasDaYunConflict(BaZiInfo info, DaYun daYun, System.Text.StringBuilder html) {
         /* 這邊是判斷大運，所以最後一個一定要放大運，在 CheckConflict 裡面會有 mustLast，也就是跟大運有合、有刑沖破害的才會記錄 */
-        var dy = info.CurrentDaYun;
         var threePair = new List<IList<IGanZhi>> {
-            new List<IGanZhi>() { info.DayZhu, info.MonthZhu, dy },
-            new List<IGanZhi>() { info.DayZhu, info.HourZhu, dy }
+            new List<IGanZhi>() { info.DayZhu, info.MonthZhu, daYun },
+            new List<IGanZhi>() { info.DayZhu, info.HourZhu, daYun }
         };
         var twoPair = new List<IList<IGanZhi>> {
-            new List<IGanZhi>() { info.YearZhu, dy },
-            new List<IGanZhi>() { info.MonthZhu, dy },
-            new List<IGanZhi>() { info.DayZhu, dy },
-            new List<IGanZhi>() { info.HourZhu, dy }
+            new List<IGanZhi>() { info.YearZhu, daYun },
+            new List<IGanZhi>() { info.MonthZhu, daYun },
+            new List<IGanZhi>() { info.DayZhu, daYun },
+            new List<IGanZhi>() { info.HourZhu, daYun }
         };
         var (bad, _) = CheckConflict(info, null, threePair, twoPair, html);
         return bad;
@@ -1095,14 +1092,16 @@ public class FortuneService {
             .Replace("流年", "流月", StringComparison.Ordinal);
     }
 
-    public MarkupString DaYunAnalysis(BaZiInfo info) {
-        if (info.CurrentDaYun is null) return new MarkupString("查無大運資料");
+    public MarkupString DaYunAnalysis(BaZiInfo info, int targetYear) {
+        var (daYun, _) = FindLiuNian(info, targetYear);
+        if (daYun is null) return new MarkupString();
+
         var html = new System.Text.StringBuilder();
         html.AppendLine("<div class=\"card p-3 mt-3\">");
         html.AppendLine("    <h5 class=\"card-title border-bottom pb-2\">大運分析</h5>");
         /* 先列出是否有衝突 */
         var conflict = new System.Text.StringBuilder();
-        var bad = HasDaYunConflict(info, conflict);
+        var bad = HasDaYunConflict(info, daYun, conflict);
         if (bad) {
             html.AppendLine(@"    <div class=""row ms-1 me-1 py-3 border-bottom-dash"">");
             html.AppendLine(conflict.ToString());
@@ -1111,15 +1110,14 @@ public class FortuneService {
         /* 前五年走天干的運，後五年走地支的運
         * 但地支的力量是大於天干，這邊就單純用地支來判斷吧! */
         html.AppendLine(@"    <div class=""row ms-1 me-1 py-3"">");
-        var curYun = info.CurrentDaYun.Zhi.ToShiShen(info.DayZhu.Gan);
-        var curYunDisplay = FormatTenGod(info, curYun, curYun.ToYunString());
-        html.Append($"<span>{info.CurrentDaYun.StartYear} 年 ~ {(info.CurrentDaYun.StartYear + 10)} 年走 {curYunDisplay}</span>");
-        CreateYunDesc(info, info.CurrentDaYun, curYun, html);
+        var selectedYun = daYun.Zhi.ToShiShen(info.DayZhu.Gan);
+        var selectedYunDisplay = FormatTenGod(info, selectedYun, selectedYun.ToYunString());
+        html.Append($"<span>{daYun.StartYear} 年 ~ {(daYun.StartYear + 10)} 年走 {selectedYunDisplay}</span>");
+        CreateYunDesc(info, daYun, selectedYun, html);
         html.AppendLine(@"    </div>");
 
-        int currentYear = DateTime.Now.Year;
-        var nextDaYun = info.DaYunList.FirstOrDefault(x => x.StartYear > info.CurrentDaYun.StartYear);
-        if (nextDaYun != null && currentYear == nextDaYun.StartYear - 1) {
+        var nextDaYun = info.DaYunList.FirstOrDefault(x => x.StartYear > daYun.StartYear);
+        if (nextDaYun != null && targetYear == nextDaYun.StartYear - 1) {
             html.AppendLine(@"    <hr />");
             html.AppendLine(@"    <div class=""row ms-1 me-1 py-3"">");
             var nextYun = nextDaYun.Zhi.ToShiShen(info.DayZhu.Gan);

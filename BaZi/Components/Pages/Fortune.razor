@@ -41,8 +41,6 @@
             @confMs
         }
 
-        @FortuneService.DaYunAnalysis(info)
-
         <div class="card p-3 mt-3">
             <h5 class="card-title border-bottom pb-2">流年查詢</h5>
             @if (liuNianYears.Count == 0) {
@@ -71,6 +69,7 @@
         </div>
 
         @if (_fortunePage.QueriedLiuNianYear is int targetYear) {
+            @FortuneService.DaYunAnalysis(info, targetYear)
             @FortuneService.LiuNianAnalysis(info, targetYear)
             @FortuneService.LiuNianTopicAnalysis(info, targetYear)
         }

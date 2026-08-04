@@ -168,13 +168,16 @@ public class FortuneServiceTests {
     }
 
     [Fact]
-    public void DaYunAnalysis_CurrentDaYun_FormatsTenGodFavorability() {
+    public void DaYunAnalysis_SelectedYear_UsesCorrespondingDaYunAndFormatsTenGodFavorability() {
         var info = new BaZiInfo(BirthDate, 2);
         var service = new FortuneService();
+        var selectedDaYun = info.DaYunList.First(daYun => daYun != info.CurrentDaYun);
+        int targetYear = selectedDaYun.LiuNianList[0].Year;
 
-        var html = service.DaYunAnalysis(info).Value;
+        var html = service.DaYunAnalysis(info, targetYear).Value;
 
         Assert.Contains("大運分析", html);
+        Assert.Contains($"{selectedDaYun.StartYear} 年 ~ {selectedDaYun.StartYear + 10} 年", html);
         Assert.Contains("topic-ten-god ", html);
         Assert.Contains("title=\"", html);
         Assert.Contains("依本命格局列為", html);
@@ -182,6 +185,16 @@ public class FortuneServiceTests {
             html.Contains("topic-ten-god-favorable", StringComparison.Ordinal)
             || html.Contains("topic-ten-god-unfavorable", StringComparison.Ordinal)
         );
+    }
+
+    [Fact]
+    public void DaYunAnalysis_MissingYear_ReturnsEmptyMarkup() {
+        var info = new BaZiInfo(BirthDate, 2);
+        var service = new FortuneService();
+
+        var html = service.DaYunAnalysis(info, 1800).Value;
+
+        Assert.Null(html);
     }
 
     [Fact]
