@@ -6,16 +6,26 @@
                 <div class="border rounded p-3 h-100">
                     <h6>自己</h6>
                     <div>@FormatBirth(Result.Self)</div>
-                    <div>日柱：@FormatDayPillar(Result.Self)</div>
-                    <div>日主／格局：@Result.Self.RiZhu.ToWuXingString()／@Result.Self.StrengthStatus.ToGeJuString()</div>
+                    <div>生肖：@Result.Self.ShengXiao</div>
+                    <div>
+                        日柱：<span class="@GetElementColorClass(Result.Self.DayZhu.GanWuXing) fw-semibold">@Result.Self.DayZhu.Gan.ToGanString()</span><span class="@GetElementColorClass(Result.Self.DayZhu.ZhiWuXing) fw-semibold">@Result.Self.DayZhu.Zhi.ToZhiString()</span>
+                    </div>
+                    <div>
+                        日主／格局：<span class="@GetElementColorClass(Result.Self.RiZhu) fw-semibold">@Result.Self.RiZhu.ToWuXingString()</span>／@Result.Self.StrengthStatus.ToGeJuString()
+                    </div>
                 </div>
             </div>
             <div class="col-md-6">
                 <div class="border rounded p-3 h-100">
                     <h6>對方</h6>
                     <div>@FormatBirth(Result.Other)</div>
-                    <div>日柱：@FormatDayPillar(Result.Other)</div>
-                    <div>日主／格局：@Result.Other.RiZhu.ToWuXingString()／@Result.Other.StrengthStatus.ToGeJuString()</div>
+                    <div>生肖：@Result.Other.ShengXiao</div>
+                    <div>
+                        日柱：<span class="@GetElementColorClass(Result.Other.DayZhu.GanWuXing) fw-semibold">@Result.Other.DayZhu.Gan.ToGanString()</span><span class="@GetElementColorClass(Result.Other.DayZhu.ZhiWuXing) fw-semibold">@Result.Other.DayZhu.Zhi.ToZhiString()</span>
+                    </div>
+                    <div>
+                        日主／格局：<span class="@GetElementColorClass(Result.Other.RiZhu) fw-semibold">@Result.Other.RiZhu.ToWuXingString()</span>／@Result.Other.StrengthStatus.ToGeJuString()
+                    </div>
                 </div>
             </div>
         </div>
@@ -26,13 +36,23 @@
             <h5 class="card-title border-bottom pb-2">
                 <i class="fa-solid @GetToneIcon(section.Tone) me-2"></i>@section.Title
             </h5>
-            <p>@section.Summary</p>
+            <p>@FormatText(section.Summary, section.TenGodSubject)</p>
             @if (section.Details.Count > 0) {
                 <ul class="mb-0">
                     @foreach (var detail in section.Details) {
-                        <li class="mb-2">@detail</li>
+                        <li class="mb-2">@FormatText(detail, section.TenGodSubject)</li>
                     }
                 </ul>
+            }
+            @if (section.Notes is { Count: > 0 }) {
+                <div class="topic-notice mt-3 mb-0">
+                    <i class="fa-solid fa-circle-info topic-notice-icon" aria-hidden="true"></i>
+                    <ul class="compatibility-note-list mb-0">
+                        @foreach (var note in section.Notes) {
+                            <li class="mb-1">@FormatText(note, section.TenGodSubject)</li>
+                        }
+                    </ul>
+                </div>
             }
         </div>
     }
@@ -46,34 +66,3 @@
         </ul>
     </div>
 </div>
-
-@code {
-    [Parameter, EditorRequired]
-    public CompatibilityResult Result { get; set; } = default!;
-
-    private static string FormatBirth(BaZiInfo info) {
-        return $"{info.SolarDate:yyyy/MM/dd HH:mm}，{info.Gender.ToSexString()}";
-    }
-
-    private static string FormatDayPillar(BaZiInfo info) {
-        return $"{info.DayZhu.Gan.ToGanString()}{info.DayZhu.Zhi.ToZhiString()}";
-    }
-
-    private static string GetToneClass(CompatibilityTone tone) {
-        return tone switch {
-            CompatibilityTone.Positive => "border-success",
-            CompatibilityTone.Caution => "border-warning",
-            CompatibilityTone.Notice => "border-info",
-            _ => "border-secondary"
-        };
-    }
-
-    private static string GetToneIcon(CompatibilityTone tone) {
-        return tone switch {
-            CompatibilityTone.Positive => "fa-circle-check text-success",
-            CompatibilityTone.Caution => "fa-triangle-exclamation text-warning",
-            CompatibilityTone.Notice => "fa-circle-info text-info",
-            _ => "fa-compass"
-        };
-    }
-}

@@ -90,7 +90,20 @@ public sealed class CompatibilityServiceTests {
         var zodiacSection = Assert.Single(result.Sections, section => section.Title == "生肖初篩");
 
         Assert.DoesNotContain("形成六沖", zodiacSection.Summary);
-        Assert.Contains("不屬於六沖", zodiacSection.Summary);
+        Assert.Contains("沒有六沖的狀況", zodiacSection.Summary);
+    }
+
+    [Fact]
+    public void AnalyzeRomance_NoTrineOrClash_UsesNeutralSummary() {
+        var service = CreateService();
+        var self = _baZiService.GetBaZiInfo(new DateTime(1989, 6, 1, 12, 0, 0), 2);
+        var other = _baZiService.GetBaZiInfo(new DateTime(1990, 6, 1, 12, 0, 0), 1);
+
+        var result = service.Analyze(self, other, CompatibilityRelationship.Romance);
+        var zodiacSection = Assert.Single(result.Sections, section => section.Title == "生肖初篩");
+
+        Assert.Contains("沒有三合、六沖的狀況", zodiacSection.Summary);
+        Assert.Contains("無特別不合的狀況", zodiacSection.Summary);
     }
 
     private CompatibilityService CreateService() {

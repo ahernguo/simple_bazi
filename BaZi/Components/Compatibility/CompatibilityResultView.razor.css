@@ -1,0 +1,11 @@
+.compatibility-section {
+    border-left-width: 0.35rem;
+}
+
+.compatibility-note-list {
+    padding-left: 1.25rem;
+}
+
+.compatibility-note-list li:last-child {
+    margin-bottom: 0 !important;
+}

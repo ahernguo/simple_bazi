@@ -7,38 +7,99 @@
 
         <div class="mb-3">
             <label class="form-label">性別</label>
-            <InputRadioGroup @bind-Value="_input.Gender" class="d-flex gap-4">
-                <label class="form-check-label">
-                    <InputRadio class="form-check-input me-1" Value="2" /> 男
+            <div class="btn-group w-100" role="group">
+                <input type="radio"
+                       class="btn-check"
+                       name="compatibility-gender"
+                       id="compatibility-male"
+                       @onclick="() => SetGender(2)"
+                       checked="@(_input.Gender == 2)" />
+                <label class="btn btn-outline-primary" for="compatibility-male">
+                    <i class="fa-solid fa-mars me-1"></i> 男
                 </label>
-                <label class="form-check-label">
-                    <InputRadio class="form-check-input me-1" Value="1" /> 女
+
+                <input type="radio"
+                       class="btn-check"
+                       name="compatibility-gender"
+                       id="compatibility-female"
+                       @onclick="() => SetGender(1)"
+                       checked="@(_input.Gender == 1)" />
+                <label class="btn btn-outline-danger" for="compatibility-female">
+                    <i class="fa-solid fa-venus me-1"></i> 女
                 </label>
-            </InputRadioGroup>
+            </div>
             <ValidationMessage For="@(() => _input.Gender)" />
         </div>
 
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label" for="compatibility-birth-date">出生日期</label>
-                <InputDate id="compatibility-birth-date"
-                           class="form-control"
-                           @bind-Value="_input.BirthDate"
-                           max="@DateTime.Today.ToString("yyyy-MM-dd")" />
-                <ValidationMessage For="@(() => _input.BirthDate)" />
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <label class="form-label" for="compatibility-birth-year">年 (西元)</label>
+                <select id="compatibility-birth-year"
+                        class="form-select"
+                        @bind="_year"
+                        @bind:after="UpdateBirthDate">
+                    @for (int year = 1900; year <= DateTime.Now.Year; year++) {
+                        <option value="@year">@year</option>
+                    }
+                </select>
             </div>
-            <div class="col-md-6">
-                <label class="form-label" for="compatibility-birth-time">出生時間</label>
-                <InputDate id="compatibility-birth-time"
-                           class="form-control"
-                           @bind-Value="_input.BirthTime"
-                           Type="InputDateType.Time" />
-                <ValidationMessage For="@(() => _input.BirthTime)" />
+            <div class="col-md-3">
+                <label class="form-label" for="compatibility-birth-month">月</label>
+                <select id="compatibility-birth-month"
+                        class="form-select"
+                        @bind="_month"
+                        @bind:after="UpdateBirthDate">
+                    @for (int month = 1; month <= 12; month++) {
+                        <option value="@month">@month</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="compatibility-birth-day">日</label>
+                <select id="compatibility-birth-day"
+                        class="form-select"
+                        @bind="_day"
+                        @bind:after="UpdateBirthDate">
+                    @for (int day = 1; day <= DateTime.DaysInMonth(_year, _month); day++) {
+                        <option value="@day">@day</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <div class="row g-1">
+                    <div class="col-6">
+                        <label class="form-label" for="compatibility-birth-hour">時</label>
+                        <select id="compatibility-birth-hour"
+                                class="form-select"
+                                @bind="_hour"
+                                @bind:after="UpdateBirthTime">
+                            @for (int hour = 0; hour < 24; hour++) {
+                                <option value="@hour">@($"{hour:D2}")</option>
+                            }
+                            <option value="@LuckyHour">吉時</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" for="compatibility-birth-minute">分</label>
+                        <select id="compatibility-birth-minute"
+                                class="form-select"
+                                @bind="_minute"
+                                @bind:after="UpdateBirthTime">
+                            @for (int minute = 0; minute < 60; minute++) {
+                                <option value="@minute">@($"{minute:D2}")</option>
+                            }
+                            <option value="@LuckyMinute">吉分</option>
+                        </select>
+                    </div>
+                </div>
             </div>
         </div>
+        <ValidationMessage For="@(() => _input.BirthDate)" />
+        <ValidationMessage For="@(() => _input.BirthTime)" />
 
-        <div class="form-text mt-3">
-            合盤會使用完整四柱，請輸入已確認的出生時間，不以 00:00 假設未知時辰。
+        <div class="compatibility-birth-warning">
+            <i class="fa-solid fa-triangle-exclamation mt-1" aria-hidden="true"></i>
+            <span>選擇吉時或吉分時，會分別以 12 時或 00 分進行合盤；因缺少準確生辰，結果僅供參考。</span>
         </div>
 
         <div class="d-grid mt-4">
@@ -50,10 +111,33 @@
 </EditForm>
 
 @code {
+    private const int LuckyHour = 25;
+    private const int LuckyMinute = 61;
+
     private readonly CompatibilityBirthInput _input = new();
+    private int _year = 1990;
+    private int _month = 1;
+    private int _day = 1;
+    private int _hour = LuckyHour;
+    private int _minute = LuckyMinute;
 
     [Parameter]
     public EventCallback<CompatibilityBirthInput> OnSubmit { get; set; }
+
+    private void SetGender(int gender) {
+        _input.Gender = gender;
+    }
+
+    private void UpdateBirthDate() {
+        _day = Math.Min(_day, DateTime.DaysInMonth(_year, _month));
+        _input.BirthDate = new DateTime(_year, _month, _day);
+    }
+
+    private void UpdateBirthTime() {
+        int hour = _hour == LuckyHour ? 12 : _hour;
+        int minute = _minute == LuckyMinute ? 0 : _minute;
+        _input.BirthTime = DateTime.Today.AddHours(hour).AddMinutes(minute);
+    }
 
     private Task HandleSubmit() {
         return OnSubmit.InvokeAsync(_input);

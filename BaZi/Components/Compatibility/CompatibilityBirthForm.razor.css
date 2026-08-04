@@ -1,0 +1,16 @@
+.compatibility-birth-warning {
+    display: flex;
+    gap: 0.625rem;
+    align-items: flex-start;
+    padding: 0.75rem 0.875rem;
+    color: #664d03;
+    background-color: #fff3cd;
+    border: 1px solid #ffecb5;
+    border-radius: var(--bs-border-radius);
+}
+
+.dark-mode .compatibility-birth-warning {
+    color: #ffe69c;
+    background-color: #332701;
+    border-color: #997404;
+}

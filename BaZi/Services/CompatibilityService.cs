@@ -83,8 +83,8 @@ namespace BaZi.Services {
                 : isClash
                     ? $"{self.ShengXiao}與{other.ShengXiao}形成六沖，宜把它視為變動與衝突修復提醒，不是關係失敗的結論。"
                     : selfZhi == otherZhi
-                        ? $"兩人同為{self.ShengXiao}，不屬於六沖；生肖相同也不能單獨判定關係品質。"
-                        : "雙方生肖未落在本單元的同組三合或六沖初篩條件。";
+                        ? $"兩人同為{self.ShengXiao}，沒有六沖的狀況；生肖相同也不能單獨判定關係品質。"
+                        : "雙方生肖沒有三合、六沖的狀況；雖非天造地設的一對，但也無特別不合的狀況。";
             var zodiacTone = sameTrineGroup
                 ? CompatibilityTone.Positive
                 : isClash ? CompatibilityTone.Caution : CompatibilityTone.Information;
@@ -97,7 +97,7 @@ namespace BaZi.Services {
 
             var complement = EvaluateDirectionalRule(self, other, RomanceComplementTargets, true);
             var reverseComplement = EvaluateDirectionalRule(other, self, RomanceComplementTargets, true);
-            var complementSummary = DescribeDirectionalMatches(complement, reverseComplement, "課程配對表列為本命五行能量互補。", "課程表未列為指定互補組合。");
+            var complementSummary = DescribeDirectionalMatches(complement, reverseComplement, "課程配對表列為本命五行能量互補。", "雙方沒有落在課程指定的互補組合，也沒有因此形成特別不合的狀況。");
             var complementTone = GetRuleTone(complement, reverseComplement);
 
             var exactDayPillar = self.DayZhu.Gan == other.DayZhu.Gan && self.DayZhu.Zhi == other.DayZhu.Zhi;
@@ -107,7 +107,7 @@ namespace BaZi.Services {
                 ? "雙方日柱干支相同，課程視為較容易互相理解；也要留意喜忌與低潮可能同步。"
                 : sameStructure
                     ? "雙方八個表層干支的五行數量相同，可作為結構相似的保守提示；仍不等於完整命局相同。"
-                    : "未偵測到日柱完全相同或八個表層干支五行數量完全一致。";
+                    : "雙方日柱與表層五行結構各有特色；沒有完全相同不代表彼此不合。";
 
             var selfSpouseInPalace = self.DayZhu.ZhiWuXing == selfSpouse;
             var otherSpouseInPalace = other.DayZhu.ZhiWuXing == otherSpouse;
@@ -115,16 +115,25 @@ namespace BaZi.Services {
                 (true, true) => "雙方表層日支五行都符合各自夫妻星坐夫妻宮的公式。",
                 (true, false) => "自己的表層日支五行符合夫妻星坐夫妻宮；對方未符合。",
                 (false, true) => "對方的表層日支五行符合夫妻星坐夫妻宮；自己未符合。",
-                _ => "雙方表層日支五行都未符合夫妻星坐夫妻宮公式。"
+                _ => "雙方表層日支五行皆非夫妻星坐夫妻宮；此項沒有形成加分條件，也不代表彼此不合。"
             };
 
             return [
-                new CompatibilitySection("生肖初篩", zodiacSummary, ["同組兩個生肖不等於完整三合局。", "六沖不可直接推成離婚或不適合。"], zodiacTone),
+                new CompatibilitySection(
+                    "生肖初篩",
+                    zodiacSummary,
+                    [],
+                    zodiacTone,
+                    Notes: ["同組兩個生肖不等於完整三合局。", "六沖不可直接推成離婚或不適合。"]
+                ),
                 new CompatibilitySection(
                     "共同姻緣五行",
-                    sameSpouse ? $"雙方夫妻星同為{selfSpouse.ToWuXingString()}，課程解讀為感情頻率與婚姻價值較可能同步。" : $"自己的夫妻星為{selfSpouse.ToWuXingString()}，對方為{otherSpouse.ToWuXingString()}，未形成共同姻緣五行。",
-                    ["男命依日主所剋的財星；女命依剋日主的官殺。"],
-                    sameSpouse ? CompatibilityTone.Positive : CompatibilityTone.Information
+                    sameSpouse
+                        ? $"雙方夫妻星同為{selfSpouse.ToWuXingString()}，課程解讀為感情頻率與婚姻價值較可能同步。"
+                        : $"自己的夫妻星為{selfSpouse.ToWuXingString()}，對方為{otherSpouse.ToWuXingString()}；兩種五行呈現各自的感情取向，不代表彼此不合。",
+                    [],
+                    sameSpouse ? CompatibilityTone.Positive : CompatibilityTone.Information,
+                    Notes: ["男命依日主所剋的財星；女命依剋日主的官殺。"]
                 ),
                 new CompatibilitySection(
                     "互為夫妻星",
@@ -133,12 +142,31 @@ namespace BaZi.Services {
                         : selfMatchesOther || otherMatchesSelf
                             ? $"目前只有{(selfMatchesOther ? "對方日主符合自己的夫妻星" : "自己的日主符合對方的夫妻星")}，屬單向符合，不稱為互為。"
                             : "雙方日主未互為夫妻星；這不代表不是正緣或無法經營。",
-                    ["此處沿用課程以命主性別決定財星或官殺的二元口徑，不推定性別認同或關係品質。"],
-                    selfMatchesOther && otherMatchesSelf ? CompatibilityTone.Positive : CompatibilityTone.Information
+                    [],
+                    selfMatchesOther && otherMatchesSelf ? CompatibilityTone.Positive : CompatibilityTone.Information,
+                    Notes: ["此處沿用課程以命主性別決定財星或官殺的二元口徑，不推定性別認同或關係品質。"]
                 ),
-                new CompatibilitySection("五行能量互補", complementSummary, ["只比較本命日主與身強／身弱，不混入目前大運。", "從強、從弱沒有完整指定表，因此不自動推論。"], complementTone),
-                new CompatibilitySection("結構相似度", structureSummary, ["僅比較各自命盤，不把兩張命盤的地支跨盤湊成刑、沖、破、害。"], exactDayPillar || sameStructure ? CompatibilityTone.Notice : CompatibilityTone.Information),
-                new CompatibilitySection("夫妻星坐夫妻宮", palaceSummary, ["這是表層日支五行公式；藏干未有固定權重，故不作等量推論。", "符合也不是關係永久穩定的保證。"], selfSpouseInPalace || otherSpouseInPalace ? CompatibilityTone.Positive : CompatibilityTone.Information)
+                new CompatibilitySection(
+                    "五行能量互補",
+                    complementSummary,
+                    [],
+                    complementTone,
+                    Notes: ["只比較本命日主與身強／身弱，不混入目前大運。", "從強、從弱沒有完整指定表，因此不自動推論。"]
+                ),
+                new CompatibilitySection(
+                    "結構相似度",
+                    structureSummary,
+                    [],
+                    exactDayPillar || sameStructure ? CompatibilityTone.Notice : CompatibilityTone.Information,
+                    Notes: ["僅比較各自命盤，不把兩張命盤的地支跨盤湊成刑、沖、破、害。"]
+                ),
+                new CompatibilitySection(
+                    "夫妻星坐夫妻宮",
+                    palaceSummary,
+                    [],
+                    selfSpouseInPalace || otherSpouseInPalace ? CompatibilityTone.Positive : CompatibilityTone.Information,
+                    Notes: ["這是表層日支五行公式；藏干未有固定權重，故不作等量推論。", "符合也不是關係永久穩定的保證。"]
+                ),
             ];
         }
 
@@ -156,10 +184,18 @@ namespace BaZi.Services {
                 new CompatibilitySection(
                     "對方的主要十神",
                     $"五組合併統計以{groupNames}最多；外顯主星為{mainStarNames}。",
-                    ["並列最多的十神組全部保留，不強選唯一人格。", "主星與副星分層參考，最後以對方長期實際行為回驗。"],
-                    CompatibilityTone.Notice
+                    [],
+                    CompatibilityTone.Notice,
+                    CompatibilityTenGodSubject.Other,
+                    ["並列最多的十神組全部保留，不強選唯一人格。", "主星與副星分層參考，最後以對方長期實際行為回驗。"]
                 ),
-                new CompatibilitySection("相處建議", "以下是依對方最多十神組轉成的溝通假設。", details, CompatibilityTone.Positive)
+                new CompatibilitySection(
+                    "相處建議",
+                    "以下是依對方最多十神組轉成的溝通假設。",
+                    details,
+                    CompatibilityTone.Positive,
+                    CompatibilityTenGodSubject.Other
+                ),
             ];
         }
 
@@ -178,12 +214,19 @@ namespace BaZi.Services {
             var dominantGroups = _tenGodService.GetDominantGroups(other);
 
             return [
-                new CompatibilitySection("手足訊號", signalSummary, [tendency], supportive ? CompatibilityTone.Positive : CompatibilityTone.Caution),
+                new CompatibilitySection(
+                    "手足訊號",
+                    signalSummary,
+                    [tendency],
+                    supportive ? CompatibilityTone.Positive : CompatibilityTone.Caution,
+                    CompatibilityTenGodSubject.Self
+                ),
                 new CompatibilitySection(
                     "手足本人的互動入口",
                     $"對方最多的十神組為{string.Join("、", dominantGroups.Select(group => group.Group.ToShenString()))}。",
                     dominantGroups.Select(group => GetAdvice(CompatibilityRelationship.Sibling, group)).ToArray(),
-                    CompatibilityTone.Notice
+                    CompatibilityTone.Notice,
+                    CompatibilityTenGodSubject.Other
                 )
             ];
         }
@@ -191,14 +234,20 @@ namespace BaZi.Services {
         private static IReadOnlyList<CompatibilitySection> AnalyzeFriend(BaZiInfo self, BaZiInfo other) {
             var forward = EvaluateDirectionalRule(self, other, FriendComplementTargets, false);
             var reverse = EvaluateDirectionalRule(other, self, FriendComplementTargets, false);
-            var complementSummary = DescribeDirectionalMatches(forward, reverse, "課程朋友互補表列為可補足盲點的方向。", "課程表未列為指定互補組合。");
+            var complementSummary = DescribeDirectionalMatches(forward, reverse, "課程朋友互補表列為可補足盲點的方向。", "雙方沒有落在課程指定的互補組合，也沒有因此形成特別不合的狀況。");
             var prefersLead = self.StrengthStatus is GeJu.ShenQiang or GeJu.CongRuo;
             var partnership = prefersLead
                 ? "課程傾向由自己保有主要決策權；若合夥仍要把授權、帳目與退出條件書面化。"
                 : "課程傾向善用團隊與夥伴力量；仍要確認能力、信用、權責與實際交付。";
 
             return [
-                new CompatibilitySection("朋友五行互補", complementSummary, ["從格在選長期夥伴時著重降低共同盲點，但筆記沒有完整指定配對表，因此不自動判定。"], GetRuleTone(forward, reverse)),
+                new CompatibilitySection(
+                    "朋友五行互補",
+                    complementSummary,
+                    [],
+                    GetRuleTone(forward, reverse),
+                    Notes: ["從格在選長期夥伴時著重降低共同盲點，但筆記沒有完整指定配對表，因此不自動判定。"]
+                ),
                 new CompatibilitySection("合作方式", partnership, ["友誼不等於信用背書；借貸、投資、擔保或合夥須另查現金流、契約與風險。", "可先用小規模任務驗證溝通與交付，再決定是否擴大合作。"], CompatibilityTone.Caution)
             ];
         }

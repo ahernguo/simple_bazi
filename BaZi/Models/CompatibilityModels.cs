@@ -19,6 +19,13 @@ namespace BaZi.Models {
         Caution
     }
 
+    /// <summary>合盤文字中的十神所屬命盤。</summary>
+    public enum CompatibilityTenGodSubject {
+        None,
+        Self,
+        Other
+    }
+
     /// <summary>合盤對象的出生資料。</summary>
     public sealed class CompatibilityBirthInput : IValidatableObject {
         [Required(ErrorMessage = "請輸入出生日期。")]
@@ -61,7 +68,9 @@ namespace BaZi.Models {
         string Title,
         string Summary,
         IReadOnlyList<string> Details,
-        CompatibilityTone Tone = CompatibilityTone.Information
+        CompatibilityTone Tone = CompatibilityTone.Information,
+        CompatibilityTenGodSubject TenGodSubject = CompatibilityTenGodSubject.None,
+        IReadOnlyList<string>? Notes = null
     );
 
     /// <summary>合盤分析結果。</summary>
