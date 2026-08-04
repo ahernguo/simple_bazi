@@ -158,5 +158,75 @@ public class FortuneServiceTests {
         Assert.Contains("2026 流年分析", html);
         Assert.Contains("丙", html);
         Assert.Contains("午", html);
+        Assert.Contains("topic-ten-god ", html);
+        Assert.Contains("title=\"", html);
+        Assert.Contains("依本命格局列為", html);
+        Assert.True(
+            html.Contains("topic-ten-god-favorable", StringComparison.Ordinal)
+            || html.Contains("topic-ten-god-unfavorable", StringComparison.Ordinal)
+        );
+    }
+
+    [Fact]
+    public void DaYunAnalysis_CurrentDaYun_FormatsTenGodFavorability() {
+        var info = new BaZiInfo(BirthDate, 2);
+        var service = new FortuneService();
+
+        var html = service.DaYunAnalysis(info).Value;
+
+        Assert.Contains("大運分析", html);
+        Assert.Contains("topic-ten-god ", html);
+        Assert.Contains("title=\"", html);
+        Assert.Contains("依本命格局列為", html);
+        Assert.True(
+            html.Contains("topic-ten-god-favorable", StringComparison.Ordinal)
+            || html.Contains("topic-ten-god-unfavorable", StringComparison.Ordinal)
+        );
+    }
+
+    [Fact]
+    public void LiuNianTopicAnalysis_ExistingYear_ReturnsThreeTopicCards() {
+        var info = new BaZiInfo(BirthDate, 2);
+        var service = new FortuneService();
+
+        var html = service.LiuNianTopicAnalysis(info, 2026).Value;
+
+        Assert.Contains("element-fire fw-semibold", html);
+        Assert.Contains("topic-ten-god ", html);
+        Assert.Contains("topic-ten-god-favorable", html);
+        Assert.Contains("topic-ten-god-unfavorable", html);
+        Assert.Contains("title=\"", html);
+        Assert.Equal(3, html.Split("class=\"topic-notice mb-0\"").Length - 1);
+        Assert.Equal(3, html.Split("fa-solid fa-triangle-exclamation topic-notice-icon").Length - 1);
+        Assert.DoesNotContain("alert alert-secondary mb-0", html);
+        Assert.DoesNotContain("alert alert-danger mb-0", html);
+        Assert.Contains("財富與事業", html);
+        Assert.Contains("感情姻緣", html);
+        Assert.Contains("健康注意事項", html);
+        Assert.Contains("本年訊號", html);
+        Assert.Contains("醫療優先", html);
+    }
+
+    [Fact]
+    public void LiuYueTopicAnalysis_ExistingMonth_UsesMonthlyWordingWithoutAnnualCrisisRule() {
+        var info = new BaZiInfo(BirthDate, 2);
+        var service = new FortuneService();
+
+        var html = service.LiuYueTopicAnalysis(info, 2026, 0).Value;
+
+        Assert.Contains("本月訊號", html);
+        Assert.Contains("本月桃花時機", html);
+        Assert.Contains("本月健康氣象", html);
+        Assert.DoesNotContain("關係查證提醒", html);
+    }
+
+    [Fact]
+    public void LiuNianTopicAnalysis_MissingYear_ReturnsEmptyMarkup() {
+        var info = new BaZiInfo(BirthDate, 2);
+        var service = new FortuneService();
+
+        var html = service.LiuNianTopicAnalysis(info, 1800).Value;
+
+        Assert.Null(html);
     }
 }

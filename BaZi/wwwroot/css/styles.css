@@ -107,6 +107,36 @@ h1:focus {
 .element-metal { color: #6c757d; } /* 灰色/金色 */
 .element-water { color: #007bff; } /* 藍色 */
 
+/* 運勢主題卡片 */
+.topic-ten-god {
+    font-weight: 600;
+    text-decoration: underline dotted;
+    text-underline-offset: 0.2rem;
+    cursor: help;
+}
+
+.topic-ten-god-favorable { color: #198754; }
+.topic-ten-god-unfavorable { color: #dc3545; }
+
+.topic-notice {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 0.875rem 1rem;
+    color: #adb5bd;
+    background-color: #212529;
+    border: 1px solid #343a40;
+    border-radius: var(--bs-border-radius);
+}
+
+.topic-notice strong { color: #ced4da; }
+
+.topic-notice-icon {
+    flex-shrink: 0;
+    margin-top: 0.2rem;
+    color: #adb5bd;
+}
+
 /* 暗黑模式 */
 .dark-mode {
     background-color: #121212;
@@ -127,6 +157,13 @@ h1:focus {
 
 .dark-mode .btn-outline-primary { color: #4dabf7; border-color: #4dabf7; }
 .dark-mode .btn-outline-danger { color: #ff8787; border-color: #ff8787; }
+.dark-mode .topic-ten-god-favorable { color: #75b798; }
+.dark-mode .topic-ten-god-unfavorable { color: #ea868f; }
+.dark-mode .topic-notice {
+    color: #9da3a9;
+    background-color: #16191c;
+    border-color: #30363d;
+}
 
 /* 命盤樣式 */
 .bazi-chart {

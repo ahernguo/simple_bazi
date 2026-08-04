@@ -72,6 +72,7 @@
 
         @if (_fortunePage.QueriedLiuNianYear is int targetYear) {
             @FortuneService.LiuNianAnalysis(info, targetYear)
+            @FortuneService.LiuNianTopicAnalysis(info, targetYear)
         }
     </div>
 }
