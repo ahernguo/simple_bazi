@@ -6,6 +6,11 @@ namespace BaZi.Tests;
 
 public class FortuneServiceTests {
     private static readonly DateTime BirthDate = new(1990, 1, 1, 12, 0, 0);
+    private static readonly DateTime OverlappingXingPoBirthDate = new(1992, 2, 17, 12, 0, 0);
+
+    private static string GetInteractionHtml(string firstId, string firstZhi, string secondId, string secondZhi, string relation) {
+        return $"{firstId} <span class=\"border-bottom-dash\">{firstZhi}</span> 與{secondId} <span class=\"border-bottom-dash\">{secondZhi}</span> 形成「<strong class=\"text-danger\">{relation}</strong>」";
+    }
 
     [Fact]
     public void GetLiuYueMonths_ExistingYear_ReturnsTwelveOrderedMonths() {
@@ -195,6 +200,50 @@ public class FortuneServiceTests {
         var html = service.DaYunAnalysis(info, 1800).Value;
 
         Assert.Null(html);
+    }
+
+    [Fact]
+    public void DaYunAnalysis_SamePairIsXingAndPo_OnlyListsXing() {
+        var info = new BaZiInfo(OverlappingXingPoBirthDate, 2);
+        var service = new FortuneService();
+        var daYun = Assert.Single(info.DaYunList.Where(item => item.Zhi == DiZhi.Si));
+
+        var html = service.DaYunAnalysis(info, daYun.StartYear).Value;
+
+        Assert.Contains(GetInteractionHtml("年柱", "申", "大運", "巳", "相刑"), html);
+        Assert.DoesNotContain(GetInteractionHtml("年柱", "申", "大運", "巳", "破"), html);
+        Assert.Contains(GetInteractionHtml("日柱", "亥", "大運", "巳", "相沖"), html);
+        Assert.Contains(GetInteractionHtml("月柱", "寅", "大運", "巳", "害"), html);
+    }
+
+    [Fact]
+    public void LiuNianAnalysis_SamePairIsXingAndChong_OnlyListsXingForThatPair() {
+        var info = new BaZiInfo(OverlappingXingPoBirthDate, 2);
+        var service = new FortuneService();
+        var daYun = Assert.Single(info.DaYunList.Where(item => item.Zhi == DiZhi.Si));
+        var liuNian = Assert.Single(daYun.LiuNianList.Where(item => item.Zhi == DiZhi.Yin));
+
+        var html = service.LiuNianAnalysis(info, liuNian.Year).Value;
+
+        Assert.Contains(GetInteractionHtml("年柱", "申", "流年", "寅", "相刑"), html);
+        Assert.DoesNotContain(GetInteractionHtml("年柱", "申", "流年", "寅", "相沖"), html);
+        Assert.Contains(GetInteractionHtml("大運", "巳", "流年", "寅", "害"), html);
+    }
+
+    [Fact]
+    public void LiuYueAnalysis_SamePairIsXingAndPo_DoesNotListPo() {
+        var info = new BaZiInfo(OverlappingXingPoBirthDate, 2);
+        var service = new FortuneService();
+        var daYun = Assert.Single(info.DaYunList.Where(item => item.Zhi == DiZhi.Si));
+        var liuNian = daYun.LiuNianList.First(item => item.Zhi != DiZhi.Shen);
+        var liuYue = Assert.Single(liuNian.LiuYueList.Where(item => item.Zhi == DiZhi.Shen));
+
+        var html = service.LiuYueAnalysis(info, liuNian.Year, liuYue.Index).Value;
+
+        Assert.Contains("三刑", html);
+        Assert.DoesNotContain(GetInteractionHtml("月柱", "寅", "流月", "申", "相沖"), html);
+        Assert.DoesNotContain(GetInteractionHtml("大運", "巳", "流月", "申", "破"), html);
+        Assert.Contains(GetInteractionHtml("日柱", "亥", "流月", "申", "害"), html);
     }
 
     [Fact]

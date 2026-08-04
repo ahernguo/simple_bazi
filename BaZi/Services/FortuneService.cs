@@ -179,9 +179,14 @@ public class FortuneService {
         int requiredCount,
         bool mustIncludeLast,
         out IList<IGanZhi> participants,
-        out int sourceIndex
+        out int sourceIndex,
+        ISet<int>? excludedSourceIndices = null
     ) where T : notnull {
         for (var index = 0; index < sources.Count; index++) {
+            if (excludedSourceIndices?.Contains(index) == true) {
+                continue;
+            }
+
             foreach (var target in targets) {
                 if (TrySelectParticipants(sources[index], target, valueSelector, requiredCount, mustIncludeLast, out participants)) {
                     sourceIndex = index;
@@ -193,6 +198,21 @@ public class FortuneService {
         participants = [];
         sourceIndex = -1;
         return false;
+    }
+
+    private static void AddMatchingPairSourceIndices(
+        IList<IList<IGanZhi>> sources,
+        IList<IGanZhi> participants,
+        ISet<int> sourceIndices
+    ) {
+        for (var index = 0; index < sources.Count; index++) {
+            bool isMatchingPair = sources[index].All(item =>
+                participants.Any(participant => ReferenceEquals(participant, item))
+            );
+            if (isMatchingPair) {
+                sourceIndices.Add(index);
+            }
+        }
     }
 
     private static bool TrySelectParticipants<T>(
@@ -428,6 +448,8 @@ public class FortuneService {
         IList<IGanZhi> threeXingInteraction;
         IList<IGanZhi> twoXingInteraction;
         int idx;
+        // 同一對地支若同時符合多種關係，以相刑優先，避免後續重複列為沖、破或害。
+        var xingSourceIndices = new HashSet<int>();
         // 無恩之刑 = 寅巳申 (外在, 力度強)
         if ((threePair != null)
             && TryFindInteraction(threePair, BaZiDefine.ThreeXing[0], item => item.Zhi, 3, true, out threeXingInteraction, out idx)) {
@@ -435,12 +457,14 @@ public class FortuneService {
             if (help) msg += helpStr;
             if (worse) msg += worseStr;
             CreateThreeXingDesc(threeXingInteraction, msg, "三思後行、注意車關", html);
+            AddMatchingPairSourceIndices(twoPair, threeXingInteraction, xingSourceIndices);
             bad = true;
         } else if (TryFindInteraction(twoPair, BaZiDefine.ThreeXing[0], item => item.Zhi, 2, true, out twoXingInteraction, out idx)) {
             var msg = "談判受挫、容易失誤、容易衝動";
             if (help) msg += helpStr;
             if (worse) msg += worseStr;
             CreateTwoXingDesc(twoXingInteraction, msg, "三思後行", "強", html);
+            xingSourceIndices.Add(idx);
             bad = true;
         }
         // 恃勢之刑 = 丑戌未 (外在, 力度強)
@@ -452,6 +476,7 @@ public class FortuneService {
             if (help) msg += helpStr;
             if (worse) msg += worseStr;
             CreateThreeXingDesc(threeXingInteraction, msg, "注意車關、不動產問題", html);
+            AddMatchingPairSourceIndices(twoPair, threeXingInteraction, xingSourceIndices);
             bad = true;
         } else if (TryFindInteraction(twoPair, BaZiDefine.TwoXing[1], item => item.Zhi, 2, true, out twoXingInteraction, out idx)) {
             var msg = idx switch {
@@ -464,6 +489,7 @@ public class FortuneService {
             if (help) msg += helpStr;
             if (worse) msg += worseStr;
             CreateTwoXingDesc(twoXingInteraction, msg, "注意情緒性用詞", "強", html);
+            xingSourceIndices.Add(idx);
             bad = true;
         }
         // 恩愛之刑 = 子卯 (外在, 力度小)
@@ -478,6 +504,7 @@ public class FortuneService {
             if (help) msg += helpStr;
             if (worse) msg += worseStr;
             CreateTwoXingDesc(twoXingInteraction, msg, "注意溝通", "小", html);
+            xingSourceIndices.Add(idx);
             bad = true;
         }
         // 自刑 = 辰辰, 午午, 酉酉, 戌戌 (內在)
@@ -486,10 +513,11 @@ public class FortuneService {
             if (help) msg += helpStr;
             if (worse) msg += worseStr;
             CreateSelfXingDesc(selfXingInteraction, msg, html);
+            xingSourceIndices.Add(idx);
             bad = true;
         }
         // 沖 = 子午、丑未、寅申、卯酉、辰戌、巳亥
-        if (TryFindAnyInteraction(twoPair, BaZiDefine.Chong, item => item.Zhi, 2, true, out var pairInteraction, out idx)) {
+        if (TryFindAnyInteraction(twoPair, BaZiDefine.Chong, item => item.Zhi, 2, true, out var pairInteraction, out idx, xingSourceIndices)) {
             var msg = idx switch {
                 0 => "跟長輩聚少離多、易口角衝突",
                 1 => "跟父母聚少離多、晚婚、易口角衝突、住所不穩定",
@@ -503,7 +531,7 @@ public class FortuneService {
             bad = true;
         }
         // 破 = 寅亥、巳申、子酉、午卯、戌未、丑辰
-        if (TryFindAnyInteraction(twoPair, BaZiDefine.Po, item => item.Zhi, 2, true, out pairInteraction, out idx)) {
+        if (TryFindAnyInteraction(twoPair, BaZiDefine.Po, item => item.Zhi, 2, true, out pairInteraction, out idx, xingSourceIndices)) {
             var msg = "做事有阻力、破局、容易受傷";
             if (help) msg += helpStr;
             if (worse) msg += worseStr;
@@ -511,7 +539,7 @@ public class FortuneService {
             bad = true;
         }
         // 害 = 卯辰、寅巳、午丑、子未、酉戌、申亥
-        if (TryFindAnyInteraction(twoPair, BaZiDefine.Hai, item => item.Zhi, 2, true, out pairInteraction, out idx)) {
+        if (TryFindAnyInteraction(twoPair, BaZiDefine.Hai, item => item.Zhi, 2, true, out pairInteraction, out idx, xingSourceIndices)) {
             var msg = idx switch {
                 0 => "人際壓力、與長輩相處易有摩擦、情緒不悅",
                 1 => "人際壓力、與父母相處易有摩擦、情緒不悅",
