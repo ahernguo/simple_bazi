@@ -99,7 +99,7 @@
 
         <div class="compatibility-birth-warning">
             <i class="fa-solid fa-triangle-exclamation mt-1" aria-hidden="true"></i>
-            <span>選擇吉時或吉分時，會分別以 12 時或 00 分進行合盤；因缺少準確生辰，結果僅供參考。</span>
+            <span>選擇吉時或吉分時，會分別以 00 時或 00 分進行合盤；因缺少準確生辰，結果僅供參考。</span>
         </div>
 
         <div class="d-grid mt-4">
@@ -124,6 +124,10 @@
     [Parameter]
     public EventCallback<CompatibilityBirthInput> OnSubmit { get; set; }
 
+    protected override void OnInitialized() {
+        UpdateBirthTime();
+    }
+
     private void SetGender(int gender) {
         _input.Gender = gender;
     }
@@ -134,12 +138,13 @@
     }
 
     private void UpdateBirthTime() {
-        int hour = _hour == LuckyHour ? 12 : _hour;
+        int hour = _hour == LuckyHour ? 0 : _hour;
         int minute = _minute == LuckyMinute ? 0 : _minute;
         _input.BirthTime = DateTime.Today.AddHours(hour).AddMinutes(minute);
     }
 
     private Task HandleSubmit() {
+        UpdateBirthTime();
         return OnSubmit.InvokeAsync(_input);
     }
 }

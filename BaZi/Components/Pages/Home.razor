@@ -85,7 +85,7 @@
                             @for (int i = 0; i < 24; i++) {
                                 <option value="@i">@($"{i:D2}")</option>
                             }
-                            <option value="25">吉時</option>
+                            <option value="@LuckyHour">吉時</option>
                         </select>
                     </div>
                     <div class="col-6">
@@ -94,7 +94,7 @@
                             @for (int i = 0; i < 60; i++) {
                                 <option value="@i">@($"{i:D2}")</option>
                             }
-                            <option value="61">吉分</option>
+                            <option value="@LuckyMinute">吉分</option>
                         </select>
                     </div>
                 </div>
@@ -128,9 +128,9 @@
                 </div>
                 <div class="modal-body">
                     <p>此命理程式為固定邏輯所設計，僅供參考，欲求準確仍需請命理師推論。</p>
-                    @if (mHour == 25 || mMinute == 61) {
+                    @if (mHour == LuckyHour || mMinute == LuckyMinute) {
                         <div class="alert alert-danger mt-3 mb-0">
-                            <strong>注意：</strong>由於缺少準確的生辰時、分，準確度僅有 60%~75%，請勿過度相信結果。
+                            <strong>注意：</strong>吉時或吉分會分別以 00 時或 00 分代入；由於缺少準確的生辰時、分，準確度僅有 60%~75%，請勿過度相信結果。
                         </div>
                     }
                 </div>
@@ -144,11 +144,14 @@
 }
 
 @code {
+    private const int LuckyHour = 25;
+    private const int LuckyMinute = 61;
+
     private int mYear = 1990;
     private int mMonth = 1;
     private int mDay = 1;
-    private int mHour = 25;
-    private int mMinute = 61;
+    private int mHour = LuckyHour;
+    private int mMinute = LuckyMinute;
 
     private bool mShowImport = false;
     private string? mImportText;
@@ -207,10 +210,10 @@
 
     private void Calculate() {
         try {
-            int h = mHour == 25 ? 12 : mHour;
-            int m = mMinute == 61 ? 0 : mMinute;
-            DateTime dt = new DateTime(mYear, mMonth, mDay, h, m, 0);
-            Dispatcher.Dispatch(new CalculateBaZiAction(dt, BaZiState.Value.Gender));
+            int hour = mHour == LuckyHour ? 0 : mHour;
+            int minute = mMinute == LuckyMinute ? 0 : mMinute;
+            DateTime birthDateTime = new DateTime(mYear, mMonth, mDay, hour, minute, 0);
+            Dispatcher.Dispatch(new CalculateBaZiAction(birthDateTime, BaZiState.Value.Gender));
         } catch (Exception ex) {
             Dispatcher.Dispatch(new CalculateBaZiFailureAction(ex.Message));
         }
