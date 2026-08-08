@@ -9,43 +9,45 @@
     </div>
 </div>
 <div class="top-row px-4">
-    <button class="btn btn-link" @onclick="ToggleSidebar">
+    <button class="btn btn-link mobile-menu-btn" @onclick="ToggleMobileMenu">
+        <i class="fa-solid fa-bars"></i>
+    </button>
+    <button class="btn btn-link desktop-sidebar-btn" @onclick="ToggleSidebar">
         <i class="fa-solid fa-bars"></i>
     </button>
     <button class="btn btn-link ms-auto" @onclick="ToggleTheme">
         <i class="fa-solid @(ThemeState.Value.IsDarkMode ? "fa-sun" : "fa-moon")"></i>
     </button>
 </div>
-<div class="nav-scrollable">
+<div class="nav-scrollable @(_isMobileMenuExpanded ? "nav-scrollable-expanded" : null)">
     <nav class="nav flex-column">
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All" @onclick="CollapseMobileMenu">
                 <i class="fa-solid fa-home me-2"></i> 首頁
             </NavLink>
         </div>
 
-        @if (BaZiState.Value.IsCalculated)
-        {
+        @if (BaZiState.Value.IsCalculated) {
             <div class="nav-group-title px-3 pt-3">
                 <i class="fa-solid fa-person me-2"></i>個人
             </div>
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="analysis">
+                <NavLink class="nav-link" href="analysis" @onclick="CollapseMobileMenu">
                     <i class="fa-solid fa-chart-line me-2"></i> 命盤分析
                 </NavLink>
             </div>
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="overview">
+                <NavLink class="nav-link" href="overview" @onclick="CollapseMobileMenu">
                     <i class="fa-solid fa-user me-2"></i> 個人概述
                 </NavLink>
             </div>
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="fortune">
+                <NavLink class="nav-link" href="fortune" @onclick="CollapseMobileMenu">
                     <i class="fa-solid fa-calendar-days me-2"></i> 大運/流年
                 </NavLink>
             </div>
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="monthly-fortune">
+                <NavLink class="nav-link" href="monthly-fortune" @onclick="CollapseMobileMenu">
                     <i class="fa-solid fa-calendar-week me-2"></i> 流月
                 </NavLink>
             </div>
@@ -54,32 +56,32 @@
                 <i class="fa-solid fa-people-arrows me-2"></i>合盤
             </div>
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="compatibility/romance">
+                <NavLink class="nav-link" href="compatibility/romance" @onclick="CollapseMobileMenu">
                     <i class="fa-solid fa-heart me-2"></i> 感情
                 </NavLink>
             </div>
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="compatibility/parent">
+                <NavLink class="nav-link" href="compatibility/parent" @onclick="CollapseMobileMenu">
                     <i class="fa-solid fa-person-cane me-2"></i> 父母
                 </NavLink>
             </div>
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="compatibility/child">
+                <NavLink class="nav-link" href="compatibility/child" @onclick="CollapseMobileMenu">
                     <i class="fa-solid fa-child-reaching me-2"></i> 兒女
                 </NavLink>
             </div>
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="compatibility/sibling">
+                <NavLink class="nav-link" href="compatibility/sibling" @onclick="CollapseMobileMenu">
                     <i class="fa-solid fa-people-roof me-2"></i> 手足
                 </NavLink>
             </div>
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="compatibility/friend">
+                <NavLink class="nav-link" href="compatibility/friend" @onclick="CollapseMobileMenu">
                     <i class="fa-solid fa-user-group me-2"></i> 朋友
                 </NavLink>
             </div>
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="compatibility/colleague">
+                <NavLink class="nav-link" href="compatibility/colleague" @onclick="CollapseMobileMenu">
                     <i class="fa-solid fa-briefcase me-2"></i> 同事
                 </NavLink>
             </div>
@@ -88,6 +90,13 @@
 </div>
 
 @code {
+    private bool _isMobileMenuExpanded;
+
+    private void CollapseMobileMenu() => _isMobileMenuExpanded = false;
+
+    private void ToggleMobileMenu() => _isMobileMenuExpanded = !_isMobileMenuExpanded;
+
     private void ToggleTheme() => Dispatcher.Dispatch(new ToggleThemeAction());
+
     private void ToggleSidebar() => Dispatcher.Dispatch(new ToggleSidebarAction());
 }

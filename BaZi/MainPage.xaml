@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:BaZi"
              xmlns:components="clr-namespace:BaZi.Components"
-             x:Class="BaZi.MainPage">
+             x:Class="BaZi.MainPage"
+             SafeAreaEdges="None">
 
     <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
         <BlazorWebView.RootComponents>

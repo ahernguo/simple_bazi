@@ -41,12 +41,35 @@ main {
 
 .sidebar-btn {
     position: fixed;
-    top: 10px;
-    left: 10px;
+    top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
+    left: calc(env(safe-area-inset-left, 0px) + 0.75rem);
     z-index: 9999;
+    display: flex;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    background-color: rgba(33, 37, 41, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0.5rem;
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.3);
+}
+
+.sidebar-btn:hover, .sidebar-btn:focus {
+    color: white;
+    background-color: rgba(52, 58, 64, 0.96);
 }
 
 @media (max-width: 640.98px) {
+    .sidebar {
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100dvh - env(safe-area-inset-top, 0px));
+        overflow: hidden;
+    }
+
     .top-row {
         justify-content: space-between;
     }

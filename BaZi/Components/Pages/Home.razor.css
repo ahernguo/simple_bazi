@@ -1,0 +1,31 @@
+.home-form-header {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.home-form-title {
+    min-width: 0;
+    line-height: 1.25;
+}
+
+.home-form-actions {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+@media (max-width: 575.98px) {
+    .home-form-header {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: stretch;
+    }
+
+    .home-form-actions {
+        align-self: flex-end;
+    }
+}
