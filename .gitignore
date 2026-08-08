@@ -364,3 +364,4 @@ FodyWeavers.xsd
 
 # The package file
 BaZi_*.7z
+BaZi/publish.ps1

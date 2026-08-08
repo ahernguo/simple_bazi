@@ -33,7 +33,7 @@
 		<ApplicationIcon>app.ico</ApplicationIcon>
 
 		<!-- App Identifier -->
-		<ApplicationId>com.companyname.bazi</ApplicationId>
+		<ApplicationId>tw.ahern.bazi</ApplicationId>
 
 		<!-- Versions -->
 		<ApplicationDisplayVersion>1.14</ApplicationDisplayVersion>
