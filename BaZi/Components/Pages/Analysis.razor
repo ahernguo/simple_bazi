@@ -64,28 +64,28 @@
                 <div class="col fuxing">
                     <div class="row text-center">
                         @foreach (var ts in info.HourZhu.FuXing) {
-                            <div class="col shishen">@ts.ToShenString()</div>
+                            <div @key="ts" class="col shishen">@ts.ToShenString()</div>
                         }
                     </div>
                 </div>
                 <div class="col fuxing">
                     <div class="row text-center">
                         @foreach (var ts in info.DayZhu.FuXing) {
-                            <div class="col shishen">@ts.ToShenString()</div>
+                            <div @key="ts" class="col shishen">@ts.ToShenString()</div>
                         }
                     </div>
                 </div>
                 <div class="col fuxing">
                     <div class="row text-center">
                         @foreach (var ts in info.MonthZhu.FuXing) {
-                            <div class="col shishen">@ts.ToShenString()</div>
+                            <div @key="ts" class="col shishen">@ts.ToShenString()</div>
                         }
                     </div>
                 </div>
                 <div class="col fuxing">
                     <div class="row text-center">
                         @foreach (var ts in info.YearZhu.FuXing) {
-                            <div class="col shishen">@ts.ToShenString()</div>
+                            <div @key="ts" class="col shishen">@ts.ToShenString()</div>
                         }
                     </div>
                 </div>

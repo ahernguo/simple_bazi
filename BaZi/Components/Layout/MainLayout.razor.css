@@ -41,8 +41,8 @@ main {
 
 .sidebar-btn {
     position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
-    left: calc(env(safe-area-inset-left, 0px) + 0.75rem);
+    top: 0.75rem;
+    left: 0.75rem;
     z-index: 9999;
     display: flex;
     width: 2.75rem;
@@ -66,7 +66,7 @@ main {
     .sidebar {
         display: flex;
         flex-direction: column;
-        max-height: calc(100dvh - env(safe-area-inset-top, 0px));
+        max-height: 100dvh;
         overflow: hidden;
     }
 

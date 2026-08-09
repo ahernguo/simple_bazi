@@ -1,5 +1,5 @@
 @inherits LayoutComponentBase
-@implements IDisposable
+@implements IAsyncDisposable
 @inject IState<ThemeState> ThemeState
 @inject IDispatcher Dispatcher
 
@@ -25,13 +25,47 @@
     protected override void OnInitialized() {
         base.OnInitialized();
         ThemeState.StateChanged += StateChanged;
+        SynchronizeNativeTheme();
     }
 
-    private void StateChanged(object? sender, EventArgs e) => InvokeAsync(StateHasChanged);
+    private async void StateChanged(object? sender, EventArgs e) {
+        try {
+            await InvokeAsync(() => {
+                SynchronizeNativeTheme();
+                StateHasChanged();
+            });
+        } catch (Exception ex) {
+            await DispatchExceptionAsync(ex);
+        }
+    }
 
     private void ToggleSidebar() => Dispatcher.Dispatch(new ToggleSidebarAction());
 
-    public void Dispose() {
+    private void SynchronizeNativeTheme() {
+        var application = Microsoft.Maui.Controls.Application.Current;
+        if (application is null) {
+            return;
+        }
+
+        var backgroundColor = ThemeState.Value.IsDarkMode
+            ? Microsoft.Maui.Graphics.Color.FromArgb("#121212")
+            : Microsoft.Maui.Graphics.Colors.White;
+
+        foreach (var window in application.Windows) {
+            if (window.Page is { } page) {
+                page.BackgroundColor = backgroundColor;
+            }
+        }
+
+#if ANDROID
+        if (Microsoft.Maui.ApplicationModel.Platform.CurrentActivity is MainActivity activity) {
+            activity.SetStatusBarTheme(ThemeState.Value.IsDarkMode);
+        }
+#endif
+    }
+
+    public ValueTask DisposeAsync() {
         ThemeState.StateChanged -= StateChanged;
+        return ValueTask.CompletedTask;
     }
 }

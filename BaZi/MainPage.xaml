@@ -4,7 +4,8 @@
              xmlns:local="clr-namespace:BaZi"
              xmlns:components="clr-namespace:BaZi.Components"
              x:Class="BaZi.MainPage"
-             SafeAreaEdges="None">
+             BackgroundColor="#121212"
+             SafeAreaEdges="Container">
 
     <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
         <BlazorWebView.RootComponents>
