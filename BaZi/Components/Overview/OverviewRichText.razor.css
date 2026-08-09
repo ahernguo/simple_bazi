@@ -1,0 +1,6 @@
+.overview-ten-god {
+    color: var(--overview-ten-god-color);
+    font-weight: 600;
+    text-decoration: underline dotted;
+    text-underline-offset: 0.2rem;
+}

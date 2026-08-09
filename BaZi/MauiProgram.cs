@@ -13,6 +13,7 @@ using WinRT.Interop;
 #endif
 
 namespace BaZi;
+
 public static class MauiProgram {
     public static MauiApp CreateMauiApp() {
         ConfigureCulture();
@@ -68,6 +69,8 @@ public static class MauiProgram {
         // 註冊服務，後續就可以從 Dispatcher 來呼叫、存取
         builder.Services.AddSingleton<BaZiService>();
         builder.Services.AddSingleton<TenGodAnalysisService>();
+        builder.Services.AddSingleton<PersonalOverviewService>();
+        builder.Services.AddSingleton<PersonalOverviewTextService>();
         builder.Services.AddSingleton<CompatibilityService>();
         builder.Services.AddSingleton<FortuneService>();
         builder.Services.AddSingleton<SecurityService>();

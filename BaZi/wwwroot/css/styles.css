@@ -135,7 +135,26 @@ h1:focus {
 }
 
 /* 暗黑模式 */
+.light-mode {
+    --overview-foreground: #000;
+    --overview-card-background: #fff;
+    --overview-surface-background: #f1f3f5;
+    --overview-notice-background: #e9ecef;
+    --overview-border-color: #adb5bd;
+    --overview-divider-color: #6c757d;
+    --overview-shadow-color: rgb(0 0 0 / 8%);
+    --overview-ten-god-color: #6f42c1;
+}
+
 .dark-mode {
+    --overview-foreground: #fff;
+    --overview-card-background: #1e1e1e;
+    --overview-surface-background: #2b3035;
+    --overview-notice-background: #252a30;
+    --overview-border-color: #495057;
+    --overview-divider-color: #6c757d;
+    --overview-shadow-color: rgb(0 0 0 / 45%);
+    --overview-ten-god-color: #d0b7ff;
     background-color: #121212;
     color: #e0e0e0;
 }

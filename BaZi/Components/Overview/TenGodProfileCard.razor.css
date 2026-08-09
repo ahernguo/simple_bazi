@@ -1,0 +1,18 @@
+.ten-god-card {
+    color: var(--overview-foreground);
+    background-color: var(--overview-card-background);
+    border-color: var(--overview-border-color);
+    box-shadow: 0 0.35rem 1.25rem var(--overview-shadow-color);
+}
+
+.ten-god-card .card-title {
+    color: var(--overview-foreground);
+    border-color: var(--overview-border-color) !important;
+}
+
+.ten-god-progress {
+    display: block;
+    width: 100%;
+    height: 0.625rem;
+    accent-color: var(--bs-primary);
+}

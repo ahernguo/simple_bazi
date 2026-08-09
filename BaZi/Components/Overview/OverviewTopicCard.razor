@@ -1,0 +1,45 @@
+<article class="card overview-topic-card h-100">
+    <div class="card-body d-flex flex-column p-4">
+        <h4 class="card-title border-bottom pb-3 mb-3">
+            <i class="fa-solid @Card.Icon me-2"></i>@Card.Title
+        </h4>
+        <p class="overview-topic-summary">
+            <OverviewRichText Text="@Card.Summary" />
+        </p>
+
+        @foreach (var section in Card.Sections) {
+            <section class="overview-topic-section @GetToneClass(section.Tone)" @key="section.Title">
+                <h5><OverviewRichText Text="@section.Title" /></h5>
+                <p><OverviewRichText Text="@section.Summary" /></p>
+                @if (section.Details.Count > 0) {
+                    <ul class="mb-0">
+                        @foreach (var item in section.Details.Select((detail, index) => (detail, index))) {
+                            <li class="mb-2" @key="item.index">
+                                <OverviewRichText Text="@item.detail" />
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+        }
+
+        <div class="topic-notice mt-auto">
+            <i class="fa-solid fa-circle-info topic-notice-icon"></i>
+            <span><OverviewRichText Text="@Card.Notice" /></span>
+        </div>
+    </div>
+</article>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public PersonalOverviewCard Card { get; set; } = null!;
+
+    private static string GetToneClass(PersonalOverviewTone tone) {
+        return tone switch {
+            PersonalOverviewTone.Positive => "overview-topic-section-positive",
+            PersonalOverviewTone.Caution => "overview-topic-section-caution",
+            _ => "overview-topic-section-information"
+        };
+    }
+}

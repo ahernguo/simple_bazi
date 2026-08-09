@@ -1279,25 +1279,25 @@ public class FortuneService {
         html.AppendLine("        <ul class=\"mb-0\">");
 
         if (ganHasWealth && zhiHasWealth) {
-            html.AppendLine($"            <li>{periodLabel}天干、地支皆見{wealthStar}，課程視為財務機會較集中的窗口；仍須確認大運背景與實際風險。</li>");
+            html.AppendLine($"            <li>{periodLabel}天干、地支皆見{wealthStar}，財運機會較集中、明顯；並非一定發財，僅表示機會較大。</li>");
         } else if ((ganHasWealth || zhiHasWealth) && (ganHasOutput || zhiHasOutput)) {
             html.AppendLine($"            <li>{periodLabel}同見{wealthStar}與{outputStar}，形成課程所稱的「{outputStar}生{wealthStar}」，適合把專業、作品或提案轉成可驗證的收入機會。</li>");
         } else if (ganHasWealth || zhiHasWealth) {
-            html.AppendLine($"            <li>{periodLabel}見{wealthStar}，代表資源與金錢議題較容易被引動；這是機會窗口，不等於必然獲利。</li>");
+            html.AppendLine($"            <li>{periodLabel}見{wealthStar}，代表資源與金錢議題較容易被引動；這是機會，不等於必然獲利。</li>");
         } else if (ganHasOutput || zhiHasOutput) {
             html.AppendLine($"            <li>{periodLabel}以{outputStar}訊號為主，可透過技術、表達、內容或成果輸出間接帶動財；相較於直接{wealthStar}，力道較為間接。</li>");
         } else {
-            html.AppendLine($"            <li>{periodLabel}未見明顯{wealthStar}或{outputStar}主訊號，不代表沒有收入；以既有計畫、現金流與實際成果追蹤為主。</li>");
+            html.AppendLine($"            <li>{periodLabel}未見明顯{wealthStar}或{outputStar}主訊號，表示近期財運較無特殊狀況，以正財穩定收入為主。</li>");
         }
 
         if (ganHasCareer && zhiHasWealth) {
-            html.AppendLine($"            <li>{periodLabel}形成筆記 3-4 明定的「{careerStar}天干 × {wealthStar}地支」，可優先準備面試、提案、簽約或重要工作決策。</li>");
+            html.AppendLine($"            <li>{periodLabel}形成「{careerStar}天干 × {wealthStar}地支」工作訊號，可優先準備面試、提案、簽約或重要工作決策。</li>");
         } else if (ganHasCareer || zhiHasCareer) {
             html.AppendLine($"            <li>{periodLabel}見{careerStar}工作訊號，職責、上司、客戶或外在要求可能增加；準備充分時可主動爭取機會。</li>");
         } else if (ganHasWealth || zhiHasWealth) {
             html.AppendLine($"            <li>{wealthStar}可生{careerStar}，若有轉職或升遷計畫，可把{periodLabel}列為候選窗口，再以職缺、能力與契約條件篩選。</li>");
         } else {
-            html.AppendLine($"            <li>{periodLabel}未見明顯{careerStar}工作訊號，宜穩定累積履歷、技能與可量化成果，不因命理訊號延後必要行動。</li>");
+            html.AppendLine($"            <li>{periodLabel}未見明顯{careerStar}工作訊號，表示近期工作上較無特殊狀況，宜穩定累積履歷、技能與可量化成果。</li>");
         }
 
         html.AppendLine("        </ul>");
@@ -1306,7 +1306,7 @@ public class FortuneService {
         html.AppendLine("        <strong class=\"mb-2\">承接與行動</strong>");
         html.AppendLine($"        <span>{GetCapacityAdvice(info, daYun)}</span>");
         html.AppendLine("    </div>");
-        AppendTopicNotice(html, "財務與職涯內容屬課程觀點，不應單獨作為投資、借貸、創業或轉職決策依據。");
+        AppendTopicNotice(html, "財務與職涯內容為「意象」、「傾向」或「機會」，不應單獨作為投資、借貸、創業或轉職決策依據。");
         html.AppendLine("</div>");
     }
 
@@ -1348,23 +1348,23 @@ public class FortuneService {
         html.AppendLine("    <h5 class=\"card-title border-bottom pb-2\"><i class=\"fa-solid fa-heart me-2\"></i>感情姻緣</h5>");
         html.AppendLine("    <div class=\"row ms-1 me-1 py-3 border-bottom-dash\">");
         html.AppendLine($"        <strong class=\"mb-2\">{periodLabel}桃花時機</strong>");
-        html.AppendLine($"        <span>{periodLabel}<strong>{ganDisplay}{zhiDisplay}</strong>；依課程的{info.Gender.ToSexString()}命口徑，你的夫妻星為{FormatElement(spouseElement)}（{spouseStar}）。</span>");
+        html.AppendLine($"        <span>{periodLabel}<strong>{ganDisplay}{zhiDisplay}</strong>；依{info.Gender.ToSexString()}命口徑，你的夫妻星為{FormatElement(spouseElement)}（{spouseStar}）。</span>");
         html.AppendLine("        <ul class=\"mb-0 mt-2\">");
 
         if (ganHasSpouse && zhiHasSpouse) {
-            html.AppendLine($"            <li>{periodLabel}天干、地支皆見夫妻星（{spouseStar}），課程視為感情意願或關係議題較集中的時間窗。</li>");
+            html.AppendLine($"            <li>{periodLabel}天干、地支皆見夫妻星（{spouseStar}），感情意願或關係議題較集中。</li>");
         } else if (ganHasSpouse || zhiHasSpouse) {
-            html.AppendLine($"            <li>{periodLabel}一側見夫妻星（{spouseStar}），仍屬桃花候選時間；結果取決於雙方意願、關係基礎與實際行動。</li>");
+            html.AppendLine($"            <li>{periodLabel}一側見夫妻星（{spouseStar}），有桃花的機會出現；但仍決於雙方意願、關係基礎與相處狀況。</li>");
         } else {
-            html.AppendLine($"            <li>{periodLabel}未見直接夫妻星（{spouseStar}），不等於沒有緣分；可回到現實社交、溝通與關係經營。</li>");
+            html.AppendLine($"            <li>{periodLabel}未見夫妻星（{spouseStar}），較無桃花狀況</li>");
         }
 
         if (daYunHasSpouse) {
-            html.AppendLine($"            <li>目前大運也見夫妻星（{spouseStar}），十年背景與短期訊號可分層觀察；不代表期間內必然交往或結婚。</li>");
+            html.AppendLine($"            <li>目前大運見夫妻星（{spouseStar}），十年背景與短期訊號均可觀察；不代表大運期間內必然交往或結婚。</li>");
         }
 
         if (sameZodiacGroup) {
-            html.AppendLine($"            <li>流年地支{zhiDisplay}與出生年支{birthYearBranch}同屬一組生肖三合，依筆記可列為另一條桃花時間線；單一同組生肖不等於完整三合局成立。</li>");
+            html.AppendLine($"            <li>流年地支{zhiDisplay}與出生年支{birthYearBranch}同屬一組生肖三合，可列為另一條桃花時間線；可期待但仍決於雙方意願、關係基礎與相處狀況。</li>");
         }
 
         html.AppendLine("        </ul>");
@@ -1372,15 +1372,20 @@ public class FortuneService {
 
         if (spouseWithPeer) {
             html.AppendLine("    <div class=\"alert alert-warning mt-3 mb-0\">");
-            html.AppendLine($"        <strong>關係查證提醒：</strong>{periodLabel}同見夫妻星（{spouseStar}）與{peerStar}，課程視為競爭者、共同圈子或關係不透明的候選訊號{(spouseStarOnStem ? "，且夫妻星透在天干，課程認為訊號較明顯" : "")}。這不能作為劈腿或第三者的證據，應先查明對方關係狀態與彼此界線。");
+            html.AppendLine($"        <strong>關係查證提醒：</strong>{periodLabel}同見夫妻星（{spouseStar}）與{peerStar}，表示競爭者、共同圈子或關係不透明的訊號{(spouseStarOnStem ? "，且夫妻星透在天干，訊號較為強烈" : "")}。有訊號不代表有實際作為，不可視為為劈腿或第三者的狀況，但可多留意彼此界線與關係。");
             html.AppendLine("    </div>");
         }
 
+        var (raDesc, raAccept) = GetRelationshipAdvice(info, daYun);
         html.AppendLine("    <div class=\"row ms-1 me-1 py-3\">");
         html.AppendLine("        <strong class=\"mb-2\">承接與相處</strong>");
-        html.AppendLine($"        <span>{GetRelationshipAdvice(info, daYun)} 單身者可增加安全且合意的認識機會；已有對象者可安排關係對話與共同規劃，不用日期向對方施壓。</span>");
+        if (raAccept) {
+            html.AppendLine($"        <span>{raDesc} 單身者可增加安全且合意的認識機會；已有對象者可進一步討論關係或規劃未來，但仍需互相尊重，不能用日期向對方施壓。</span>");
+        } else {
+            html.AppendLine($"        <span>{raDesc}</span>");
+        }
         html.AppendLine("    </div>");
-        AppendTopicNotice(html, "感情判讀是課程的時間模型，不代表必然遇見、結婚、分手或出現第三者；關係安全與事實證據優先。");
+        AppendTopicNotice(html, "感情判讀不代表必然遇見、結婚、分手或出現第三者，僅為一種訊號，仍須以實際關係來探討");
         html.AppendLine("</div>");
     }
 
@@ -1410,7 +1415,7 @@ public class FortuneService {
         html.AppendLine("    <h5 class=\"card-title border-bottom pb-2\"><i class=\"fa-solid fa-heart-pulse me-2\"></i>健康注意事項</h5>");
         html.AppendLine("    <div class=\"row ms-1 me-1 py-3 border-bottom-dash\">");
         html.AppendLine("        <strong class=\"mb-2\">本命五行初判</strong>");
-        html.AppendLine($"        <span>八字主氣計數：{countDescription}。數量最少的五行為 <strong>{string.Join("、", weakElements.Select(element => FormatElement(element)))}</strong>；依課程象意較需留意：{weakDescription}。</span>");
+        html.AppendLine($"        <span>八字主氣計數：{countDescription}。數量最少的五行為 <strong>{string.Join("、", weakElements.Select(element => FormatElement(element)))}</strong>；需留意：{weakDescription}。</span>");
         html.AppendLine("    </div>");
         html.AppendLine("    <div class=\"row ms-1 me-1 py-3\">");
         html.AppendLine($"        <strong class=\"mb-2\">{periodLabel}健康氣象</strong>");
@@ -1420,11 +1425,11 @@ public class FortuneService {
 
         if (threePunishment is not null) {
             html.AppendLine("    <div class=\"alert alert-warning mb-3\">");
-            html.AppendLine($"        <strong>三刑訊號：</strong>本命、大運與目前期間合看出現{threePunishment}。課程將它列為外傷、壓力或健康波動的高注意訊號，但不能據此預言事故或診斷疾病；請落實休息、交通與日常安全。");
+            html.AppendLine($"        <strong>三刑訊號：</strong>本命、大運與目前期間合看出現{threePunishment}。外傷、壓力或健康波動的高注意訊號，不代表一定會有狀況，但多注意行車安全、身體健康狀況。");
             html.AppendLine("    </div>");
         }
 
-        AppendTopicNotice(html, "<strong>醫療優先：</strong>五行與器官對應僅是課程命理模型，不能診斷疾病或估算風險。有症狀、慢性病、檢查異常或用藥疑問時，請直接依合格醫療專業處理，不等待有利大運、流年或流月。");
+        AppendTopicNotice(html, "<strong>醫療優先：</strong>五行與器官對應僅是「表徵」或「意象」，不能診斷疾病或估算風險。有症狀、慢性病、檢查異常或用藥疑問時，請直接依照醫療專業處理，不可等待有利大運、流年或流月才處理。");
         html.AppendLine("</div>");
     }
 
@@ -1437,15 +1442,15 @@ public class FortuneService {
         var sealStar = FormatTenGod(info, ShiShen.Yin);
         var peerStar = FormatTenGod(info, ShiShen.BiJie);
         return info.StrengthStatus switch {
-            GeJu.ShenQiang => $"身強已有較多承接力，可在{wealthStar}或{careerStar}窗口主動準備，但仍應設定預算、停損與契約檢查。",
-            GeJu.ShenRuo when IsSupportiveDaYun(info, daYun) => $"身弱但目前大運以{sealStar}、{peerStar}幫扶，可比照身強承接財務與工作機會；合作仍須寫清權責、出資與退出機制。",
+            GeJu.ShenQiang => $"身強有較多承接力，可在{wealthStar}或{careerStar}承接財務與工作機會，但仍應設定預算、停損與契約檢查。",
+            GeJu.ShenRuo when IsSupportiveDaYun(info, daYun) => $"身弱但目前大運以{sealStar}、{peerStar}幫扶，可承接財務與工作機會；合作仍須寫清權責、出資與退出機制。",
             GeJu.ShenRuo => $"身弱且目前大運仍偏{wealthStar}、{careerStar}或{outputStar}，應留意{wealthStar}過多而身弱與工作壓力；先穩定現金流、健康與支援資源，再擴張或轉職。",
-            GeJu.CongQiang or GeJu.CongRuo => "從格不直接套一般身強、身弱表；本功能依筆記較一致的順勢喜用原則，先看大運、流年是否成格，再以實際事件回驗。",
+            GeJu.CongQiang or GeJu.CongRuo => "從格以大運、流年來判斷，輔以實際事件回驗。",
             _ => "請先確認格局與大運背景，再判斷是否能承接機會。"
         };
     }
 
-    private static string GetRelationshipAdvice(BaZiInfo info, DaYun daYun) {
+    private static (string desc, bool accept) GetRelationshipAdvice(BaZiInfo info, DaYun daYun) {
         var spouseStar = FormatTenGod(
             info,
             info.Gender == Sex.Male ? ShiShen.Cai : ShiShen.GuanSha
@@ -1453,11 +1458,11 @@ public class FortuneService {
         var sealStar = FormatTenGod(info, ShiShen.Yin);
         var peerStar = FormatTenGod(info, ShiShen.BiJie);
         return info.StrengthStatus switch {
-            GeJu.ShenQiang => $"身強可直接觀察夫妻星（{spouseStar}）時間窗，並把能量轉為清楚表達、界線與具體行動。",
-            GeJu.ShenRuo when IsSupportiveDaYun(info, daYun) => $"身弱但目前{sealStar}、{peerStar}大運已有幫扶，可比照身強承接感情機會。",
-            GeJu.ShenRuo => $"身弱且大運仍耗洩時，夫妻星（{spouseStar}）也可能成為壓力；先建立身心穩定、支持系統與關係界線。",
-            GeJu.CongQiang or GeJu.CongRuo => $"從格的桃花時機仍找夫妻星（{spouseStar}），但承接方式依筆記採順勢補喜用神，不套一般身強、身弱表。",
-            _ => "請先確認格局與大運背景，再判斷承接方式。"
+            GeJu.ShenQiang => ($"身強可直接觀察夫妻星（{spouseStar}）時間窗，並把能量轉為清楚表達、界線與具體行動。", true),
+            GeJu.ShenRuo when IsSupportiveDaYun(info, daYun) => ($"身弱但目前{sealStar}、{peerStar}大運已有幫扶，可承接感情機會。", true),
+            GeJu.ShenRuo => ($"身弱且大運仍耗洩時，夫妻星（{spouseStar}）可能成為壓力；先建立身心穩定、支持系統與關係界線。", false),
+            GeJu.CongQiang or GeJu.CongRuo => ($"從格的桃花時機仍找夫妻星（{spouseStar}），但承接方式以大運、流年的喜用神為準。", false),
+            _ => ("請先確認格局與大運背景，再判斷承接方式。", false)
         };
     }
 
@@ -1496,11 +1501,11 @@ public class FortuneService {
         }
 
         if (challenged.Length > 0) {
-            return $"{periodLabel}對弱項 {challengedText} 出現剋、洩或耗的訊號，課程視為較需保養的期間；行程排鬆、充足休息並避免疲勞駕駛。";
+            return $"{periodLabel}對弱項 {challengedText} 出現剋、洩或耗的訊號，需多注意、保養的期間；行程排鬆、充足休息並避免疲勞駕駛。";
         }
 
         if (supported.Length > 0) {
-            return $"{periodLabel}對弱項 {supportedText} 有同我或生我的補強訊號，可視為相對有支撐；仍應維持一般預防保健，不因命理加分忽略症狀。";
+            return $"{periodLabel}對弱項 {supportedText} 有同我或生我的補強訊號，可視為相對好轉或幫助；仍應維持一般預防保健，不因命理加分忽略症狀。";
         }
 
         return $"{periodLabel}對本命最弱五行沒有明顯直接補強或剋、洩、耗訊號；維持例行保健，並以實際病史、症狀與檢查結果為準。";

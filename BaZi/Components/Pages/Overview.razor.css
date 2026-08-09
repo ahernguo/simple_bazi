@@ -1,0 +1,14 @@
+.overview-page {
+    color: var(--overview-foreground);
+}
+
+.overview-page-intro {
+    color: var(--overview-foreground);
+}
+
+.overview-section-divider {
+    margin: 2.25rem 0 1.25rem;
+    border: 0;
+    border-top: 0.125rem dashed var(--overview-divider-color);
+    opacity: 1;
+}

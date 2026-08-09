@@ -1,0 +1,142 @@
+@inject TenGodAnalysisService TenGodService
+
+<div class="card ten-god-card p-3 mb-4">
+    <h5 class="card-title border-bottom pb-2">十神性格比例</h5>
+    @foreach (var statistic in _statistics) {
+        <div class="mb-3" @key="statistic.Xing">
+            <div class="d-flex justify-content-between mb-1">
+                <span><OverviewRichText Text="@statistic.Xing.ToShenString()" /></span>
+                <span>@($"{statistic.Percentage:P1}") (@statistic.Count 字)</span>
+            </div>
+            <progress class="ten-god-progress"
+                      value="@statistic.Percentage"
+                      max="1">
+                @($"{statistic.Percentage:P1}")
+            </progress>
+        </div>
+    }
+</div>
+
+@foreach (var profile in _profiles) {
+    <div class="card ten-god-card mt-4 p-4" @key="profile.Title">
+        <h5 class="card-title border-bottom pb-2">
+            <OverviewRichText Text="@profile.Title" />
+            <span class="text-success ms-2">@($"{profile.Percentage:P1}")</span>
+            <strong class="text-info ms-2"><OverviewRichText Text="@profile.Meaning" /></strong>
+        </h5>
+        @if (profile.Comparison is not null) {
+            <p class="mt-3 mb-2">
+                <u><OverviewRichText Text="@profile.Comparison.Value.More.ToShenString()" /></u>
+                較
+                <u><OverviewRichText Text="@profile.Comparison.Value.Less.ToShenString()" /></u>
+                多時：
+            </p>
+        }
+        <dl class="row mb-0 mt-3">
+            <dt class="col-sm-2">特性</dt>
+            <dd class="col-sm-10"><OverviewRichText Text="@profile.Detail.desc" /></dd>
+            <dt class="col-sm-2 text-success">優點</dt>
+            <dd class="col-sm-10"><OverviewRichText Text="@profile.Detail.positive" /></dd>
+            <dt class="col-sm-2 text-danger">缺點</dt>
+            <dd class="col-sm-10"><OverviewRichText Text="@profile.Detail.negative" /></dd>
+            <dt class="col-sm-2 text-info">建議</dt>
+            <dd class="col-sm-10"><OverviewRichText Text="@profile.Detail.advice" /></dd>
+        </dl>
+    </div>
+}
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public BaZiInfo Info { get; set; } = null!;
+
+    private IReadOnlyList<TenGodStatistic> _statistics = [];
+    private IReadOnlyList<TenGodProfile> _profiles = [];
+
+    protected override void OnParametersSet() {
+        _statistics = TenGodService.GetStatistics(Info)
+            .OrderByDescending(statistic => statistic.Count)
+            .ThenBy(statistic => statistic.Xing)
+            .ToArray();
+        _profiles = BuildProfiles(Info, _statistics);
+    }
+
+    private IReadOnlyList<TenGodProfile> BuildProfiles(
+        BaZiInfo info,
+        IReadOnlyList<TenGodStatistic> statistics
+    ) {
+        var allStars = TenGodService.GetAllStars(info);
+        var total = statistics.Sum(statistic => statistic.Count);
+        var groups = new[] {
+            CreateGroup(ShiShen.GuanSha, ShiShen.ZhengGuan, ShiShen.QiSha, allStars),
+            CreateGroup(ShiShen.ShihShang, ShiShen.ShihShen, ShiShen.ShangGuan, allStars),
+            CreateGroup(ShiShen.Cai, ShiShen.ZhengCai, ShiShen.PianCai, allStars),
+            CreateGroup(ShiShen.Yin, ShiShen.ZhengYin, ShiShen.PianYin, allStars),
+            CreateGroup(ShiShen.BiJie, ShiShen.BiJian, ShiShen.JieCai, allStars)
+        };
+
+        return groups
+            .Where(group => group.FirstCount + group.SecondCount > 0)
+            .OrderByDescending(group => group.FirstCount + group.SecondCount)
+            .Select(group => CreateProfile(group, total))
+            .ToArray();
+    }
+
+    private static TenGodGroup CreateGroup(
+        ShiShen group,
+        ShiShen first,
+        ShiShen second,
+        IReadOnlyList<ShiShen> allStars
+    ) {
+        return new TenGodGroup(
+            group,
+            first,
+            second,
+            allStars.Count(star => star == first),
+            allStars.Count(star => star == second)
+        );
+    }
+
+    private static TenGodProfile CreateProfile(TenGodGroup group, int total) {
+        var count = group.FirstCount + group.SecondCount;
+        var percentage = total == 0 ? 0 : (double)count / total;
+        if (group.FirstCount == group.SecondCount) {
+            var detail = count < 3
+                ? BaZiDefine.ShiShenCombineLs3Details[group.Group]
+                : BaZiDefine.ShiShenCombineGte3Details[group.Group];
+            return new TenGodProfile(
+                group.Group.ToShenString(),
+                percentage,
+                BaZiDefine.ShiShenCombineMeans[group.Group],
+                detail,
+                null
+            );
+        }
+
+        var more = group.FirstCount > group.SecondCount ? group.First : group.Second;
+        var less = group.FirstCount > group.SecondCount ? group.Second : group.First;
+        return new TenGodProfile(
+            group.Group.ToShenString(),
+            percentage,
+            BaZiDefine.ShiShenCombineMeans[group.Group],
+            BaZiDefine.ShiShenDetails[more],
+            (more, less)
+        );
+    }
+
+    private sealed record TenGodGroup(
+        ShiShen Group,
+        ShiShen First,
+        ShiShen Second,
+        int FirstCount,
+        int SecondCount
+    );
+
+    private sealed record TenGodProfile(
+        string Title,
+        double Percentage,
+        string Meaning,
+        (string desc, string positive, string negative, string advice) Detail,
+        (ShiShen More, ShiShen Less)? Comparison
+    );
+}
