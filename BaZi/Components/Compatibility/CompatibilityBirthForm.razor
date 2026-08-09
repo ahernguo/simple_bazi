@@ -1,3 +1,5 @@
+@inject BirthInputPreferencesService BirthInputPreferences
+
 <EditForm Model="_input" OnValidSubmit="HandleSubmit" FormName="compatibility-birth">
     <DataAnnotationsValidator />
     <ValidationSummary class="text-danger" />
@@ -111,8 +113,8 @@
 </EditForm>
 
 @code {
-    private const int LuckyHour = 25;
-    private const int LuckyMinute = 61;
+    private const int LuckyHour = BirthInputSelection.UnknownHour;
+    private const int LuckyMinute = BirthInputSelection.UnknownMinute;
 
     private readonly CompatibilityBirthInput _input = new();
     private int _year = 1990;
@@ -125,6 +127,8 @@
     public EventCallback<CompatibilityBirthInput> OnSubmit { get; set; }
 
     protected override void OnInitialized() {
+        RestoreBirthInput();
+        UpdateBirthDate();
         UpdateBirthTime();
     }
 
@@ -146,6 +150,32 @@
 
     private Task HandleSubmit() {
         UpdateBirthTime();
+        BirthInputPreferences.SaveCompatibility(CreateBirthInputSelection());
         return OnSubmit.InvokeAsync(_input);
+    }
+
+    private BirthInputSelection CreateBirthInputSelection() {
+        return new BirthInputSelection(
+            _input.Gender,
+            _year,
+            _month,
+            _day,
+            _hour,
+            _minute
+        );
+    }
+
+    private void RestoreBirthInput() {
+        var selection = BirthInputPreferences.LoadCompatibility();
+        if (selection is null) {
+            return;
+        }
+
+        _input.Gender = selection.Gender;
+        _year = selection.Year;
+        _month = selection.Month;
+        _day = selection.Day;
+        _hour = selection.Hour;
+        _minute = selection.Minute;
     }
 }

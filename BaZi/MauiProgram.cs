@@ -4,6 +4,7 @@ using BaZi.Services;
 using Fluxor;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.LifecycleEvents;
+using Microsoft.Maui.Storage;
 
 #if WINDOWS
 using Microsoft.UI;
@@ -75,6 +76,8 @@ namespace BaZi {
             builder.Services.AddSingleton<CompatibilityService>();
             builder.Services.AddSingleton<FortuneService>();
             builder.Services.AddSingleton<SecurityService>();
+            builder.Services.AddSingleton<IPreferences>(_ => Preferences.Default);
+            builder.Services.AddSingleton<BirthInputPreferencesService>();
             builder.Services.AddScoped<Store.BaZiEffects>();
 
             // 加入 Fluxor 服務

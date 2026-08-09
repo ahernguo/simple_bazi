@@ -7,6 +7,7 @@
 @inject NavigationManager Navigation
 @inject SecurityService SecurityService
 @inject IState<ThemeState> ThemeState
+@inject BirthInputPreferencesService BirthInputPreferences
 
 @* ... rest of UI code ... *@
 <div class="container mt-4">
@@ -144,8 +145,8 @@
 }
 
 @code {
-    private const int LuckyHour = 25;
-    private const int LuckyMinute = 61;
+    private const int LuckyHour = BirthInputSelection.UnknownHour;
+    private const int LuckyMinute = BirthInputSelection.UnknownMinute;
 
     private int mYear = 1990;
     private int mMonth = 1;
@@ -201,20 +202,22 @@
                 mMinute = minute;
 
                 mShowImport = false;
-                Calculate();
+                Calculate(gender);
             }
         } catch (Exception ex) {
             Dispatcher.Dispatch(new CalculateBaZiFailureAction($"匯入資料格式錯誤。{ex.Message}"));
         }
     }
 
-    private void Calculate() {
+    private void Calculate(int? gender = null) {
         try {
+            int selectedGender = gender ?? BaZiState.Value.Gender;
             bool isBirthTimeAccurate = mHour != LuckyHour && mMinute != LuckyMinute;
             int hour = mHour == LuckyHour ? 0 : mHour;
             int minute = mMinute == LuckyMinute ? 0 : mMinute;
             DateTime birthDateTime = new DateTime(mYear, mMonth, mDay, hour, minute, 0);
-            Dispatcher.Dispatch(new CalculateBaZiAction(birthDateTime, BaZiState.Value.Gender, isBirthTimeAccurate));
+            BirthInputPreferences.SaveHome(CreateBirthInputSelection(selectedGender));
+            Dispatcher.Dispatch(new CalculateBaZiAction(birthDateTime, selectedGender, isBirthTimeAccurate));
         } catch (Exception ex) {
             Dispatcher.Dispatch(new CalculateBaZiFailureAction(ex.Message));
         }
@@ -222,7 +225,33 @@
 
     protected override void OnInitialized() {
         base.OnInitialized();
+        RestoreBirthInput();
         BaZiState.StateChanged += HandleStateChanged;
+    }
+
+    private BirthInputSelection CreateBirthInputSelection(int gender) {
+        return new BirthInputSelection(
+            gender,
+            mYear,
+            mMonth,
+            mDay,
+            mHour,
+            mMinute
+        );
+    }
+
+    private void RestoreBirthInput() {
+        var selection = BirthInputPreferences.LoadHome();
+        if (selection is null) {
+            return;
+        }
+
+        mYear = selection.Year;
+        mMonth = selection.Month;
+        mDay = selection.Day;
+        mHour = selection.Hour;
+        mMinute = selection.Minute;
+        SetGender(selection.Gender);
     }
 
     private void HandleStateChanged(object? sender, EventArgs e) {
