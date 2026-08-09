@@ -46,7 +46,11 @@ namespace BaZi.Services {
             CompatibilityRelationship relationship
         ) {
             ArgumentNullException.ThrowIfNull(otherInput);
-            var other = _baZiService.GetBaZiInfo(otherInput.ToDateTime(), otherInput.Gender);
+            var other = _baZiService.GetBaZiInfo(
+                otherInput.ToDateTime(),
+                otherInput.Gender,
+                otherInput.IsBirthTimeAccurate
+            );
             return Analyze(self, other, relationship);
         }
 

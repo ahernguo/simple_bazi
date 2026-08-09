@@ -389,6 +389,12 @@ namespace BaZi.Services {
             var heHui = new Dictionary<HeHui, WuXing>();
             if (info.CurrentDaYun is null)
                 return (bad, heHui);
+
+            if (!info.IsBirthTimeAccurate) {
+                ganPair = ganPair is null ? null : RemoveHourPillarFromSources(info, ganPair);
+                threePair = threePair is null ? null : RemoveHourPillarFromSources(info, threePair);
+                twoPair = RemoveHourPillarFromSources(info, twoPair);
+            }
             // 天干五合
             if ((ganPair != null) && TryFindAnyInteraction(ganPair, BaZiDefine.FiveHe, item => item.Gan, 2, true, out var ganInteraction, out _)) {
                 // 檢查這個被合走的天干是喜用神還是忌神
@@ -583,6 +589,17 @@ namespace BaZi.Services {
                 bad = true;
             }
             return (bad, heHui);
+        }
+
+        private static IList<IList<IGanZhi>> RemoveHourPillarFromSources(
+            BaZiInfo info,
+            IList<IList<IGanZhi>> sources
+        ) {
+            return sources
+                .Select(source => (IList<IGanZhi>)source
+                    .Where(item => !ReferenceEquals(item, info.HourZhu))
+                    .ToList())
+                .ToList();
         }
 
         public bool HasSelfConflict(BaZiInfo info, out MarkupString desc) {
@@ -1604,12 +1621,15 @@ namespace BaZi.Services {
             info.YearZhu.Zhi,
             info.MonthZhu.Zhi,
             info.DayZhu.Zhi,
-            info.HourZhu.Zhi,
             daYun.Zhi,
             liuNian.Zhi
         };
-            if (period == PeriodScope.LiuYue)
+            if (info.IsBirthTimeAccurate) {
+                branches.Add(info.HourZhu.Zhi);
+            }
+            if (period == PeriodScope.LiuYue) {
                 branches.Add(periodGanZhi.Zhi);
+            }
 
             var punishment = BaZiDefine.ThreeXing.FirstOrDefault(group => group.All(branches.Contains));
             return punishment is null

@@ -26,7 +26,7 @@ namespace BaZi.Store {
         [EffectMethod]
         public Task OnCalculate(CalculateBaZiAction action, Fluxor.IDispatcher dispatcher) {
             try {
-                var info = mSvc.GetBaZiInfo(action.BirthDate, action.Gender);
+                var info = mSvc.GetBaZiInfo(action.BirthDate, action.Gender, action.IsBirthTimeAccurate);
                 dispatcher.Dispatch(new CalculateBaZiSuccessAction(info));
             } catch (Exception ex) {
                 dispatcher.Dispatch(new CalculateBaZiFailureAction(ex.Message));

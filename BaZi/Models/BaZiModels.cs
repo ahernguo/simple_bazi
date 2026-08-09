@@ -181,6 +181,8 @@ namespace BaZi.Models {
         public Zhu DayZhu { get; }
         /// <summary>取得時柱</summary>
         public Zhu HourZhu { get; }
+        /// <summary>取得使用者是否提供準確的生辰時、分</summary>
+        public bool IsBirthTimeAccurate { get; }
         /// <summary>取得日主五行</summary>
         public WuXing RiZhu { get; }
         /// <summary>取得日主極性(陰/陽)</summary>
@@ -211,10 +213,12 @@ namespace BaZi.Models {
         /// <summary>建構八字資訊</summary>
         /// <param name="birthdate">生辰</param>
         /// <param name="gender">性別 (1)女 (2)男</param>
-        public BaZiInfo(DateTime birthdate, int gender) {
-            LOG4N.Info($"生辰 '{birthdate}' 性別 '{gender}'");
+        /// <param name="isBirthTimeAccurate">是否具有準確的生辰時、分</param>
+        public BaZiInfo(DateTime birthdate, int gender, bool isBirthTimeAccurate = true) {
+            LOG4N.Info($"生辰 '{birthdate}' 性別 '{gender}' 生辰時間準確 '{isBirthTimeAccurate}'");
             SolarDate = birthdate;
             Gender = (gender == 1) ? Sex.Female : Sex.Male;
+            IsBirthTimeAccurate = isBirthTimeAccurate;
             var solar = Lunar.Solar.FromDate(birthdate);
             var lunar = solar.Lunar;
             LOG4N.Info($"對應的農曆為 '{lunar}'");

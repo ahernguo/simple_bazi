@@ -13,11 +13,12 @@ namespace BaZi.Services {
         /// <summary>根據國曆生日與性別進行排盤</summary>
         /// <param name="birthDate">國曆生日</param>
         /// <param name="gender">性別 (1:女, 2:男)</param>
+        /// <param name="isBirthTimeAccurate">是否具有準確的生辰時、分</param>
         /// <returns>八字命盤資料</returns>
-        public BaZiInfo GetBaZiInfo(DateTime birthDate, int gender) {
-            LOG4N.Info($"開始排盤: {birthDate:yyyy-MM-dd HH:mm}, 性別: {(gender == 1 ? "女" : "男")}");
+        public BaZiInfo GetBaZiInfo(DateTime birthDate, int gender, bool isBirthTimeAccurate = true) {
+            LOG4N.Info($"開始排盤: {birthDate:yyyy-MM-dd HH:mm}, 性別: {(gender == 1 ? "女" : "男")}, 生辰時間準確: {isBirthTimeAccurate}");
             try {
-                var info = new BaZiInfo(birthDate, gender);
+                var info = new BaZiInfo(birthDate, gender, isBirthTimeAccurate);
                 LOG4N.Info($"排盤完成: {info.DayZhu.Gan.ToGanString()}{info.DayZhu.Zhi.ToZhiString()} 日主");
                 return info;
             } catch (Exception ex) {

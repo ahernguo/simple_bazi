@@ -99,7 +99,7 @@
 
         <div class="compatibility-birth-warning">
             <i class="fa-solid fa-triangle-exclamation mt-1" aria-hidden="true"></i>
-            <span>選擇吉時或吉分時，會分別以 00 時或 00 分進行合盤；因缺少準確生辰，結果僅供參考。</span>
+            <span>選擇吉時或吉分時，會分別以 00 時或 00 分進行合盤，並略過所有涉及時柱的刑、沖、破、害、合、會與子息宮推論；因缺少準確生辰，結果僅供參考。</span>
         </div>
 
         <div class="d-grid mt-4">
@@ -138,6 +138,7 @@
     }
 
     private void UpdateBirthTime() {
+        _input.IsBirthTimeAccurate = _hour != LuckyHour && _minute != LuckyMinute;
         int hour = _hour == LuckyHour ? 0 : _hour;
         int minute = _minute == LuckyMinute ? 0 : _minute;
         _input.BirthTime = DateTime.Today.AddHours(hour).AddMinutes(minute);

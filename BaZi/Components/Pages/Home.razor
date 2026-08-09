@@ -130,7 +130,7 @@
                     <p>此命理程式為固定邏輯所設計，僅供參考，欲求準確仍需請命理師推論。</p>
                     @if (mHour == LuckyHour || mMinute == LuckyMinute) {
                         <div class="alert alert-danger mt-3 mb-0">
-                            <strong>注意：</strong>吉時或吉分會分別以 00 時或 00 分代入；由於缺少準確的生辰時、分，準確度僅有 60%~75%，請勿過度相信結果。
+                            <strong>注意：</strong>吉時或吉分會分別以 00 時或 00 分代入；由於缺少準確的生辰時、分，將略過所有涉及時柱的刑、沖、破、害、合、會與子息宮推論，準確度僅有 60%~75%，請勿過度相信結果。
                         </div>
                     }
                 </div>
@@ -210,10 +210,11 @@
 
     private void Calculate() {
         try {
+            bool isBirthTimeAccurate = mHour != LuckyHour && mMinute != LuckyMinute;
             int hour = mHour == LuckyHour ? 0 : mHour;
             int minute = mMinute == LuckyMinute ? 0 : mMinute;
             DateTime birthDateTime = new DateTime(mYear, mMonth, mDay, hour, minute, 0);
-            Dispatcher.Dispatch(new CalculateBaZiAction(birthDateTime, BaZiState.Value.Gender));
+            Dispatcher.Dispatch(new CalculateBaZiAction(birthDateTime, BaZiState.Value.Gender, isBirthTimeAccurate));
         } catch (Exception ex) {
             Dispatcher.Dispatch(new CalculateBaZiFailureAction(ex.Message));
         }

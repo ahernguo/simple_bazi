@@ -203,6 +203,22 @@ namespace BaZi.Tests {
         }
 
         [Fact]
+        public void LiuNianAnalysis_UncertainBirthTime_SkipsHourPillarInteractions() {
+            DateTime birthDate = new(1990, 1, 1, 0, 0, 0);
+            var accurateInfo = new BaZiInfo(birthDate, 2);
+            var uncertainInfo = new BaZiInfo(birthDate, 2, false);
+            var service = new FortuneService();
+            int targetYear = service.GetLiuNianYears(accurateInfo)
+                .First(year => service.LiuNianAnalysis(accurateInfo, year).Value?.Contains("時柱 <span", StringComparison.Ordinal) == true);
+
+            var accurateHtml = service.LiuNianAnalysis(accurateInfo, targetYear).Value;
+            var uncertainHtml = service.LiuNianAnalysis(uncertainInfo, targetYear).Value;
+
+            Assert.Contains("時柱 <span", accurateHtml);
+            Assert.DoesNotContain("時柱 <span", uncertainHtml);
+        }
+
+        [Fact]
         public void DaYunAnalysis_SamePairIsXingAndPo_OnlyListsXing() {
             var info = new BaZiInfo(OverlappingXingPoBirthDate, 2);
             var service = new FortuneService();

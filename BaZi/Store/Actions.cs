@@ -12,10 +12,12 @@ namespace BaZi.Store {
     public class CalculateBaZiAction {
         public DateTime BirthDate { get; }
         public int Gender { get; }
+        public bool IsBirthTimeAccurate { get; }
 
-        public CalculateBaZiAction(DateTime birthDate, int gender) {
+        public CalculateBaZiAction(DateTime birthDate, int gender, bool isBirthTimeAccurate = true) {
             BirthDate = birthDate;
             Gender = gender;
+            IsBirthTimeAccurate = isBirthTimeAccurate;
         }
     }
 

@@ -38,6 +38,8 @@ namespace BaZi.Models {
         [Range(1, 2, ErrorMessage = "請選擇性別。")]
         public int Gender { get; set; } = 2;
 
+        public bool IsBirthTimeAccurate { get; set; } = true;
+
         public DateTime ToDateTime() {
             return BirthDate.Date.Add(BirthTime.TimeOfDay);
         }

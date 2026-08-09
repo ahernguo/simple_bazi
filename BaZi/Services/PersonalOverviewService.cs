@@ -215,7 +215,6 @@ namespace BaZi.Services {
             var signals = FindElementSignals(info, childElement);
             var directCount = signals.Sum(signal => signal.StemCount + signal.MainBranchCount);
             var hiddenCount = signals.Sum(signal => signal.HiddenBranchCount);
-            var hourSignal = signals.Single(signal => signal.PillarName == "時柱");
             var locationDetails = signals
                 .Where(signal => signal.TotalCount > 0)
                 .Select(signal => {
@@ -228,15 +227,21 @@ namespace BaZi.Services {
                 locationDetails = ["本命未見子息星；訊號不突出，但不代表沒有孩子、無法懷孕或親子關係不好，僅為緣分較薄。"];
             }
 
-            var palaceRelation = GetPrimaryRelation(info.DayZhu.Zhi, info.HourZhu.Zhi);
-            var palaceDetails = new List<string> {
-            $"時柱{info.HourZhu.Gan.ToGanString()}{info.HourZhu.Zhi.ToZhiString()}是子息宮；{(hourSignal.TotalCount > 0 ? $"其中見到子息星來源：{DescribeSignalSources(hourSignal)}。" : "其中未見子息星。")}",
-            palaceRelation switch {
-                "相沖" => $"日支{info.DayZhu.Zhi.ToZhiString()}與時支{info.HourZhu.Zhi.ToZhiString()}相沖；孩子長大後較可能外地求學、工作或聚少離多，關係是否疏離仍視相處狀況而定。",
-                "相刑" => $"日支{info.DayZhu.Zhi.ToZhiString()}與時支{info.HourZhu.Zhi.ToZhiString()}相刑；親子互動需多花心力、較互不理解或有衝突，關係是否失敗仍視相處狀況而定。",
-                _ => $"日支{info.DayZhu.Zhi.ToZhiString()}與時支{info.HourZhu.Zhi.ToZhiString()}未形成相刑或相沖，親子互動無太大問題，但要互相理解、尊重。"
+            IReadOnlyList<string> palaceDetails;
+            if (!info.IsBirthTimeAccurate) {
+                palaceDetails = ["因不確定準確時辰，此部分不進行推論"];
+            } else {
+                var hourSignal = signals.Single(signal => signal.PillarName == "時柱");
+                var palaceRelation = GetPrimaryRelation(info.DayZhu.Zhi, info.HourZhu.Zhi);
+                palaceDetails = [
+                    $"時柱{info.HourZhu.Gan.ToGanString()}{info.HourZhu.Zhi.ToZhiString()}是子息宮；{(hourSignal.TotalCount > 0 ? $"其中見到子息星來源：{DescribeSignalSources(hourSignal)}。" : "其中未見子息星。")}",
+                    palaceRelation switch {
+                        "相沖" => $"日支{info.DayZhu.Zhi.ToZhiString()}與時支{info.HourZhu.Zhi.ToZhiString()}相沖；孩子長大後較可能外地求學、工作或聚少離多，關係是否疏離仍視相處狀況而定。",
+                        "相刑" => $"日支{info.DayZhu.Zhi.ToZhiString()}與時支{info.HourZhu.Zhi.ToZhiString()}相刑；親子互動需多花心力、較互不理解或有衝突，關係是否失敗仍視相處狀況而定。",
+                        _ => $"日支{info.DayZhu.Zhi.ToZhiString()}與時支{info.HourZhu.Zhi.ToZhiString()}未形成相刑或相沖，親子互動無太大問題，但要互相理解、尊重。"
+                    }
+                ];
             }
-        };
             var signalSummary = directCount > 0
                 ? $"本命見 {directCount} 個天干／地支主氣子息星訊號{(hiddenCount > 0 ? $"，另有 {hiddenCount} 個非主氣藏干訊號" : string.Empty)}。"
                 : hiddenCount > 0
@@ -386,9 +391,12 @@ namespace BaZi.Services {
         private static IReadOnlyList<string> GetPalaceRelations(BaZiInfo info) {
             var relations = new List<string>();
             AppendPalaceRelation(relations, "月支", info.MonthZhu.Zhi, info.DayZhu.Zhi);
-            AppendPalaceRelation(relations, "時支", info.HourZhu.Zhi, info.DayZhu.Zhi);
+            if (info.IsBirthTimeAccurate) {
+                AppendPalaceRelation(relations, "時支", info.HourZhu.Zhi, info.DayZhu.Zhi);
+            }
             if (relations.Count == 0) {
-                relations.Add("夫妻宮與鄰近月支、時支未形成相刑、相沖、害或破；雖姻緣上較無太大問題，但仍須視實際相處狀況而定。");
+                var neighboringBranches = info.IsBirthTimeAccurate ? "月支、時支" : "月支";
+                relations.Add($"夫妻宮與鄰近{neighboringBranches}未形成相刑、相沖、害或破；雖姻緣上較無太大問題，但仍須視實際相處狀況而定。");
             }
 
             return relations;
@@ -439,6 +447,7 @@ namespace BaZi.Services {
 
         private static IReadOnlyList<string> GetNatalThreeXing(BaZiInfo info) {
             var branches = GetPillars(info)
+                .Where(item => info.IsBirthTimeAccurate || !ReferenceEquals(item.Pillar, info.HourZhu))
                 .Select(item => item.Pillar.Zhi)
                 .Distinct()
                 .ToArray();

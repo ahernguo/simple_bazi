@@ -70,6 +70,43 @@ namespace BaZi.Tests {
         }
 
         [Fact]
+        public void Analyze_UncertainBirthTime_PreservesChildStarsAndSkipsChildPalace() {
+            DateTime birthDate = new(1990, 1, 1, 0, 0, 0);
+            var accurateResult = _service.Analyze(_baZiService.GetBaZiInfo(birthDate, 2));
+            var uncertainResult = _service.Analyze(_baZiService.GetBaZiInfo(birthDate, 2, false));
+
+            var accurateStars = Assert.Single(
+                accurateResult.Family.Sections,
+                section => section.Title == "子息星分布"
+            );
+            var uncertainStars = Assert.Single(
+                uncertainResult.Family.Sections,
+                section => section.Title == "子息星分布"
+            );
+            var uncertainPalace = Assert.Single(
+                uncertainResult.Family.Sections,
+                section => section.Title == "子息宮與親子距離"
+            );
+
+            Assert.Equal(accurateStars.Summary, uncertainStars.Summary);
+            Assert.Equal(accurateStars.Details, uncertainStars.Details);
+            Assert.Equal("因不確定準確時辰，此部分不進行推論", Assert.Single(uncertainPalace.Details));
+        }
+
+        [Fact]
+        public void Analyze_UncertainBirthTime_DoesNotEvaluateHourBranchPalaceRelations() {
+            var info = _baZiService.GetBaZiInfo(new DateTime(1990, 1, 1, 0, 0, 0), 2, false);
+
+            var result = _service.Analyze(info);
+            var palaceRelations = Assert.Single(
+                result.Relationship.Sections,
+                section => section.Title == "夫妻宮與原局互動"
+            );
+
+            Assert.DoesNotContain(palaceRelations.Details, detail => detail.Contains("時支", StringComparison.Ordinal));
+        }
+
+        [Fact]
         public void Analyze_ContainsOnlyNatalSections() {
             var info = _baZiService.GetBaZiInfo(new DateTime(1990, 1, 1, 12, 0, 0), 2);
 
