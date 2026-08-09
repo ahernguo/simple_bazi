@@ -23,6 +23,44 @@
 
         @if (_result is not null) {
             <CompatibilityResultView Result="_result" />
+
+            @if (_relationship == CompatibilityRelationship.Romance
+                && _result.InternetSourceSections.Count > 0) {
+                <hr class="overview-section-divider" aria-hidden="true" />
+                <p class="text-secondary mb-4">
+                    <strong>下方非 《徐玉蘭的人生八字應用課》 的內容，來源為網路</strong>
+                </p>
+
+                @foreach (var section in _result.InternetSourceSections) {
+                    <div class="card p-4 mb-4 compatibility-section @GetToneClass(section.Tone)" @key="section.Title">
+                        <h5 class="card-title border-bottom pb-2">
+                            <i class="fa-solid @GetToneIcon(section.Tone) me-2"></i>@section.Title
+                        </h5>
+                        <p><OverviewRichText Text="@section.Summary" /></p>
+                        @if (section.Details.Count > 0) {
+                            <ul class="mb-0">
+                                @foreach (var detail in section.Details) {
+                                    <li class="mb-2" @key="detail">
+                                        <OverviewRichText Text="@detail" />
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        @if (section.Notes is { Count: > 0 }) {
+                            <div class="topic-notice mt-3 mb-0">
+                                <i class="fa-solid fa-circle-info topic-notice-icon" aria-hidden="true"></i>
+                                <ul class="compatibility-note-list mb-0">
+                                    @foreach (var note in section.Notes) {
+                                        <li class="mb-1" @key="note">
+                                            <OverviewRichText Text="@note" />
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+                    </div>
+                }
+            }
         }
     </div>
 }
@@ -60,5 +98,23 @@
         }
 
         return Task.CompletedTask;
+    }
+
+    private static string GetToneClass(CompatibilityTone tone) {
+        return tone switch {
+            CompatibilityTone.Positive => "border-success",
+            CompatibilityTone.Caution => "border-warning",
+            CompatibilityTone.Notice => "border-info",
+            _ => "border-secondary"
+        };
+    }
+
+    private static string GetToneIcon(CompatibilityTone tone) {
+        return tone switch {
+            CompatibilityTone.Positive => "fa-circle-check text-success",
+            CompatibilityTone.Caution => "fa-triangle-exclamation text-warning",
+            CompatibilityTone.Notice => "fa-circle-info text-info",
+            _ => "fa-compass"
+        };
     }
 }

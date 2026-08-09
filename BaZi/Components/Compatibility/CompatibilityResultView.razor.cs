@@ -36,7 +36,9 @@ namespace BaZi.Components.Compatibility {
         public CompatibilityResult Result { get; set; } = default!;
 
         private static string FormatBirth(BaZiInfo info) {
-            return $"{info.SolarDate:yyyy/MM/dd HH:mm}，{info.Gender.ToSexString()}";
+            return info.IsBirthTimeAccurate
+                ? $"{info.SolarDate:yyyy/MM/dd HH:mm}，{info.Gender.ToSexString()}"
+                : $"{info.SolarDate:yyyy/MM/dd}，時辰未知，{info.Gender.ToSexString()}";
         }
 
         private MarkupString FormatText(string text, CompatibilityTenGodSubject subject) {

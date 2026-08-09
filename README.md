@@ -65,6 +65,27 @@ BaZi/
 3. `MainPage.xaml` 建立 `BlazorWebView`，載入 `wwwroot/index.html`，並將 `Routes.razor` 掛載至 `#app`。
 4. `Routes.razor` 初始化 Fluxor Store 與 Blazor Router，再依 `@page` 路由顯示對應頁面；預設進入 `Home.razor`。
 
+# 地支感情合盤規則引擎
+
+`EarthlyBranchRelationshipEngine` 直接使用既有的 `BaZiInfo`、`Zhu`、`DiZhi` 與 `BaZiDefine`，沒有建立另一套干支模型。固定規則仍集中在 `BaZiDefine`；引擎負責對 A、B 原局及跨命盤的已知柱位進行六合、六沖、六害、相刑與三會候選判定。
+
+主要公開介面：
+
+- `MatchPair(DiZhi, DiZhi)`：回傳不含柱位的對稱固定規則命中。
+- `Analyze(BaZiInfo, BaZiInfo)`：回傳基準情境；時辰不準確的命盤只使用年、月、日三柱。
+- `AnalyzeHypotheticalHour(BaZiInfo, BaZiInfo, BranchRelationshipParticipant)`：建立獨立的假設時柱情境，相關來源與命中標為 `Hypothetical`，不修改基準結果。
+- `BranchRelationshipAnalysis`／`BranchRelationshipHit`：保存規則類型、成員、A／B 來源、實際柱位、範圍、重複次數、完成度、候選合化五行及信心等級。
+
+目前採用下列邊界：
+
+- 六合與三會只標示組合或合化候選，不直接改寫原命盤五行。
+- 合、沖、刑、害各自判定，可以同時存在。
+- 三刑區分 `Partial`、`Complete` 與 `Self`；三會須三支齊全才回傳候選。
+- 不產生感情成功率或吉凶分數；文字解讀不得取代雙方明確意願、同意與現實行為。
+- 尚未納入月令、透干、根氣、鄰接、旺衰、妒合／爭合、解沖、權重及各流派的合化成立條件。
+
+網路來源的中性解讀只顯示在感情合盤頁的課程內容下方，並與《徐玉蘭的人生八字應用課》內容明確分隔。固定組合參考[地支條目](https://zh.wikipedia.org/wiki/%E5%9C%B0%E6%94%AF#%E7%B5%84%E5%90%88)，傳統解讀範圍與合化條件參考[八字開放指南](https://bazi8.net/zh/learn/clashes-combinations)；非決定論邊界參考[NCC 命理類型節目研究](https://www.ncc.gov.tw/chinese/files/17121/3501_38434_171213_1.pdf)，關係界線與同意建議參考[衛生福利部](https://www.mohw.gov.tw/cp-2704-81496-1.html)。
+
 # 執行方式
 
 ## 開發環境

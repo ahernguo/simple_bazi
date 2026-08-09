@@ -234,7 +234,7 @@ namespace BaZi.Services {
                 var hourSignal = signals.Single(signal => signal.PillarName == "時柱");
                 var palaceRelation = GetPrimaryRelation(info.DayZhu.Zhi, info.HourZhu.Zhi);
                 palaceDetails = [
-                    $"時柱{info.HourZhu.Gan.ToGanString()}{info.HourZhu.Zhi.ToZhiString()}是子息宮；{(hourSignal.TotalCount > 0 ? $"其中見到子息星來源：{DescribeSignalSources(hourSignal)}。" : "其中未見子息星。")}",
+                    $"時柱{info.HourZhu.Gan.ToGanString()}{info.HourZhu.Zhi.ToZhiString()}是子息宮；{(hourSignal.TotalCount > 0 ? $"其中見到子息星來源：{DescribeSignalSources(hourSignal)}，生命中有孩子的緣分；非必定有孩子，但有緣分與機率。" : "未見子息星，生命中較無孩子的緣分；非絕對無子，僅表示緣分少、機率低。")}",
                     palaceRelation switch {
                         "相沖" => $"日支{info.DayZhu.Zhi.ToZhiString()}與時支{info.HourZhu.Zhi.ToZhiString()}相沖；孩子長大後較可能外地求學、工作或聚少離多，關係是否疏離仍視相處狀況而定。",
                         "相刑" => $"日支{info.DayZhu.Zhi.ToZhiString()}與時支{info.HourZhu.Zhi.ToZhiString()}相刑；親子互動需多花心力、較互不理解或有衝突，關係是否失敗仍視相處狀況而定。",

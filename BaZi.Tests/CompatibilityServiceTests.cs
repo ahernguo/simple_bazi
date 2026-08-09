@@ -106,8 +106,28 @@ namespace BaZi.Tests {
             Assert.Contains("無特別不合的狀況", zodiacSection.Summary);
         }
 
+        [Fact]
+        public void AnalyzeRomance_AddsStructuredInternetSourceSections() {
+            var service = CreateService();
+            var self = _baZiService.GetBaZiInfo(new DateTime(1990, 1, 12, 9, 0, 0), 2);
+            var other = _baZiService.GetBaZiInfo(new DateTime(1992, 2, 17, 0, 0, 0), 1, false);
+
+            var result = service.Analyze(self, other, CompatibilityRelationship.Romance);
+
+            var branchRelationships = Assert.IsType<BranchRelationshipAnalysis>(result.BranchRelationships);
+            Assert.NotEmpty(branchRelationships.Hits);
+            Assert.Contains(result.InternetSourceSections, section => section.Title == "資料完整度");
+            Assert.Contains(result.InternetSourceSections, section => section.Title == "六合候選");
+            Assert.Contains(result.InternetSourceSections, section => section.Title == "六沖互動");
+        }
+
         private CompatibilityService CreateService() {
-            return new CompatibilityService(_baZiService, _tenGodService);
+            return new CompatibilityService(
+                _baZiService,
+                _tenGodService,
+                new EarthlyBranchRelationshipEngine(),
+                new PersonalOverviewTextService()
+            );
         }
     }
 }

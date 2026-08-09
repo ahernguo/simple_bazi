@@ -34,10 +34,19 @@ namespace BaZi.Services {
 
         private readonly BaZiService _baZiService;
         private readonly TenGodAnalysisService _tenGodService;
+        private readonly EarthlyBranchRelationshipEngine _branchRelationshipEngine;
+        private readonly PersonalOverviewTextService _textService;
 
-        public CompatibilityService(BaZiService baZiService, TenGodAnalysisService tenGodService) {
+        public CompatibilityService(
+            BaZiService baZiService,
+            TenGodAnalysisService tenGodService,
+            EarthlyBranchRelationshipEngine branchRelationshipEngine,
+            PersonalOverviewTextService textService
+        ) {
             _baZiService = baZiService;
             _tenGodService = tenGodService;
+            _branchRelationshipEngine = branchRelationshipEngine;
+            _textService = textService;
         }
 
         public CompatibilityResult Analyze(
@@ -72,7 +81,22 @@ namespace BaZi.Services {
                 _ => throw new ArgumentOutOfRangeException(nameof(relationship), relationship, null)
             };
 
-            return new CompatibilityResult(relationship, self, other, sections, GetLimitations(relationship));
+            BranchRelationshipAnalysis? branchRelationships = null;
+            IReadOnlyList<CompatibilitySection> internetSourceSections = [];
+            if (relationship == CompatibilityRelationship.Romance) {
+                branchRelationships = _branchRelationshipEngine.Analyze(self, other);
+                internetSourceSections = _textService.BuildRelationshipSections(branchRelationships);
+            }
+
+            return new CompatibilityResult(
+                relationship,
+                self,
+                other,
+                sections,
+                GetLimitations(relationship),
+                branchRelationships,
+                internetSourceSections
+            );
         }
 
         private static IReadOnlyList<CompatibilitySection> AnalyzeRomance(BaZiInfo self, BaZiInfo other) {
@@ -111,7 +135,7 @@ namespace BaZi.Services {
             var structureSummary = exactDayPillar
                 ? "雙方日柱干支相同，較容易互相理解；要留意喜忌與低潮可能同步。"
                 : sameStructure
-                    ? "雙方八個表層干支的五行數量相同、結構相似；不代表命局相同，但傾向、偏好等會較為相似"
+                    ? "雙方已知表層干支的五行數量相同、結構相似；不代表命局相同，但傾向、偏好等會較為相似"
                     : "雙方日柱與表層五行結構均不相同，傾向、偏好差異較大，但不代表不合";
 
             var selfSpouseInPalace = self.DayZhu.ZhiWuXing == selfSpouse;
@@ -289,7 +313,9 @@ namespace BaZi.Services {
         }
 
         private static IReadOnlyList<string> GetSiblingLocations(BaZiInfo info) {
-            var pillars = new[] { info.YearZhu, info.MonthZhu, info.DayZhu, info.HourZhu };
+            IReadOnlyList<Zhu> pillars = info.IsBirthTimeAccurate
+                ? [info.YearZhu, info.MonthZhu, info.DayZhu, info.HourZhu]
+                : [info.YearZhu, info.MonthZhu, info.DayZhu];
             return [.. pillars
             .Where(pillar => pillar.ZhuXing is ShiShen.BiJian or ShiShen.JieCai
                 || pillar.FuXing.Any(star => star is ShiShen.BiJian or ShiShen.JieCai))
@@ -303,12 +329,19 @@ namespace BaZi.Services {
         }
 
         private static IReadOnlyDictionary<WuXing, int> GetVisibleElementCounts(BaZiInfo info) {
-            var elements = new[] {
-            info.YearZhu.GanWuXing, info.YearZhu.ZhiWuXing,
-            info.MonthZhu.GanWuXing, info.MonthZhu.ZhiWuXing,
-            info.DayZhu.GanWuXing, info.DayZhu.ZhiWuXing,
-            info.HourZhu.GanWuXing, info.HourZhu.ZhiWuXing
-        };
+            var elements = new List<WuXing> {
+                info.YearZhu.GanWuXing,
+                info.YearZhu.ZhiWuXing,
+                info.MonthZhu.GanWuXing,
+                info.MonthZhu.ZhiWuXing,
+                info.DayZhu.GanWuXing,
+                info.DayZhu.ZhiWuXing
+            };
+            if (info.IsBirthTimeAccurate) {
+                elements.Add(info.HourZhu.GanWuXing);
+                elements.Add(info.HourZhu.ZhiWuXing);
+            }
+
             return elements.GroupBy(element => element).ToDictionary(group => group.Key, group => group.Count());
         }
 

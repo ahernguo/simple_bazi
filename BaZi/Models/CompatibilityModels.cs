@@ -82,7 +82,9 @@ namespace BaZi.Models {
         BaZiInfo Self,
         BaZiInfo Other,
         IReadOnlyList<CompatibilitySection> Sections,
-        IReadOnlyList<string> Limitations
+        IReadOnlyList<string> Limitations,
+        BranchRelationshipAnalysis? BranchRelationships,
+        IReadOnlyList<CompatibilitySection> InternetSourceSections
     );
 
     /// <summary>合盤關係的路由與顯示資訊。</summary>
