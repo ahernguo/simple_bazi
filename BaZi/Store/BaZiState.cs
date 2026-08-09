@@ -1,5 +1,5 @@
-using Fluxor;
 using BaZi.Models;
+using Fluxor;
 
 namespace BaZi.Store {
 
@@ -47,7 +47,7 @@ namespace BaZi.Store {
             BirthDate = birthDate;
             Gender = gender;
             Info = info;
-        } 
+        }
         #endregion
     }
 }

@@ -28,7 +28,7 @@
     }
 
     private void StateChanged(object? sender, EventArgs e) => InvokeAsync(StateHasChanged);
-    
+
     private void ToggleSidebar() => Dispatcher.Dispatch(new ToggleSidebarAction());
 
     public void Dispose() {

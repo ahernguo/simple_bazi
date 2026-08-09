@@ -12,18 +12,18 @@ using Windows.Graphics;
 using WinRT.Interop;
 #endif
 
-namespace BaZi;
+namespace BaZi {
 
-public static class MauiProgram {
-    public static MauiApp CreateMauiApp() {
-        ConfigureCulture();
+    public static class MauiProgram {
+        public static MauiApp CreateMauiApp() {
+            ConfigureCulture();
 
-        /* 取得建立程式的建置器 */
-        var builder = MauiApp.CreateBuilder();
-        builder.UseMauiApp<App>()
-            .ConfigureFonts(    // 將字型加入程式
-                fonts => fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular")
-            )
+            /* 取得建立程式的建置器 */
+            var builder = MauiApp.CreateBuilder();
+            builder.UseMauiApp<App>()
+                .ConfigureFonts(    // 將字型加入程式
+                    fonts => fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular")
+                )
 #if WINDOWS
             .ConfigureLifecycleEvents(  // 若為 Win APP (WinUI 3)，則設定預設視窗大小，並讓視窗置中
                 events => events.AddWindows(
@@ -54,45 +54,46 @@ public static class MauiProgram {
                 )
             );
 #else
-            ;
+                ;
 #endif
-        /* 啟用 WebView 支援 */
-        builder.Services.AddMauiBlazorWebView();
+            /* 啟用 WebView 支援 */
+            builder.Services.AddMauiBlazorWebView();
 
-        // 初始化 log4net。預設 log4net.config 於設定上會複製到 {outdir}\Configurations\log4net.config
-        var logRepository = log4net.LogManager.GetRepository(Assembly.GetExecutingAssembly());
-        var configFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configurations", "log4net.config");
-        if (File.Exists(configFile)) {
-            log4net.Config.XmlConfigurator.Configure(logRepository, new FileInfo(configFile));
-        }
+            // 初始化 log4net。預設 log4net.config 於設定上會複製到 {outdir}\Configurations\log4net.config
+            var logRepository = log4net.LogManager.GetRepository(Assembly.GetExecutingAssembly());
+            var configFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configurations", "log4net.config");
+            if (File.Exists(configFile)) {
+                log4net.Config.XmlConfigurator.Configure(logRepository, new FileInfo(configFile));
+            }
 
-        // 註冊服務，後續就可以從 Dispatcher 來呼叫、存取
-        builder.Services.AddSingleton<BaZiService>();
-        builder.Services.AddSingleton<TenGodAnalysisService>();
-        builder.Services.AddSingleton<PersonalOverviewService>();
-        builder.Services.AddSingleton<PersonalOverviewTextService>();
-        builder.Services.AddSingleton<CompatibilityService>();
-        builder.Services.AddSingleton<FortuneService>();
-        builder.Services.AddSingleton<SecurityService>();
-        builder.Services.AddScoped<Store.BaZiEffects>();
+            // 註冊服務，後續就可以從 Dispatcher 來呼叫、存取
+            builder.Services.AddSingleton<BaZiService>();
+            builder.Services.AddSingleton<TenGodAnalysisService>();
+            builder.Services.AddSingleton<PersonalOverviewService>();
+            builder.Services.AddSingleton<PersonalOverviewTextService>();
+            builder.Services.AddSingleton<CompatibilityService>();
+            builder.Services.AddSingleton<FortuneService>();
+            builder.Services.AddSingleton<SecurityService>();
+            builder.Services.AddScoped<Store.BaZiEffects>();
 
-        // 加入 Fluxor 服務
-        builder.Services.AddFluxor(options => options.ScanAssemblies(Assembly.GetExecutingAssembly()));
+            // 加入 Fluxor 服務
+            builder.Services.AddFluxor(options => options.ScanAssemblies(Assembly.GetExecutingAssembly()));
 
 #if DEBUG
-        // 於 Debug 時，啟用 Web View 的開發工具，並在訊息輸出中，加入 Debug 串流
-        builder.Services.AddBlazorWebViewDeveloperTools();
-        builder.Logging.AddDebug();
+            // 於 Debug 時，啟用 Web View 的開發工具，並在訊息輸出中，加入 Debug 串流
+            builder.Services.AddBlazorWebViewDeveloperTools();
+            builder.Logging.AddDebug();
 #endif
 
-        return builder.Build();
-    }
+            return builder.Build();
+        }
 
-    private static void ConfigureCulture() {
-        var culture = CultureInfo.GetCultureInfo("zh-TW");
-        CultureInfo.DefaultThreadCurrentCulture = culture;
-        CultureInfo.DefaultThreadCurrentUICulture = culture;
-        CultureInfo.CurrentCulture = culture;
-        CultureInfo.CurrentUICulture = culture;
+        private static void ConfigureCulture() {
+            var culture = CultureInfo.GetCultureInfo("zh-TW");
+            CultureInfo.DefaultThreadCurrentCulture = culture;
+            CultureInfo.DefaultThreadCurrentUICulture = culture;
+            CultureInfo.CurrentCulture = culture;
+            CultureInfo.CurrentUICulture = culture;
+        }
     }
 }
