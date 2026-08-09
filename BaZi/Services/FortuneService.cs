@@ -1325,11 +1325,11 @@ namespace BaZi.Services {
             var periodLabel = period == PeriodScope.LiuNian ? "本年" : "本月";
             var ganDisplay = FormatElement(ganElement, periodGanZhi.Gan.ToGanString());
             var zhiDisplay = FormatElement(zhiElement, periodGanZhi.Zhi.ToZhiString());
-            var ganTenGod = FormatTenGod(info, periodGanZhi.Gan.ToShiShen(info.DayZhu.Gan));
-            var zhiTenGod = FormatTenGod(info, periodGanZhi.Zhi.ToShiShen(info.DayZhu.Gan));
-            var wealthStar = FormatTenGod(info, ShiShen.Cai);
-            var outputStar = FormatTenGod(info, ShiShen.ShihShang);
-            var careerStar = FormatTenGod(info, ShiShen.GuanSha);
+            var ganTenGod = FormatTopicTenGod(periodGanZhi.Gan.ToShiShen(info.DayZhu.Gan));
+            var zhiTenGod = FormatTopicTenGod(periodGanZhi.Zhi.ToShiShen(info.DayZhu.Gan));
+            var wealthStar = FormatTopicTenGod(ShiShen.Cai);
+            var outputStar = FormatTopicTenGod(ShiShen.ShihShang);
+            var careerStar = FormatTopicTenGod(ShiShen.GuanSha);
 
             html.AppendLine("<div class=\"card p-3 mt-3\">");
             html.AppendLine("    <h5 class=\"card-title border-bottom pb-2\"><i class=\"fa-solid fa-coins me-2\"></i>財富與事業</h5>");
@@ -1397,8 +1397,8 @@ namespace BaZi.Services {
             var ganDisplay = FormatElement(ganElement, periodGanZhi.Gan.ToGanString());
             var zhiDisplay = FormatElement(zhiElement, periodGanZhi.Zhi.ToZhiString());
             var birthYearBranch = FormatElement(info.YearZhu.Zhi.ToWuXing(), info.YearZhu.Zhi.ToZhiString());
-            var spouseStar = FormatTenGod(info, spouseShiShen);
-            var peerStar = FormatTenGod(info, ShiShen.BiJie);
+            var spouseStar = FormatTopicTenGod(spouseShiShen);
+            var peerStar = FormatTopicTenGod(ShiShen.BiJie);
 
             // 待核對：筆記 4-5 只明定「流年」夫妻星＋比劫為桃花危機，沒有把公式延伸到流月。
             // 因此流月只顯示夫妻星時機，不把相同組合直接判成感情競爭訊號。
@@ -1499,11 +1499,11 @@ namespace BaZi.Services {
         private static string GetCapacityAdvice(BaZiInfo info, DaYun daYun) {
             // 待核對：筆記 3-4 對從格轉職有「成格比照身強」與「從強／從弱各自順勢」兩種衝突口徑。
             // 外部八字日元法資料只支持從格宜順勢的通則，故此處不採用「從強成格仍選財、官殺」的未確認規則。
-            var wealthStar = FormatTenGod(info, ShiShen.Cai);
-            var careerStar = FormatTenGod(info, ShiShen.GuanSha);
-            var outputStar = FormatTenGod(info, ShiShen.ShihShang);
-            var sealStar = FormatTenGod(info, ShiShen.Yin);
-            var peerStar = FormatTenGod(info, ShiShen.BiJie);
+            var wealthStar = FormatTopicTenGod(ShiShen.Cai);
+            var careerStar = FormatTopicTenGod(ShiShen.GuanSha);
+            var outputStar = FormatTopicTenGod(ShiShen.ShihShang);
+            var sealStar = FormatTopicTenGod(ShiShen.Yin);
+            var peerStar = FormatTopicTenGod(ShiShen.BiJie);
             return info.StrengthStatus switch {
                 GeJu.ShenQiang => $"身強有較多承接力，可在{wealthStar}或{careerStar}承接財務與工作機會，但仍應設定預算、停損與契約檢查。",
                 GeJu.ShenRuo when IsSupportiveDaYun(info, daYun) => $"身弱但目前大運以{sealStar}、{peerStar}幫扶，可承接財務與工作機會；合作仍須寫清權責、出資與退出機制。",
@@ -1514,12 +1514,11 @@ namespace BaZi.Services {
         }
 
         private static (string desc, bool accept) GetRelationshipAdvice(BaZiInfo info, DaYun daYun) {
-            var spouseStar = FormatTenGod(
-                info,
+            var spouseStar = FormatTopicTenGod(
                 info.Gender == Sex.Male ? ShiShen.Cai : ShiShen.GuanSha
             );
-            var sealStar = FormatTenGod(info, ShiShen.Yin);
-            var peerStar = FormatTenGod(info, ShiShen.BiJie);
+            var sealStar = FormatTopicTenGod(ShiShen.Yin);
+            var peerStar = FormatTopicTenGod(ShiShen.BiJie);
             return info.StrengthStatus switch {
                 GeJu.ShenQiang => ($"身強可直接觀察夫妻星（{spouseStar}）時間窗，並把能量轉為清楚表達、界線與具體行動。", true),
                 GeJu.ShenRuo when IsSupportiveDaYun(info, daYun) => ($"身弱但目前{sealStar}、{peerStar}大運已有幫扶，可承接感情機會。", true),
@@ -1697,6 +1696,10 @@ namespace BaZi.Services {
             var tenGodText = tenGod.ToShenString();
             var tooltip = $"{tenGodText}屬{element.ToWuXingString()}，依本命格局列為{stateText}";
             return $"<span class=\"topic-ten-god {stateClass}\" title=\"{tooltip}\">{displayText ?? tenGodText}</span>";
+        }
+
+        private static string FormatTopicTenGod(ShiShen tenGod, string? displayText = null) {
+            return $"<span class=\"topic-ten-god-reference\">{displayText ?? tenGod.ToShenString()}</span>";
         }
 
         private static WuXing GetTenGodElement(BaZiInfo info, ShiShen tenGod) {

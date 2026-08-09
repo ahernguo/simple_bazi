@@ -115,6 +115,13 @@ h1:focus {
 .topic-ten-god-favorable { color: #198754; }
 .topic-ten-god-unfavorable { color: #dc3545; }
 
+.topic-ten-god-reference {
+    color: var(--overview-ten-god-color);
+    font-weight: 600;
+    text-decoration: underline dotted;
+    text-underline-offset: 0.2rem;
+}
+
 .topic-notice {
     display: flex;
     gap: 0.75rem;

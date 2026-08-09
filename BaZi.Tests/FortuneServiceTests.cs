@@ -247,17 +247,18 @@ namespace BaZi.Tests {
         }
 
         [Fact]
-        public void LiuNianTopicAnalysis_ExistingYear_ReturnsThreeTopicCards() {
+        public void LiuNianTopicAnalysis_ExistingYear_UsesNeutralTenGodReferencesInThreeTopicCards() {
             var info = new BaZiInfo(BirthDate, 2);
             var service = new FortuneService();
 
             var html = service.LiuNianTopicAnalysis(info, 2026).Value;
 
             Assert.Contains("element-fire fw-semibold", html);
-            Assert.Contains("topic-ten-god ", html);
-            Assert.Contains("topic-ten-god-favorable", html);
-            Assert.Contains("topic-ten-god-unfavorable", html);
-            Assert.Contains("title=\"", html);
+            Assert.Contains("topic-ten-god-reference", html);
+            Assert.DoesNotContain("topic-ten-god ", html);
+            Assert.DoesNotContain("topic-ten-god-favorable", html);
+            Assert.DoesNotContain("topic-ten-god-unfavorable", html);
+            Assert.DoesNotContain("title=\"", html);
             Assert.Equal(3, html.Split("class=\"topic-notice mb-0\"").Length - 1);
             Assert.Equal(3, html.Split("fa-solid fa-triangle-exclamation topic-notice-icon").Length - 1);
             Assert.DoesNotContain("alert alert-secondary mb-0", html);
@@ -279,6 +280,10 @@ namespace BaZi.Tests {
             Assert.Contains("本月訊號", html);
             Assert.Contains("本月桃花時機", html);
             Assert.Contains("本月健康氣象", html);
+            Assert.Contains("topic-ten-god-reference", html);
+            Assert.DoesNotContain("topic-ten-god-favorable", html);
+            Assert.DoesNotContain("topic-ten-god-unfavorable", html);
+            Assert.DoesNotContain("title=\"", html);
             Assert.DoesNotContain("關係查證提醒", html);
         }
 
