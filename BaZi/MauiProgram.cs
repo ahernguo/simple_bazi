@@ -72,6 +72,8 @@ namespace BaZi {
             builder.Services.AddSingleton<TenGodAnalysisService>();
             builder.Services.AddSingleton<PersonalOverviewService>();
             builder.Services.AddSingleton<PersonalOverviewTextService>();
+            builder.Services.AddSingleton<FuYinAnalysisService>();
+            builder.Services.AddSingleton<FanYinAnalysisService>();
             builder.Services.AddSingleton<EarthlyBranchRelationshipEngine>();
             builder.Services.AddSingleton<CompatibilityService>();
             builder.Services.AddSingleton<FortuneService>();

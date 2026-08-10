@@ -1,6 +1,8 @@
 @page "/analysis"
 @inherits Fluxor.Blazor.Web.Components.FluxorComponent
 @inject IState<BaZiState> BaZiState
+@inject FuYinAnalysisService FuYinAnalysisService
+@inject FanYinAnalysisService FanYinAnalysisService
 @inject NavigationManager Navigation
 
 @if (BaZiState.Value.Info == null) {
@@ -8,6 +10,8 @@
     <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/")'>回首頁</button>
 } else {
     var info = BaZiState.Value.Info;
+    var fuYinResult = FuYinAnalysisService.AnalyzeNatal(info);
+    var fanYinResult = FanYinAnalysisService.AnalyzeNatal(info);
     <div class="container mt-4">
         <h2 class="mb-4 text-center"><i class="fa-solid fa-chart-column me-2"></i>命盤分析</h2>
 
@@ -158,6 +162,95 @@
                 </div>
             </div>
         </div>
+        @if (fuYinResult.HasFuYin || fanYinResult.HasFanYin) {
+            <hr class="overview-section-divider" aria-hidden="true" />
+            <p class="text-secondary mb-4">
+                <strong>下方非 《徐玉蘭的人生八字應用課》 的內容，來源為網路</strong>
+            </p>
+        }
+
+        @if (fuYinResult.HasFuYin) {
+            <div class="card p-4 mb-4">
+                <h5 class="card-title border-bottom pb-2">
+                    <i class="fa-solid fa-repeat me-2" aria-hidden="true"></i>命盤伏吟
+                </h5>
+                <p>
+                    四柱中有天干、地支完全相同的柱。
+                </p>
+                <ul>
+                    @foreach (var match in fuYinResult.Matches) {
+                        <li class="mb-2" @key="match">
+                            <strong>@string.Join("、", match.PillarNames)</strong>
+                            同為
+                            <strong>
+                                <span class="@GetElementColorClass(match.Gan.ToWuXing())">@match.Gan.ToGanString()</span><span class="@GetElementColorClass(match.Zhi.ToWuXing())">@match.Zhi.ToZhiString()</span>
+                            </strong>
+                            。
+                        </li>
+                        <li class="mb-2" @key="match">
+                            @match.Situation
+                        </li>
+                    }
+                </ul>
+
+                <div class="topic-notice mt-3 mb-0">
+                    <i class="fa-solid fa-circle-info topic-notice-icon" aria-hidden="true"></i>
+                    <ul class="compatibility-note-list mb-0">
+                        <li class="mb-1"><span class="text-warning">情緒敏感</span>&ensp;命局伏吟的人，心思通常比一般人細密，但也容易多愁善感、庸人自擾</li>
+                        <li class="mb-1"><span class="text-warning">內耗較重</span>&ensp;遇到事情容易在心裡轉好幾圈、想太多</li>
+                        <li class="mb-1"><span class="text-success">因應之道</span>&ensp;<strong>學會放下執著</strong>，避免過度悲觀或反覆猶豫；多做實事、少想壞事，把心力轉移到充實自我或穩健理財上</li>
+                    </ul>
+                </div>
+
+                @if (!fuYinResult.IncludesHourPillar) {
+                    <div class="alert alert-info">
+                        因出生時辰不確定，本次未將時柱納入伏吟判斷；補齊準確時辰後，結果可能改變。
+                    </div>
+                }
+            </div>
+        }
+
+        @if (fanYinResult.HasFanYin) {
+            <div class="card p-4 mb-4">
+                <h5 class="card-title border-bottom pb-2">
+                    <i class="fa-solid fa-repeat me-2" aria-hidden="true"></i>命盤反吟
+                </h5>
+                <p>
+                    四柱中有天干相剋、地支相剋相沖的狀況
+                </p>
+                <ul>
+                    @foreach (var match in fanYinResult.Matches) {
+                        <li class="mb-2" @key="match">
+                            <strong>@match.Pillars[0].Id</strong>
+                            <span class="@GetElementColorClass(match.Pillars[0].Gan.ToWuXing())">@match.Pillars[0].Gan.ToGanString()</span><span class="@GetElementColorClass(match.Pillars[0].Zhi.ToWuXing())">@match.Pillars[0].Zhi.ToZhiString()</span>
+                            &nbsp;與&nbsp;
+                            <strong>@match.Pillars[1].Id</strong>
+                            <span class="@GetElementColorClass(match.Pillars[1].Gan.ToWuXing())">@match.Pillars[1].Gan.ToGanString()</span><span class="@GetElementColorClass(match.Pillars[1].Zhi.ToWuXing())">@match.Pillars[1].Zhi.ToZhiString()</span>
+                            &nbsp;相剋相沖
+                        </li>
+                        <li class="mb-2" @key="match">
+                            @match.Situation
+                        </li>
+                    }
+                </ul>
+
+                <div class="topic-notice mt-3 mb-0">
+                    <i class="fa-solid fa-circle-info topic-notice-icon" aria-hidden="true"></i>
+                    <ul class="compatibility-note-list mb-0">
+                        <li class="mb-1"><span class="text-warning">心態反覆</span>&ensp;命局反吟的人，想法容易反覆、缺乏安全感</li>
+                        <li class="mb-1"><span class="text-warning">生活變動</span>&ensp;一生中常面臨工作轉換、搬家或人際關係的劇烈洗牌</li>
+                        <li class="mb-1"><span class="text-success">化解原則</span>&ensp;行事宜求「穩」、保持定力，多修身養性以減少內心衝突</li>
+                        <li class="mb-1"><span class="text-success">大運流年</span>&ensp;當遇到適合的大運或流年，或可將相沖的柱給合走，在大運或流年的時間內會讓反吟的狀況減輕</li>
+                    </ul>
+                </div>
+
+                @if (!fuYinResult.IncludesHourPillar) {
+                    <div class="alert alert-info">
+                        因出生時辰不確定，本次未將時柱納入反吟判斷；補齊準確時辰後，結果可能改變。
+                    </div>
+                }
+            </div>
+        }
     </div>
 }
 

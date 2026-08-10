@@ -1,7 +1,7 @@
 @echo off
 
 rem Please change the APP_VERSION manually
-set APP_VERSION=1.15
+set APP_VERSION=1.18.1
 
 set ROOT_NAME=BaZi_v%APP_VERSION%
 set OUTPUT_ZIP=%ROOT_NAME%_Windows_x64.7z
