@@ -203,6 +203,29 @@ namespace BaZi.Tests {
         }
 
         [Fact]
+        public void GetDaYunAndLiuNianYinAnalysis_ExistingYear_ReturnsOrderedPeriods() {
+            var info = new BaZiInfo(BirthDate, 2);
+            var service = new FortuneService();
+
+            var results = service.GetDaYunAndLiuNianYinAnalysis(info, 2026);
+
+            Assert.Equal(2, results.Count);
+            Assert.Equal("大運", results[0].PeriodName);
+            Assert.Equal("流年", results[1].PeriodName);
+        }
+
+        [Fact]
+        public void GetLiuYueYinAnalysis_ExistingMonth_ReturnsLiuYuePeriod() {
+            var info = new BaZiInfo(BirthDate, 2);
+            var service = new FortuneService();
+
+            var results = service.GetLiuYueYinAnalysis(info, 2026, 0);
+
+            var result = Assert.Single(results);
+            Assert.Equal("流月", result.PeriodName);
+        }
+
+        [Fact]
         public void LiuNianAnalysis_UncertainBirthTime_SkipsHourPillarInteractions() {
             DateTime birthDate = new(1990, 1, 1, 0, 0, 0);
             var accurateInfo = new BaZiInfo(birthDate, 2);

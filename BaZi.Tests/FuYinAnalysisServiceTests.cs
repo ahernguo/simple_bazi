@@ -53,6 +53,38 @@ namespace BaZi.Tests {
             );
         }
 
+        [Fact]
+        public void AnalyzePeriodPillars_ExactGanZhiMatch_ReturnsPeriodFuYin() {
+            IReadOnlyList<IGanZhi> sourcePillars = [
+                CreatePillar("年柱", "甲", "子"),
+                CreatePillar("月柱", "丙", "寅")
+            ];
+            var periodPillar = CreatePillar("流年", "甲", "子");
+
+            var result = _service.AnalyzePeriodPillars(sourcePillars, periodPillar, true);
+
+            var match = Assert.Single(result.Matches);
+            Assert.True(result.HasFuYin);
+            Assert.Equal("年柱", match.SourcePillar.Id);
+            Assert.Equal("流年", match.PeriodPillar.Id);
+            Assert.Contains("這個流年內", match.Situation);
+            Assert.Contains("不直接等同吉凶", match.Situation);
+        }
+
+        [Fact]
+        public void AnalyzePeriodPillars_OnlyGanOrZhiMatches_DoesNotReturnPeriodFuYin() {
+            IReadOnlyList<IGanZhi> sourcePillars = [
+                CreatePillar("年柱", "甲", "子"),
+                CreatePillar("月柱", "丙", "寅")
+            ];
+            var periodPillar = CreatePillar("流月", "甲", "寅");
+
+            var result = _service.AnalyzePeriodPillars(sourcePillars, periodPillar, true);
+
+            Assert.False(result.HasFuYin);
+            Assert.Empty(result.Matches);
+        }
+
         private static Zhu CreatePillar(string id, string gan, string zhi) {
             return new Zhu(id, gan, zhi, "比肩", ["比肩"]);
         }

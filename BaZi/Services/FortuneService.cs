@@ -5,6 +5,9 @@ namespace BaZi.Services {
 
     /// <summary>提供大運、流年與流月分析服務</summary>
     public class FortuneService {
+        private readonly FuYinAnalysisService _fuYinAnalysisService;
+        private readonly FanYinAnalysisService _fanYinAnalysisService;
+
         private enum PeriodScope {
             LiuNian,
             LiuYue
@@ -80,6 +83,18 @@ namespace BaZi.Services {
                 [WuXing.Shui] = "腎臟、膀胱、泌尿與循環系統"
             };
 
+        public FortuneService()
+            : this(new FuYinAnalysisService(), new FanYinAnalysisService()) {
+        }
+
+        public FortuneService(
+            FuYinAnalysisService fuYinAnalysisService,
+            FanYinAnalysisService fanYinAnalysisService
+        ) {
+            _fuYinAnalysisService = fuYinAnalysisService;
+            _fanYinAnalysisService = fanYinAnalysisService;
+        }
+
         public IReadOnlyList<int> GetLiuNianYears(BaZiInfo info) {
             return info.DaYunList
                 .SelectMany(daYun => daYun.LiuNianList)
@@ -95,6 +110,48 @@ namespace BaZi.Services {
 
             var (_, liuNian) = FindLiuNian(info, targetYear.Value);
             return liuNian?.LiuYueList ?? [];
+        }
+
+        /// <summary>取得指定年份所屬大運及流年的伏吟、反吟分析。</summary>
+        /// <param name="info">八字命盤。</param>
+        /// <param name="targetYear">要分析的西元年份。</param>
+        /// <returns>依大運、流年排序的分析結果；找不到年份時傳回空集合。</returns>
+        public IReadOnlyList<FortuneYinAnalysisResult> GetDaYunAndLiuNianYinAnalysis(
+            BaZiInfo info,
+            int targetYear
+        ) {
+            var (daYun, liuNian) = FindLiuNian(info, targetYear);
+            if (daYun is null || liuNian is null) {
+                return [];
+            }
+
+            return [
+                CreateYinAnalysis(info, daYun),
+                CreateYinAnalysis(info, liuNian, [daYun])
+            ];
+        }
+
+        /// <summary>取得指定流月的伏吟、反吟分析。</summary>
+        /// <param name="info">八字命盤。</param>
+        /// <param name="targetYear">流月所屬的西元年份。</param>
+        /// <param name="targetMonthIndex">流月序號，範圍為 0 到 11。</param>
+        /// <returns>流月分析結果；找不到指定流月時傳回空集合。</returns>
+        public IReadOnlyList<FortuneYinAnalysisResult> GetLiuYueYinAnalysis(
+            BaZiInfo info,
+            int targetYear,
+            int targetMonthIndex
+        ) {
+            var (daYun, liuNian) = FindLiuNian(info, targetYear);
+            if (daYun is null || liuNian is null) {
+                return [];
+            }
+
+            var liuYue = liuNian.LiuYueList.FirstOrDefault(month => month.Index == targetMonthIndex);
+            if (liuYue is null) {
+                return [];
+            }
+
+            return [CreateYinAnalysis(info, liuYue, [daYun, liuNian])];
         }
 
         /// <summary>取得指定流月正式生效的起訖節氣與日期時間。</summary>
@@ -1645,6 +1702,16 @@ namespace BaZi.Services {
             }
 
             return (null, null);
+        }
+
+        private FortuneYinAnalysisResult CreateYinAnalysis(
+            BaZiInfo info,
+            IGanZhi periodPillar,
+            IReadOnlyList<IGanZhi>? earlierFortunePillars = null
+        ) {
+            var fuYin = _fuYinAnalysisService.AnalyzePeriod(info, periodPillar, earlierFortunePillars);
+            var fanYin = _fanYinAnalysisService.AnalyzePeriod(info, periodPillar, earlierFortunePillars);
+            return new FortuneYinAnalysisResult(periodPillar.Id, fuYin, fanYin);
         }
 
         private string GetPeriodHtml(

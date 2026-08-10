@@ -61,6 +61,7 @@
 
         @if (_page.QueriedYear is int targetYear && _page.QueriedMonthIndex is int targetMonthIndex) {
             var startInfo = FortuneService.GetLiuYueStartInfo(info, targetYear, targetMonthIndex);
+            var yinAnalyses = FortuneService.GetLiuYueYinAnalysis(info, targetYear, targetMonthIndex);
             <div class="card p-3 mt-3">
                 <h5 class="card-title border-bottom pb-2">流月節氣區間</h5>
                 @if (startInfo is null) {
@@ -91,6 +92,7 @@
 
             @FortuneService.LiuYueAnalysis(info, targetYear, targetMonthIndex)
             @FortuneService.LiuYueTopicAnalysis(info, targetYear, targetMonthIndex)
+            <FortuneYinAnalysisSection Analyses="yinAnalyses" />
         }
     </div>
 }
