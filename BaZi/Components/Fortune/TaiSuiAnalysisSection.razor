@@ -9,7 +9,7 @@
                 <div class="text-secondary mb-1">本命生肖</div>
                 <div class="fs-5 fw-semibold">
                     @Analysis.NatalZodiac（年支
-                    <ElementText Element="Analysis.NatalYearBranch.ToWuXing()" Text="Analysis.NatalYearBranch.ToZhiString()" />）
+                    <ElementText Element="Analysis.NatalYearBranch.ToWuXing()" Text="@(Analysis.NatalYearBranch.ToZhiString())" />）
                 </div>
             </div>
         </div>
@@ -17,7 +17,7 @@
             <div class="border rounded p-3 h-100">
                 <div class="text-secondary mb-1">@Analysis.Year 流年生肖</div>
                 <div class="fs-5 fw-semibold">
-                    @Analysis.AnnualZodiac（<ElementText Element="Analysis.AnnualStem.ToWuXing()" Text="Analysis.AnnualStem.ToGanString()" /><ElementText Element="Analysis.AnnualBranch.ToWuXing()" Text="Analysis.AnnualBranch.ToZhiString()" />年）
+                    @Analysis.AnnualZodiac（<ElementText Element="Analysis.AnnualStem.ToWuXing()" Text="@(Analysis.AnnualStem.ToGanString())" /><ElementText Element="Analysis.AnnualBranch.ToWuXing()" Text="@(Analysis.AnnualBranch.ToZhiString())" />年）
                 </div>
             </div>
         </div>
@@ -60,7 +60,7 @@
     @if (Analysis.IsZodiacClash) {
         <div class="alert alert-warning">
             <strong>生肖相沖：</strong>@(Analysis.NatalZodiac)與@(Analysis.AnnualZodiac)形成
-            <ElementText Element="Analysis.NatalYearBranch.ToWuXing()" Text="Analysis.NatalYearBranch.ToZhiString()" /><ElementText Element="Analysis.AnnualBranch.ToWuXing()" Text="Analysis.AnnualBranch.ToZhiString()" />六沖，較需留意移動、變動與摩擦。
+            <ElementText Element="Analysis.NatalYearBranch.ToWuXing()" Text="@(Analysis.NatalYearBranch.ToZhiString())" /><ElementText Element="Analysis.AnnualBranch.ToWuXing()" Text="@(Analysis.AnnualBranch.ToZhiString())" />六沖，較需留意移動、變動與摩擦。
         </div>
     } else {
         <p><strong>生肖相沖：</strong>本命生肖與所選流年生肖未形成六沖。</p>
@@ -72,9 +72,9 @@
             @foreach (TaiSuiPillarInteraction interaction in Analysis.IndirectInteractions) {
                 <li class="mb-1" @key="interaction.PillarName">
                     @interaction.PillarName 地支
-                    <ElementText Element="interaction.NatalBranch.ToWuXing()" Text="interaction.NatalBranch.ToZhiString()" />
+                    <ElementText Element="interaction.NatalBranch.ToWuXing()" Text="@(interaction.NatalBranch.ToZhiString())" />
                     與流年地支
-                    <ElementText Element="Analysis.AnnualBranch.ToWuXing()" Text="Analysis.AnnualBranch.ToZhiString()" />
+                    <ElementText Element="Analysis.AnnualBranch.ToWuXing()" Text="@(Analysis.AnnualBranch.ToZhiString())" />
                     形成
                     @string.Join("、", interaction.Interactions.Select(GetIndirectLabel))，列為間接犯太歲。
                 </li>
@@ -95,9 +95,9 @@
             @foreach (var reinforcement in Analysis.ReinforcedInteractions!) {
                 <li class="mb-1" @key="(reinforcement.RepeatedPillarName, reinforcement.RelatedPillarName)">
                     流年地支與@reinforcement.RepeatedPillarName 地支
-                    <ElementText Element="reinforcement.RepeatedBranch.ToWuXing()" Text="reinforcement.RepeatedBranch.ToZhiString()" />
+                    <ElementText Element="reinforcement.RepeatedBranch.ToWuXing()" Text="@(reinforcement.RepeatedBranch.ToZhiString())" />
                     同支，使原局和@reinforcement.RelatedPillarName 地支
-                    <ElementText Element="reinforcement.RelatedBranch.ToWuXing()" Text="reinforcement.RelatedBranch.ToZhiString()" />
+                    <ElementText Element="reinforcement.RelatedBranch.ToWuXing()" Text="@(reinforcement.RelatedBranch.ToZhiString())" />
                     的 @string.Join("、", reinforcement.Interactions.Select(GetIndirectLabel)) 再次集中。
                 </li>
             }

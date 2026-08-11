@@ -96,8 +96,8 @@
                                     <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
                                         <span class="daily-ganzhi"><GanZhiText Value="result.Day" /></span>
                                         <span class="text-body-secondary">
-                                            流月 <ElementText Element="result.Context.MonthGan.ToWuXing()" Text="result.Context.MonthGan.ToGanString()" />
-                                            <ElementText Element="result.Context.MonthZhi.ToWuXing()" Text="result.Context.MonthZhi.ToZhiString()" />
+                                            流月 <ElementText Element="result.Context.MonthGan.ToWuXing()" Text="@(result.Context.MonthGan.ToGanString())" />
+                                            <ElementText Element="result.Context.MonthZhi.ToWuXing()" Text="@(result.Context.MonthZhi.ToZhiString())" />
                                         </span>
                                     </div>
 
