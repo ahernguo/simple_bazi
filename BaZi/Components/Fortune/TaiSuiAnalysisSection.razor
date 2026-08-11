@@ -62,7 +62,7 @@
                     @string.Join("、", interaction.Interactions.Select(GetIndirectLabel))，列為間接犯太歲。
                 </li>
                 @foreach (var interactionType in interaction.Interactions) {
-                    <li class="mb-1 text-secondary" @key="interactionType">
+                    <li class="mb-1 text-secondary" @key="(interaction.PillarName, interactionType)">
                         <span>間接</span>@GetDirectLabel(interactionType)：@GetIndirectIssue(interactionType)但其力量會較直接犯太歲小一點，但仍需注意
                     </li>
                 }
