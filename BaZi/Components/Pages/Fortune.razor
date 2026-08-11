@@ -70,8 +70,12 @@
 
         @if (_fortunePage.QueriedLiuNianYear is int targetYear) {
             var yinAnalyses = FortuneService.GetDaYunAndLiuNianYinAnalysis(info, targetYear);
+            var taiSuiAnalysis = FortuneService.GetTaiSuiAnalysis(info, targetYear);
             @FortuneService.DaYunAnalysis(info, targetYear)
             @FortuneService.LiuNianAnalysis(info, targetYear)
+            @if (taiSuiAnalysis is not null) {
+                <TaiSuiAnalysisSection Analysis="taiSuiAnalysis" />
+            }
             @FortuneService.LiuNianTopicAnalysis(info, targetYear)
             <FortuneYinAnalysisSection Analyses="yinAnalyses" />
         }

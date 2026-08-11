@@ -1,0 +1,111 @@
+<div class="card p-3 mt-3">
+    <h5 class="card-title border-bottom pb-2">
+        <i class="fa-solid fa-shield-halved me-2" aria-hidden="true"></i>犯太歲與生肖相沖
+    </h5>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <div class="border rounded p-3 h-100">
+                <div class="text-secondary mb-1">本命生肖</div>
+                <div class="fs-5 fw-semibold">
+                    @Analysis.NatalZodiac（年支
+                    <span class="@GetElementColorClass(Analysis.NatalYearBranch.ToWuXing())">@Analysis.NatalYearBranch.ToZhiString()</span>）
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="border rounded p-3 h-100">
+                <div class="text-secondary mb-1">@Analysis.Year 流年生肖</div>
+                <div class="fs-5 fw-semibold">
+                    @Analysis.AnnualZodiac（<span class="@GetElementColorClass(Analysis.AnnualStem.ToWuXing())">@Analysis.AnnualStem.ToGanString()</span><span class="@GetElementColorClass(Analysis.AnnualBranch.ToWuXing())">@Analysis.AnnualBranch.ToZhiString()</span>年）
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Analysis.HasDirectTaiSui) {
+        <div class="alert alert-warning">
+            <strong>直接犯太歲：</strong>@string.Join("、", Analysis.DirectInteractions.Select(GetDirectLabel))。
+        </div>
+    } else {
+        <div class="alert alert-success">
+            本命年支與所選流年未形成值、沖、刑、害、破，沒有直接犯太歲。
+        </div>
+    }
+
+    @if (Analysis.IsZodiacClash) {
+        <div class="alert alert-warning">
+            <strong>生肖相沖：</strong>@(Analysis.NatalZodiac)與@(Analysis.AnnualZodiac)形成
+            <span class="@GetElementColorClass(Analysis.NatalYearBranch.ToWuXing())">@Analysis.NatalYearBranch.ToZhiString()</span><span class="@GetElementColorClass(Analysis.AnnualBranch.ToWuXing())">@Analysis.AnnualBranch.ToZhiString()</span>六沖，較需留意移動、變動與摩擦。
+        </div>
+    } else {
+        <p><strong>生肖相沖：</strong>本命生肖與所選流年生肖未形成六沖。</p>
+    }
+
+    <h6 class="mt-3">四柱延伸比較</h6>
+    @if (Analysis.HasIndirectTaiSui) {
+        <ul class="mb-3">
+            @foreach (TaiSuiPillarInteraction interaction in Analysis.IndirectInteractions) {
+                <li class="mb-1" @key="interaction.PillarName">
+                    @interaction.PillarName 地支
+                    <span class="@GetElementColorClass(interaction.NatalBranch.ToWuXing())">@interaction.NatalBranch.ToZhiString()</span>
+                    與流年地支
+                    <span class="@GetElementColorClass(Analysis.AnnualBranch.ToWuXing())">@Analysis.AnnualBranch.ToZhiString()</span>
+                    形成
+                    @string.Join("、", interaction.Interactions.Select(GetIndirectLabel))，列為間接犯太歲。
+                </li>
+            }
+        </ul>
+    } else {
+        <p>已納入的月、日、時支與所選流年未形成間接犯太歲。</p>
+    }
+
+    @if (!Analysis.IsHourPillarIncluded) {
+        <div class="alert alert-info">
+            因出生時辰不確定，本次未將時柱納入比較；補齊準確時辰後，結果可能改變。
+        </div>
+    }
+
+    <p class="small text-secondary mb-0">
+        犯太歲與六沖是流年互動及變動提醒，不代表一定倒楣或必然發生特定事件；仍須配合喜用神、大運、完整命盤與現實狀況判讀。
+    </p>
+</div>
+
+@code {
+    /// <summary>取得要呈現的犯太歲分析。</summary>
+    [Parameter, EditorRequired]
+    public TaiSuiAnalysisResult Analysis { get; set; } = null!;
+
+    private static string GetDirectLabel(TaiSuiInteractionType interaction) {
+        return interaction switch {
+            TaiSuiInteractionType.SameBranch => "值太歲",
+            TaiSuiInteractionType.SixClash => "沖太歲",
+            TaiSuiInteractionType.Punishment => "刑太歲",
+            TaiSuiInteractionType.SixHarm => "害太歲",
+            TaiSuiInteractionType.SixBreak => "破太歲",
+            _ => throw new ArgumentOutOfRangeException(nameof(interaction), interaction, null)
+        };
+    }
+
+    private static string GetIndirectLabel(TaiSuiInteractionType interaction) {
+        return interaction switch {
+            TaiSuiInteractionType.SameBranch => "同支",
+            TaiSuiInteractionType.SixClash => "相沖",
+            TaiSuiInteractionType.Punishment => "相刑",
+            TaiSuiInteractionType.SixHarm => "相害",
+            TaiSuiInteractionType.SixBreak => "相破",
+            _ => throw new ArgumentOutOfRangeException(nameof(interaction), interaction, null)
+        };
+    }
+
+    private static string GetElementColorClass(WuXing element) {
+        return element switch {
+            WuXing.Mu => "element-wood",
+            WuXing.Huo => "element-fire",
+            WuXing.Tu => "element-earth",
+            WuXing.Jin => "element-metal",
+            WuXing.Shui => "element-water",
+            _ => string.Empty
+        };
+    }
+}

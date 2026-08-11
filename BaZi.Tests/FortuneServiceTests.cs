@@ -12,6 +12,13 @@ namespace BaZi.Tests {
             return $"{firstId} <span class=\"border-bottom-dash\">{firstZhi}</span> 與{secondId} <span class=\"border-bottom-dash\">{secondZhi}</span> 形成「<strong class=\"text-danger\">{relation}</strong>」";
         }
 
+        private static int GetLiuNianYear(BaZiInfo info, DiZhi branch) {
+            return info.DaYunList
+                .SelectMany(daYun => daYun.LiuNianList)
+                .First(liuNian => liuNian.Zhi == branch)
+                .Year;
+        }
+
         [Fact]
         public void GetLiuYueMonths_ExistingYear_ReturnsTwelveOrderedMonths() {
             var info = new BaZiInfo(BirthDate, 2);
@@ -119,6 +126,101 @@ namespace BaZi.Tests {
             var startInfo = service.GetLiuYueStartInfo(info, 2026, 12);
 
             Assert.Null(startInfo);
+        }
+
+        [Fact]
+        public void GetTaiSuiAnalysis_SameYearBranch_ReturnsDirectValueTaiSui() {
+            var info = new BaZiInfo(BirthDate, 2);
+            var service = new FortuneService();
+            int targetYear = GetLiuNianYear(info, info.YearZhu.Zhi);
+
+            var analysis = service.GetTaiSuiAnalysis(info, targetYear);
+
+            Assert.NotNull(analysis);
+            TaiSuiAnalysisResult actual = analysis!;
+            Assert.Equal("蛇", actual.NatalZodiac);
+            Assert.Equal(actual.NatalZodiac, actual.AnnualZodiac);
+            Assert.Contains(TaiSuiInteractionType.SameBranch, actual.DirectInteractions);
+            Assert.True(actual.HasDirectTaiSui);
+            Assert.False(actual.IsZodiacClash);
+        }
+
+        [Fact]
+        public void GetTaiSuiAnalysis_ClashingYearBranch_ReturnsZodiacClash() {
+            var info = new BaZiInfo(BirthDate, 2);
+            var service = new FortuneService();
+            IList<DiZhi> clashPair = BaZiDefine.Chong.Single(pair => pair.Contains(info.YearZhu.Zhi));
+            DiZhi clashBranch = clashPair.Single(branch => branch != info.YearZhu.Zhi);
+            int targetYear = GetLiuNianYear(info, clashBranch);
+
+            var analysis = service.GetTaiSuiAnalysis(info, targetYear);
+
+            Assert.NotNull(analysis);
+            TaiSuiAnalysisResult actual = analysis!;
+            Assert.Equal(clashBranch, actual.AnnualBranch);
+            Assert.Contains(TaiSuiInteractionType.SixClash, actual.DirectInteractions);
+            Assert.True(actual.IsZodiacClash);
+        }
+
+        [Fact]
+        public void GetTaiSuiAnalysis_OverlappingRelations_PreservesEveryTaiSuiType() {
+            var info = new BaZiInfo(BirthDate, 2);
+            var service = new FortuneService();
+            Assert.Equal(DiZhi.Si, info.YearZhu.Zhi);
+            int yinYear = GetLiuNianYear(info, DiZhi.Yin);
+            int shenYear = GetLiuNianYear(info, DiZhi.Shen);
+
+            var yinAnalysis = service.GetTaiSuiAnalysis(info, yinYear);
+            var shenAnalysis = service.GetTaiSuiAnalysis(info, shenYear);
+
+            Assert.NotNull(yinAnalysis);
+            Assert.Contains(TaiSuiInteractionType.Punishment, yinAnalysis!.DirectInteractions);
+            Assert.Contains(TaiSuiInteractionType.SixHarm, yinAnalysis.DirectInteractions);
+            Assert.NotNull(shenAnalysis);
+            Assert.Contains(TaiSuiInteractionType.Punishment, shenAnalysis!.DirectInteractions);
+            Assert.Contains(TaiSuiInteractionType.SixBreak, shenAnalysis.DirectInteractions);
+        }
+
+        [Fact]
+        public void GetTaiSuiAnalysis_IndirectSameBranch_ListsNatalPillar() {
+            var info = new BaZiInfo(BirthDate, 2);
+            var service = new FortuneService();
+            int targetYear = GetLiuNianYear(info, info.MonthZhu.Zhi);
+
+            var analysis = service.GetTaiSuiAnalysis(info, targetYear);
+
+            Assert.NotNull(analysis);
+            TaiSuiPillarInteraction monthInteraction = Assert.Single(
+                analysis!.IndirectInteractions.Where(interaction => interaction.PillarName == "月柱")
+            );
+            Assert.Equal(info.MonthZhu.Zhi, monthInteraction.NatalBranch);
+            Assert.Contains(TaiSuiInteractionType.SameBranch, monthInteraction.Interactions);
+        }
+
+        [Fact]
+        public void GetTaiSuiAnalysis_UncertainBirthTime_ExcludesHourPillar() {
+            var info = new BaZiInfo(BirthDate, 2, false);
+            var service = new FortuneService();
+            int targetYear = GetLiuNianYear(info, info.HourZhu.Zhi);
+
+            var analysis = service.GetTaiSuiAnalysis(info, targetYear);
+
+            Assert.NotNull(analysis);
+            Assert.False(analysis!.IsHourPillarIncluded);
+            Assert.DoesNotContain(
+                analysis.IndirectInteractions,
+                interaction => interaction.PillarName == "時柱"
+            );
+        }
+
+        [Fact]
+        public void GetTaiSuiAnalysis_MissingYear_ReturnsNull() {
+            var info = new BaZiInfo(BirthDate, 2);
+            var service = new FortuneService();
+
+            var analysis = service.GetTaiSuiAnalysis(info, 1800);
+
+            Assert.Null(analysis);
         }
 
         [Fact]

@@ -104,6 +104,52 @@ namespace BaZi.Services {
                 .ToArray();
         }
 
+        /// <summary>比較本命四柱與指定流年，取得犯太歲及生肖相沖分析。</summary>
+        /// <param name="info">八字命盤。</param>
+        /// <param name="targetYear">要分析的西元年份。</param>
+        /// <returns>犯太歲分析；找不到指定流年時傳回 <see langword="null"/>。</returns>
+        public TaiSuiAnalysisResult? GetTaiSuiAnalysis(BaZiInfo info, int targetYear) {
+            ArgumentNullException.ThrowIfNull(info);
+
+            var (_, liuNian) = FindLiuNian(info, targetYear);
+            if (liuNian is null) {
+                return null;
+            }
+
+            var directInteractions = GetTaiSuiInteractions(info.YearZhu.Zhi, liuNian.Zhi);
+            var natalPillars = new List<(string Name, Zhu Pillar)> {
+                ("月柱", info.MonthZhu),
+                ("日柱", info.DayZhu)
+            };
+            if (info.IsBirthTimeAccurate) {
+                natalPillars.Add(("時柱", info.HourZhu));
+            }
+
+            var indirectInteractions = new List<TaiSuiPillarInteraction>();
+            foreach ((string pillarName, Zhu pillar) in natalPillars) {
+                var interactions = GetTaiSuiInteractions(pillar.Zhi, liuNian.Zhi);
+                if (interactions.Count > 0) {
+                    indirectInteractions.Add(new TaiSuiPillarInteraction(
+                        pillarName,
+                        pillar.Zhi,
+                        interactions
+                    ));
+                }
+            }
+
+            return new TaiSuiAnalysisResult(
+                targetYear,
+                liuNian.Gan,
+                liuNian.Zhi,
+                GetZodiac(liuNian.Zhi),
+                GetZodiac(info.YearZhu.Zhi),
+                info.YearZhu.Zhi,
+                directInteractions,
+                indirectInteractions,
+                info.IsBirthTimeAccurate
+            );
+        }
+
         public IReadOnlyList<LiuYue> GetLiuYueMonths(BaZiInfo info, int? targetYear) {
             if (targetYear is null)
                 return [];
@@ -1702,6 +1748,69 @@ namespace BaZi.Services {
             }
 
             return (null, null);
+        }
+
+        private static IReadOnlyList<TaiSuiInteractionType> GetTaiSuiInteractions(
+            DiZhi natalBranch,
+            DiZhi annualBranch
+        ) {
+            var interactions = new List<TaiSuiInteractionType>();
+            if (natalBranch == annualBranch) {
+                interactions.Add(TaiSuiInteractionType.SameBranch);
+            }
+
+            if (ContainsBranchPair(BaZiDefine.Chong, natalBranch, annualBranch)) {
+                interactions.Add(TaiSuiInteractionType.SixClash);
+            }
+
+            if (IsPunishment(natalBranch, annualBranch)) {
+                interactions.Add(TaiSuiInteractionType.Punishment);
+            }
+
+            if (ContainsBranchPair(BaZiDefine.Hai, natalBranch, annualBranch)) {
+                interactions.Add(TaiSuiInteractionType.SixHarm);
+            }
+
+            if (ContainsBranchPair(BaZiDefine.Po, natalBranch, annualBranch)) {
+                interactions.Add(TaiSuiInteractionType.SixBreak);
+            }
+
+            return interactions;
+        }
+
+        private static bool ContainsBranchPair(
+            IEnumerable<IList<DiZhi>> groups,
+            DiZhi first,
+            DiZhi second
+        ) {
+            return first != second
+                && groups.Any(group => group.Contains(first) && group.Contains(second));
+        }
+
+        private static bool IsPunishment(DiZhi first, DiZhi second) {
+            if (first == second) {
+                return BaZiDefine.SelfXing.Contains(first);
+            }
+
+            return BaZiDefine.TwoXing.Any(group => group.Contains(first) && group.Contains(second));
+        }
+
+        private static string GetZodiac(DiZhi branch) {
+            return branch switch {
+                DiZhi.Zi => "鼠",
+                DiZhi.Chou => "牛",
+                DiZhi.Yin => "虎",
+                DiZhi.Mao => "兔",
+                DiZhi.Chen => "龍",
+                DiZhi.Si => "蛇",
+                DiZhi.Wu => "馬",
+                DiZhi.Wei => "羊",
+                DiZhi.Shen => "猴",
+                DiZhi.You => "雞",
+                DiZhi.Xu => "狗",
+                DiZhi.Hai => "豬",
+                _ => throw new ArgumentOutOfRangeException(nameof(branch), branch, null)
+            };
         }
 
         private FortuneYinAnalysisResult CreateYinAnalysis(
