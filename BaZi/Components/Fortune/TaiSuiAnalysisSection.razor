@@ -26,6 +26,13 @@
     @if (Analysis.HasDirectTaiSui) {
         <div class="alert alert-warning">
             <strong>直接犯太歲：</strong>@string.Join("、", Analysis.DirectInteractions.Select(GetDirectLabel))。
+            <ul class="mt-2 mb-0">
+                @foreach (TaiSuiInteractionType interaction in Analysis.DirectInteractions) {
+                    <li class="mb-1" @key="interaction">
+                        <strong>@GetDirectLabel(interaction)：</strong>@GetDirectIssue(interaction)
+                    </li>
+                }
+            </ul>
         </div>
     } else {
         <div class="alert alert-success">
@@ -54,6 +61,11 @@
                     形成
                     @string.Join("、", interaction.Interactions.Select(GetIndirectLabel))，列為間接犯太歲。
                 </li>
+                @foreach (var interactionType in interaction.Interactions) {
+                    <li class="mb-1 text-secondary" @key="interactionType">
+                        <span>間接</span>@GetDirectLabel(interactionType)：@GetIndirectIssue(interactionType)但其力量會較直接犯太歲小一點，但仍需注意
+                    </li>
+                }
             }
         </ul>
     } else {
@@ -66,9 +78,10 @@
         </div>
     }
 
-    <p class="small text-secondary mb-0">
-        犯太歲與六沖是流年互動及變動提醒，不代表一定倒楣或必然發生特定事件；仍須配合喜用神、大運、完整命盤與現實狀況判讀。
-    </p>
+    <div class="topic-notice mb-0">
+        <i class="fa-solid fa-triangle-exclamation topic-notice-icon" aria-hidden="true"></i>
+        <div>犯太歲與六沖是流年互動及變動提醒，不代表一定倒楣或必然發生特定事件；仍須配合喜用神、大運、完整命盤與現實狀況判讀。</div>
+    </div>
 </div>
 
 @code {
@@ -94,6 +107,28 @@
             TaiSuiInteractionType.Punishment => "相刑",
             TaiSuiInteractionType.SixHarm => "相害",
             TaiSuiInteractionType.SixBreak => "相破",
+            _ => throw new ArgumentOutOfRangeException(nameof(interaction), interaction, null)
+        };
+    }
+
+    private static string GetDirectIssue(TaiSuiInteractionType interaction) {
+        return interaction switch {
+            TaiSuiInteractionType.SameBranch => "即本命年；運氣與情緒起伏較大，身心健康易有狀況。",
+            TaiSuiInteractionType.SixClash => "可能呈現快速、移動或變動的(運勢、想法、健康、突如其來的搬家等等)，特別注意車關與跌倒。",
+            TaiSuiInteractionType.Punishment => "可能出現糾結、摩擦或壓力。",
+            TaiSuiInteractionType.SixHarm => "可能出現人際阻礙或遭陷害(不是必然發生)。",
+            TaiSuiInteractionType.SixBreak => "可能出現破財、計畫受阻或生變；其力量相對較弱。",
+            _ => throw new ArgumentOutOfRangeException(nameof(interaction), interaction, null)
+        };
+    }
+
+    private static string GetIndirectIssue(TaiSuiInteractionType interaction) {
+        return interaction switch {
+            TaiSuiInteractionType.SameBranch => "運勢較多變動、注意身體健康。",
+            TaiSuiInteractionType.SixClash => "可能呈現快速、移動或變動的(運勢、想法、健康、突如其來的搬家等等)，特別注意車關與跌倒。",
+            TaiSuiInteractionType.Punishment => "可能出現糾結、摩擦或壓力。",
+            TaiSuiInteractionType.SixHarm => "可能出現小人或人事不順。",
+            TaiSuiInteractionType.SixBreak => "可能出現破財、計畫受阻或生變。",
             _ => throw new ArgumentOutOfRangeException(nameof(interaction), interaction, null)
         };
     }
