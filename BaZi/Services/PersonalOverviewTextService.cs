@@ -163,11 +163,29 @@ namespace BaZi.Services {
             AddRelationSection(
                 sections,
                 analysis,
+                BranchRelationshipType.SixBreak,
+                "六破互動",
+                "六破代表既有安排容易被打斷、承諾反覆或合作節奏不穩；問題通常需要重新確認與修補。",
+                CompatibilityTone.Caution,
+                ["先核對具體事件與責任，不把六破直接斷成關係破裂。"]
+            );
+            AddRelationSection(
+                sections,
+                analysis,
                 BranchRelationshipType.Punishment,
                 "相刑互動",
                 "相刑為高反應、防衛被觸發、反覆糾結或壓力累積；較容易陷入情緒、溝通不良與猜測對方想法等狀況，需多注意互動狀況。",
                 CompatibilityTone.Caution,
                 ["'三支齊全' 會觸發三刑，為較嚴重的狀況；'部分成立' 則需要多注意、觀察；'自刑候選' 表示同支出現兩次，容易自己糾結。"]
+            );
+            AddRelationSection(
+                sections,
+                analysis,
+                BranchRelationshipType.ThreeCombination,
+                "三合互動",
+                "三合或兩支候選表示方向較容易靠攏；兩支只算半合或暗拱，三支齊全也仍須另查成局條件。",
+                CompatibilityTone.Positive,
+                ["只標示組合候選，不直接判定已合化，也不以此保證感情結果。"]
             );
             AddRelationSection(
                 sections,
@@ -182,7 +200,7 @@ namespace BaZi.Services {
             if (analysis.Hits.Count == 0) {
                 sections.Add(new CompatibilitySection(
                     "未見指定地支互動",
-                    "已知柱位沒有六合、六沖、六害、相刑或三會，感情上無特殊狀況；不代表關係絕對順利或有狀況。",
+                    "已知柱位沒有六合、六沖、六害、六破、相刑、三合或三會；這只表示未命中指定組合，不代表關係絕對順利或一定有狀況。",
                     [],
                     CompatibilityTone.Information
                 ));
@@ -298,9 +316,14 @@ namespace BaZi.Services {
             }
 
             var hasSupport = analysis.Hits.Any(hit => hit.RelationType is
-                BranchRelationshipType.SixCombination or BranchRelationshipType.ThreeMeeting);
+                BranchRelationshipType.SixCombination
+                    or BranchRelationshipType.ThreeCombination
+                    or BranchRelationshipType.ThreeMeeting);
             var hasPressure = analysis.Hits.Any(hit => hit.RelationType is
-                BranchRelationshipType.SixClash or BranchRelationshipType.SixHarm or BranchRelationshipType.Punishment);
+                BranchRelationshipType.SixClash
+                    or BranchRelationshipType.SixHarm
+                    or BranchRelationshipType.SixBreak
+                    or BranchRelationshipType.Punishment);
             var summary = (hasSupport, hasPressure) switch {
                 (true, true) => "支持與壓力同時存在，既有靠近與協調，也有推拉、誤解或高反應情境。相處上需多協調、尊重對方，減少猜想與邊界處理",
                 (true, false) => "感情上可互相扶持、互補；仍需用實際相處確認，不能由命盤代替雙方意願。",
@@ -325,7 +348,9 @@ namespace BaZi.Services {
                 BranchRelationshipType.SixCombination => "六合",
                 BranchRelationshipType.SixClash => "六沖",
                 BranchRelationshipType.SixHarm => "六害",
+                BranchRelationshipType.SixBreak => "六破",
                 BranchRelationshipType.Punishment => "相刑",
+                BranchRelationshipType.ThreeCombination => "三合",
                 BranchRelationshipType.ThreeMeeting => "三會",
                 _ => throw new ArgumentOutOfRangeException(nameof(relationType), relationType, null)
             };

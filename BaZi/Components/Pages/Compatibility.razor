@@ -28,7 +28,7 @@
                 && _result.InternetSourceSections.Count > 0) {
                 <hr class="overview-section-divider" aria-hidden="true" />
                 <p class="text-secondary mb-4">
-                    <strong>下方非 《徐玉蘭的人生八字應用課》 的內容，來源為網路</strong>
+                    <strong>以下為公開資料補充的地支互動判讀，與前段規則分開呈現。</strong>
                 </p>
 
                 @foreach (var section in _result.InternetSourceSections) {
@@ -47,8 +47,7 @@
                             </ul>
                         }
                         @if (section.Notes is { Count: > 0 }) {
-                            <div class="topic-notice mt-3 mb-0">
-                                <i class="fa-solid fa-circle-info topic-notice-icon" aria-hidden="true"></i>
+                            <TopicNotice CssClass="mt-3 mb-0">
                                 <ul class="compatibility-note-list mb-0">
                                     @foreach (var note in section.Notes) {
                                         <li class="mb-1" @key="note">
@@ -56,7 +55,7 @@
                                         </li>
                                     }
                                 </ul>
-                            </div>
+                            </TopicNotice>
                         }
                     </div>
                 }

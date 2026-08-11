@@ -140,6 +140,14 @@ namespace BaZi.Models {
         CongRuo = 0x22
     }
 
+    /// <summary>大運十年中的主作用階段。</summary>
+    public enum DaYunPhase {
+        /// <summary>前五年以天干為主，地支仍有作用。</summary>
+        FirstFiveYears = 1,
+        /// <summary>後五年以地支為主，天干作用較弱。</summary>
+        LastFiveYears = 2
+    }
+
     /// <summary>合、會結果</summary>
     public enum HeHui {
         /// <summary>地支三合</summary>

@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.RegularExpressions;
@@ -28,7 +27,7 @@ namespace BaZi.Components.Compatibility {
             };
 
         private static readonly Regex DisplayTokenPattern = new(
-            "正財|偏財|正官|七殺|食神|傷官|正印|偏印|比肩|劫財|比劫|食傷|財星|官殺|印星|[金木水火土]",
+            "正財|偏財|正官|七殺|食神|傷官|正印|偏印|比肩|劫財|比劫|食傷|財星|官殺|印星|[金木水火土甲乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未申酉戌亥]",
             RegexOptions.Compiled | RegexOptions.CultureInvariant
         );
 
@@ -41,7 +40,11 @@ namespace BaZi.Components.Compatibility {
                 : $"{info.SolarDate:yyyy/MM/dd}，時辰未知，{info.Gender.ToSexString()}";
         }
 
-        private MarkupString FormatText(string text, CompatibilityTenGodSubject subject) {
+        private MarkupString FormatText(
+            string text,
+            CompatibilityTenGodSubject subject,
+            bool showsFavorability
+        ) {
             var html = new StringBuilder();
             var subjectInfo = GetSubjectInfo(subject);
             var position = 0;
@@ -50,9 +53,18 @@ namespace BaZi.Components.Compatibility {
                 html.Append(HtmlEncoder.Default.Encode(text[position..match.Index]));
 
                 if (subjectInfo.Info is not null && TenGodTokens.TryGetValue(match.Value, out var tenGod)) {
-                    AppendTenGod(html, match.Value, tenGod, subjectInfo.Info, subjectInfo.Label);
+                    AppendTenGod(
+                        html,
+                        match.Value,
+                        tenGod,
+                        subjectInfo.Info,
+                        subjectInfo.Label,
+                        showsFavorability
+                    );
                 } else if (TryGetElement(match.Value, out var element) && IsElementReference(text, match.Index)) {
                     html.Append($"<span class=\"{GetElementColorClass(element)} fw-semibold\">{match.Value}</span>");
+                } else if (TryGetGanZhiElement(text, match.Index, match.Value, out var ganZhiElement)) {
+                    html.Append($"<span class=\"{GetElementColorClass(ganZhiElement)} fw-semibold\">{match.Value}</span>");
                 } else {
                     html.Append(HtmlEncoder.Default.Encode(match.Value));
                 }
@@ -77,9 +89,17 @@ namespace BaZi.Components.Compatibility {
             string displayText,
             ShiShen tenGod,
             BaZiInfo info,
-            string subjectLabel
+            string subjectLabel,
+            bool showsFavorability
         ) {
-            var element = GetTenGodElement(info, tenGod);
+            if (!showsFavorability) {
+                html.Append("<span class=\"topic-ten-god-reference\">");
+                html.Append(HtmlEncoder.Default.Encode(displayText));
+                html.Append("</span>");
+                return;
+            }
+
+            var element = TenGodElementResolver.Resolve(info.RiZhu, tenGod);
             var isFavorable = info.LikeWuXing.Contains(element);
             var stateClass = isFavorable ? "topic-ten-god-favorable" : "topic-ten-god-unfavorable";
             var stateText = isFavorable ? "喜用神（相對較好）" : "忌神（相對較需留意）";
@@ -90,17 +110,6 @@ namespace BaZi.Components.Compatibility {
             html.Append("\">");
             html.Append(HtmlEncoder.Default.Encode(displayText));
             html.Append("</span>");
-        }
-
-        private static WuXing GetTenGodElement(BaZiInfo info, ShiShen tenGod) {
-            return tenGod.ToCombined() switch {
-                ShiShen.Cai => BaZiDefine.Restricting[info.RiZhu],
-                ShiShen.GuanSha => BaZiDefine.RestrictBy[info.RiZhu],
-                ShiShen.ShihShang => BaZiDefine.Generation[info.RiZhu],
-                ShiShen.Yin => BaZiDefine.GenerateBy[info.RiZhu],
-                ShiShen.BiJie => info.RiZhu,
-                _ => throw new InvalidEnumArgumentException(nameof(tenGod), (int)tenGod, typeof(ShiShen))
-            };
         }
 
         private static bool TryGetElement(string text, out WuXing element) {
@@ -125,6 +134,55 @@ namespace BaZi.Components.Compatibility {
 
             var suffix = text.AsSpan(index + 1);
             return suffix.StartsWith("身強") || suffix.StartsWith("身弱");
+        }
+
+        private static bool TryGetGanZhiElement(
+            string text,
+            int index,
+            string value,
+            out WuXing element
+        ) {
+            var prefix = text[..index];
+            if (prefix.EndsWith("天干", StringComparison.Ordinal) && TryGetStemElement(value, out element)) {
+                return true;
+            }
+
+            if ((prefix.EndsWith("地支", StringComparison.Ordinal)
+                    || prefix.EndsWith("年支", StringComparison.Ordinal)
+                    || prefix.EndsWith("月支", StringComparison.Ordinal)
+                    || prefix.EndsWith("日支", StringComparison.Ordinal)
+                    || prefix.EndsWith("時支", StringComparison.Ordinal))
+                && TryGetBranchElement(value, out element)) {
+                return true;
+            }
+
+            element = default;
+            return false;
+        }
+
+        private static bool TryGetStemElement(string value, out WuXing element) {
+            element = value switch {
+                "甲" or "乙" => WuXing.Mu,
+                "丙" or "丁" => WuXing.Huo,
+                "戊" or "己" => WuXing.Tu,
+                "庚" or "辛" => WuXing.Jin,
+                "壬" or "癸" => WuXing.Shui,
+                _ => default
+            };
+            return value is "甲" or "乙" or "丙" or "丁" or "戊" or "己" or "庚" or "辛" or "壬" or "癸";
+        }
+
+        private static bool TryGetBranchElement(string value, out WuXing element) {
+            element = value switch {
+                "寅" or "卯" => WuXing.Mu,
+                "巳" or "午" => WuXing.Huo,
+                "辰" or "戌" or "丑" or "未" => WuXing.Tu,
+                "申" or "酉" => WuXing.Jin,
+                "亥" or "子" => WuXing.Shui,
+                _ => default
+            };
+            return value is "子" or "丑" or "寅" or "卯" or "辰" or "巳"
+                or "午" or "未" or "申" or "酉" or "戌" or "亥";
         }
 
         private static string GetElementColorClass(WuXing element) {

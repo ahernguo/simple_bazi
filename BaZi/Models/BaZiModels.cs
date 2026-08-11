@@ -142,6 +142,8 @@ namespace BaZi.Models {
         public int StartAge { get; }
         /// <summary>取得此運的年份(西元)</summary>
         public int StartYear { get; }
+        /// <summary>取得此運的結束年份(西元，含)</summary>
+        public int EndYear { get; }
         /// <summary>取得此運對應的十神</summary>
         public ShiShen Shen { get; }
         /// <summary>取得此運的流年</summary>
@@ -157,7 +159,33 @@ namespace BaZi.Models {
             StartAge = daYun.StartAge;
             StartYear = daYun.StartYear;
             LiuNianList = [.. daYun.GetLiuNian().Select(ln => new LiuNian(ln))];
+            EndYear = LiuNianList.Count > 0 ? LiuNianList.Max(liuNian => liuNian.Year) : StartYear + 9;
             IsGoodYun = false;
+        }
+        #endregion
+
+        #region Methods
+        /// <summary>依年份取得大運的前後五年階段。</summary>
+        /// <param name="year">欲判斷的西元年</param>
+        /// <returns>大運階段</returns>
+        public DaYunPhase GetPhase(int year) {
+            if (year < StartYear || year > EndYear) {
+                throw new ArgumentOutOfRangeException(nameof(year), year, $"年份必須介於 {StartYear} 與 {EndYear}。 ");
+            }
+
+            return year < StartYear + 5
+                ? DaYunPhase.FirstFiveYears
+                : DaYunPhase.LastFiveYears;
+        }
+
+        /// <summary>依年份取得大運的主要十神作用。</summary>
+        /// <param name="dayMaster">日主天干</param>
+        /// <param name="year">欲判斷的西元年</param>
+        /// <returns>主要十神</returns>
+        public ShiShen GetPrimaryTenGod(TianGan dayMaster, int year) {
+            return GetPhase(year) == DaYunPhase.FirstFiveYears
+                ? Gan.ToShiShen(dayMaster)
+                : Zhi.ToShiShen(dayMaster);
         }
         #endregion
 
@@ -197,8 +225,14 @@ namespace BaZi.Models {
         public string ShengXiao { get; }
         /// <summary>取得身格得分</summary>
         public int StrengthScore { get; }
+        /// <summary>取得身格計算明細</summary>
+        public StrengthCalculationResult StrengthCalculation { get; }
         /// <summary>取得身格</summary>
         public GeJu StrengthStatus { get; }
+        /// <summary>取得需要以歷史流年複核的疑似從格；一般格局時為 null</summary>
+        public GeJu? CandidateStrengthStatus { get; }
+        /// <summary>取得是否需要以歷史流年與大運複核從格</summary>
+        public bool RequiresStrengthVerification => CandidateStrengthStatus is not null;
         /// <summary>取得大運清單</summary>
         public IReadOnlyList<DaYun> DaYunList { get; }
         /// <summary>取得當前的大運</summary>
@@ -272,25 +306,23 @@ namespace BaZi.Models {
                     continue;
                 var y = new DaYun(daYun);
                 daYunList.Add(y);
-                if ((y.StartYear <= curYear) && (curYear <= (y.StartYear + 10))) {
+                if ((y.StartYear <= curYear) && (curYear <= y.EndYear)) {
                     CurrentDaYun = y;
                 }
             }
             DaYunList = daYunList;
-            var score = CalculateGeJu();
-            StrengthScore = score;
-            if (80 <= score) {
-                StrengthStatus = GeJu.CongQiang;
-                LOG4N.Info($"80 ≦ 分數，從強");
-            } else if ((45 <= score) && (score < 80)) {
-                StrengthStatus = GeJu.ShenQiang;
-                LOG4N.Info($"45 ≦ 分數 < 80，身強");
-            } else if ((20 < score) && (score < 45)) {
-                StrengthStatus = GeJu.ShenRuo;
-                LOG4N.Info($"20 < 分數 < 45，身弱");
-            } else if (20 <= score) {
-                StrengthStatus = GeJu.CongRuo;
-                LOG4N.Info($"分數 ≦ 20，從弱");
+            StrengthCalculation = CalculateGeJu();
+            StrengthScore = StrengthCalculation.TotalScore;
+            StrengthStatus = StrengthClassifier.Classify(StrengthScore);
+            CandidateStrengthStatus = StrengthClassifier.GetCandidate(StrengthScore);
+            if (StrengthStatus == GeJu.CongQiang) {
+                LOG4N.Info($"80 < 分數，疑似從強，仍需流年與大運複核");
+            } else if (StrengthStatus == GeJu.ShenQiang) {
+                LOG4N.Info($"45 ≦ 分數 ≦ 80，身強");
+            } else if (StrengthStatus == GeJu.ShenRuo) {
+                LOG4N.Info($"20 ≦ 分數 < 45，身弱");
+            } else {
+                LOG4N.Info($"分數 < 20，疑似從弱，仍需流年與大運複核");
             }
             LikeWuXing = StrengthStatus switch {
                 GeJu.ShenQiang or GeJu.CongRuo => [BaZiDefine.Restricting[RiZhu], BaZiDefine.RestrictBy[RiZhu], BaZiDefine.Generation[RiZhu]],
@@ -306,15 +338,32 @@ namespace BaZi.Models {
         #endregion
 
         #region Methods
-        private int CalculateGeJu() {
+        private StrengthCalculationResult CalculateGeJu() {
             LOG4N.Info($"開始計算格局...");
             /* 先取得日柱五行 */
             var points = new Dictionary<string, bool> {
-            { "YearGan", false }, { "YearZhi", false },
-            { "MonthGan", false }, { "MonthZhi", false },
-            { "DayZhi", false },
-            { "HourGan", false }, { "HourZhi", false }
-        };
+                { "YearGan", false }, { "YearZhi", false },
+                { "MonthGan", false }, { "MonthZhi", false },
+                { "DayZhi", false },
+                { "HourGan", false }, { "HourZhi", false }
+            };
+            var positionDefinitions = new Dictionary<string, (string label, WuXing originalElement, int weight)> {
+                ["YearGan"] = ("年柱天干", YearZhu.GanWuXing, 5),
+                ["YearZhi"] = ("年柱地支", YearZhu.ZhiWuXing, 20),
+                ["MonthGan"] = ("月柱天干", MonthZhu.GanWuXing, 5),
+                ["MonthZhi"] = ("月柱地支", MonthZhu.ZhiWuXing, 35),
+                ["DayZhi"] = ("日柱地支", DayZhu.ZhiWuXing, 20),
+                ["HourGan"] = ("時柱天干", HourZhu.GanWuXing, 5),
+                ["HourZhi"] = ("時柱地支", HourZhu.ZhiWuXing, 10)
+            };
+            var effectiveElements = positionDefinitions.ToDictionary(
+                pair => pair.Key,
+                pair => pair.Value.originalElement
+            );
+            var reasons = positionDefinitions.ToDictionary(
+                pair => pair.Key,
+                _ => new List<string>()
+            );
             /* ----- Step1. 計算四柱是否有幫扶的加分項 ----- */
             //年柱
             points["YearGan"] = SameOrGenerate(RiZhu, YearZhu.GanWuXing);
@@ -334,6 +383,12 @@ namespace BaZi.Models {
             LOG4N.Info($"  時柱天干 '{HourZhu.Gan.ToGanString()}{HourZhu.GanWuXing.ToWuXingString()}' → {(points["HourGan"] ? "得分" : "未得分")}");
             points["HourZhi"] = SameOrGenerate(RiZhu, HourZhu.ZhiWuXing);
             LOG4N.Info($"  時柱地支 '{HourZhu.Zhi.ToZhiString()}{HourZhu.ZhiWuXing.ToWuXingString()}' → {(points["HourZhi"] ? "得分" : "未得分")}");
+            foreach (var pair in positionDefinitions) {
+                var relation = points[pair.Key]
+                    ? "原始五行生扶日主，列為加分"
+                    : "原始五行未生扶日主，不列入加分";
+                reasons[pair.Key].Add(relation);
+            }
             /* ----- Step2. 貪生忘剋。但要注意相鄰的兩干如果已經被合走，則貪生忘剋不會生效! (2026/01/06 直播說的) ----- */
             LOG4N.Info($"  檢查貪生忘剋...");
             // [月支] 生 [月干] 生 [日主]
@@ -341,8 +396,16 @@ namespace BaZi.Models {
                 var a = IsGenerate(MonthZhu.ZhiWuXing, MonthZhu.GanWuXing);
                 var b = IsGenerate(MonthZhu.GanWuXing, RiZhu);
                 if (a && b) {
-                    points["MonthZhi"] = true;
-                    LOG4N.Info($"    [月支] 生 [月干] 生 [日主] 成立，月柱地支得分");
+                    var isBound = IsBranchBound(MonthZhu.Zhi, YearZhu.Zhi, DayZhu.Zhi)
+                        || IsStemBound(MonthZhu.Gan, YearZhu.Gan, DayZhu.Gan);
+                    if (isBound) {
+                        reasons["MonthZhi"].Add("月支或月干被相鄰柱合絆，月支→月干→日主不成立");
+                        LOG4N.Info($"    [月支] 或 [月干] 被相鄰柱合絆，貪生忘剋不成立");
+                    } else {
+                        points["MonthZhi"] = true;
+                        reasons["MonthZhi"].Add("月支→月干→日主連續相生，貪生忘剋成立");
+                        LOG4N.Info($"    [月支] 生 [月干] 生 [日主] 成立，月柱地支得分");
+                    }
                 }
             }
             // [時支] 生 [時干] 生 [日主]
@@ -350,8 +413,16 @@ namespace BaZi.Models {
                 var a = IsGenerate(HourZhu.ZhiWuXing, HourZhu.GanWuXing);
                 var b = IsGenerate(HourZhu.GanWuXing, RiZhu);
                 if (a && b) {
-                    points["HourZhi"] = true;
-                    LOG4N.Info($"    [時支] 生 [時干] 生 [日主] 成立，時柱地支得分");
+                    var isBound = IsBranchBound(HourZhu.Zhi, DayZhu.Zhi)
+                        || IsStemBound(HourZhu.Gan, DayZhu.Gan);
+                    if (isBound) {
+                        reasons["HourZhi"].Add("時支或時干與日柱合絆，時支→時干→日主不成立");
+                        LOG4N.Info($"    [時支] 或 [時干] 與 [日柱] 合絆，貪生忘剋不成立");
+                    } else {
+                        points["HourZhi"] = true;
+                        reasons["HourZhi"].Add("時支→時干→日主連續相生，貪生忘剋成立");
+                        LOG4N.Info($"    [時支] 生 [時干] 生 [日主] 成立，時柱地支得分");
+                    }
                 }
             }
             // [年干] 生 [月干] 生 [日主]
@@ -359,8 +430,16 @@ namespace BaZi.Models {
                 var a = IsGenerate(YearZhu.GanWuXing, MonthZhu.GanWuXing);
                 var b = IsGenerate(MonthZhu.GanWuXing, RiZhu);
                 if (a && b) {
-                    points["YearGan"] = true;
-                    LOG4N.Info($"    [年干] 生 [月干] 生 [日主] 成立，年柱天干得分");
+                    var isBound = IsStemBound(YearZhu.Gan, MonthZhu.Gan)
+                        || IsStemBound(MonthZhu.Gan, YearZhu.Gan, DayZhu.Gan);
+                    if (isBound) {
+                        reasons["YearGan"].Add("年干或月干形成天干五合合絆，年干→月干→日主不成立");
+                        LOG4N.Info($"    [年干] 或 [月干] 形成天干五合合絆，貪生忘剋不成立");
+                    } else {
+                        points["YearGan"] = true;
+                        reasons["YearGan"].Add("年干→月干→日主連續相生，貪生忘剋成立");
+                        LOG4N.Info($"    [年干] 生 [月干] 生 [日主] 成立，年柱天干得分");
+                    }
                 }
             }
             // [年支] 生 [年干] 生 [月干] 生 [日主]
@@ -369,26 +448,43 @@ namespace BaZi.Models {
                 var b = IsGenerate(YearZhu.GanWuXing, MonthZhu.GanWuXing);
                 var c = IsGenerate(MonthZhu.GanWuXing, RiZhu);
                 if (a && b && c) {
-                    points["YearZhi"] = true;
-                    LOG4N.Info($"    [年支] 生 [年干] 生 [月干] 生 [日主] 成立，年柱地支得分");
+                    var isBound = IsBranchBound(YearZhu.Zhi, MonthZhu.Zhi)
+                        || IsStemBound(YearZhu.Gan, MonthZhu.Gan)
+                        || IsStemBound(MonthZhu.Gan, YearZhu.Gan, DayZhu.Gan);
+                    if (isBound) {
+                        reasons["YearZhi"].Add("年柱至月干的路徑被合絆，長程貪生忘剋不成立");
+                        LOG4N.Info($"    [年柱] 至 [月干] 的路徑被合絆，貪生忘剋不成立");
+                    } else {
+                        points["YearZhi"] = true;
+                        reasons["YearZhi"].Add("年支→年干→月干→日主連續相生，貪生忘剋成立");
+                        LOG4N.Info($"    [年支] 生 [年干] 生 [月干] 生 [日主] 成立，年柱地支得分");
+                    }
                 }
             }
             /* ----- Step3. 四庫。若有引發庫，有可能原本加分的變成扣分，所以這邊用 `=` 複寫 ----- */
             LOG4N.Info($"  檢查年柱是否觸發庫...");
             if (CheckKu(RiZhu, YearZhu, MonthZhu, null, out var ku)) {
                 points["YearZhi"] = SameOrGenerate(RiZhu, ku);
+                effectiveElements["YearZhi"] = ku;
+                reasons["YearZhi"].Add($"四庫引動後按{ku.ToWuXingString()}判定");
             }
             LOG4N.Info($"  檢查月柱是否觸發庫...");
             if (CheckKu(RiZhu, MonthZhu, DayZhu, YearZhu, out ku)) {
                 points["MonthZhi"] = SameOrGenerate(RiZhu, ku);
+                effectiveElements["MonthZhi"] = ku;
+                reasons["MonthZhi"].Add($"四庫引動後按{ku.ToWuXingString()}判定");
             }
             LOG4N.Info($"  檢查日柱是否觸發庫...");
             if (CheckKu(RiZhu, DayZhu, HourZhu, MonthZhu, out ku)) {
                 points["DayZhi"] = SameOrGenerate(RiZhu, ku);
+                effectiveElements["DayZhi"] = ku;
+                reasons["DayZhi"].Add($"四庫引動後按{ku.ToWuXingString()}判定");
             }
             LOG4N.Info($"  檢查時柱是否觸發庫...");
             if (CheckKu(RiZhu, HourZhu, null, DayZhu, out ku)) {
                 points["HourZhi"] = SameOrGenerate(RiZhu, ku);
+                effectiveElements["HourZhi"] = ku;
+                reasons["HourZhi"].Add($"四庫引動後按{ku.ToWuXingString()}判定");
             }
             /* ----- Step4. 三會。三會的能量強，一但形成就會改變地支的五行，要用新的五行來算 ----- */
             (string key, string tip)[] zhiList = [("YearZhi", "年柱地支"), ("MonthZhi", "月柱地支"), ("DayZhi", "日柱地支"), ("HourZhi", "時柱地支")];
@@ -400,18 +496,26 @@ namespace BaZi.Models {
                     var newStt = SameOrGenerate(RiZhu, kvp.Key);
                     if (hui[0] > 0) {
                         points["YearZhi"] = newStt;
+                        effectiveElements["YearZhi"] = kvp.Key;
+                        reasons["YearZhi"].Add($"三會{kvp.Key.ToWuXingString()}局成立，改按{kvp.Key.ToWuXingString()}判定");
                         LOG4N.Info($"      年柱地支 '{YearZhu.Zhi.ToZhiString()}{YearZhu.ZhiWuXing.ToWuXingString()}' 更改為 '{kvp.Key.ToWuXingString()}'，{(newStt ? "得分" : "不得分")}");
                     }
                     if (hui[1] > 0) {
                         points["MonthZhi"] = newStt;
+                        effectiveElements["MonthZhi"] = kvp.Key;
+                        reasons["MonthZhi"].Add($"三會{kvp.Key.ToWuXingString()}局成立，改按{kvp.Key.ToWuXingString()}判定");
                         LOG4N.Info($"      月柱地支 '{MonthZhu.Zhi.ToZhiString()}{MonthZhu.ZhiWuXing.ToWuXingString()}' 更改為 '{kvp.Key.ToWuXingString()}'，{(newStt ? "得分" : "不得分")}");
                     }
                     if (hui[2] > 0) {
                         points["DayZhi"] = newStt;
+                        effectiveElements["DayZhi"] = kvp.Key;
+                        reasons["DayZhi"].Add($"三會{kvp.Key.ToWuXingString()}局成立，改按{kvp.Key.ToWuXingString()}判定");
                         LOG4N.Info($"      日柱地支 '{DayZhu.Zhi.ToZhiString()}{DayZhu.ZhiWuXing.ToWuXingString()}' 更改為 '{kvp.Key.ToWuXingString()}'，{(newStt ? "得分" : "不得分")}");
                     }
                     if (hui[3] > 0) {
                         points["HourZhi"] = newStt;
+                        effectiveElements["HourZhi"] = kvp.Key;
+                        reasons["HourZhi"].Add($"三會{kvp.Key.ToWuXingString()}局成立，改按{kvp.Key.ToWuXingString()}判定");
                         LOG4N.Info($"      時柱地支 '{HourZhu.Zhi.ToZhiString()}{HourZhu.ZhiWuXing.ToWuXingString()}' 更改為 '{kvp.Key.ToWuXingString()}'，{(newStt ? "得分" : "不得分")}");
                     }
                 }
@@ -423,18 +527,26 @@ namespace BaZi.Models {
                     LOG4N.Info($"    觸發 '{string.Join("", kvp.Value.Select(v => v.ToZhiString()))}' {kvp.Key.ToWuXingString()}局");
                     if (he[0] > 0) {
                         points["YearZhi"] = true;
+                        effectiveElements["YearZhi"] = kvp.Key;
+                        reasons["YearZhi"].Add($"三合、半合或暗拱形成{kvp.Key.ToWuXingString()}局且能生扶日主，改列加分");
                         LOG4N.Info($"      年柱地支 '{YearZhu.Zhi.ToZhiString()}{YearZhu.ZhiWuXing.ToWuXingString()}' 更改為 '{kvp.Key.ToWuXingString()}'，得分");
                     }
                     if (he[1] > 0) {
                         points["MonthZhi"] = true;
+                        effectiveElements["MonthZhi"] = kvp.Key;
+                        reasons["MonthZhi"].Add($"三合、半合或暗拱形成{kvp.Key.ToWuXingString()}局且能生扶日主，改列加分");
                         LOG4N.Info($"      月柱地支 '{MonthZhu.Zhi.ToZhiString()}{MonthZhu.ZhiWuXing.ToWuXingString()}' 更改為 '{kvp.Key.ToWuXingString()}'，得分");
                     }
                     if (he[2] > 0) {
                         points["DayZhi"] = true;
+                        effectiveElements["DayZhi"] = kvp.Key;
+                        reasons["DayZhi"].Add($"三合、半合或暗拱形成{kvp.Key.ToWuXingString()}局且能生扶日主，改列加分");
                         LOG4N.Info($"      日柱地支 '{DayZhu.Zhi.ToZhiString()}{DayZhu.ZhiWuXing.ToWuXingString()}' 更改為 '{kvp.Key.ToWuXingString()}'，得分");
                     }
                     if (he[3] > 0) {
                         points["HourZhi"] = true;
+                        effectiveElements["HourZhi"] = kvp.Key;
+                        reasons["HourZhi"].Add($"三合、半合或暗拱形成{kvp.Key.ToWuXingString()}局且能生扶日主，改列加分");
                         LOG4N.Info($"      時柱地支 '{HourZhu.Zhi.ToZhiString()}{HourZhu.ZhiWuXing.ToWuXingString()}' 更改為 '{kvp.Key.ToWuXingString()}'，得分");
                     }
                 }
@@ -492,7 +604,23 @@ namespace BaZi.Models {
                 LOG4N.Info($"    時柱地支 +0");
             }
             LOG4N.Info($"  總得分 {score}");
-            return score;
+            string[] positionOrder = ["YearGan", "YearZhi", "MonthGan", "MonthZhi", "DayZhi", "HourGan", "HourZhi"];
+            var positions = positionOrder.Select(key => {
+                var definition = positionDefinitions[key];
+                reasons[key].Add(points[key]
+                    ? $"固定柱位權重計入 {definition.weight}%"
+                    : "固定柱位權重計入 0%");
+                return new StrengthPositionResult(
+                    key,
+                    definition.label,
+                    definition.originalElement,
+                    effectiveElements[key],
+                    definition.weight,
+                    points[key],
+                    reasons[key].AsReadOnly()
+                );
+            }).ToArray();
+            return new StrengthCalculationResult(score, positions);
         }
 
         /// <summary>檢查五行是否同日主，或是生日主</summary>
@@ -510,6 +638,20 @@ namespace BaZi.Models {
         /// <returns>(true)a生b (false)不成立</returns>
         private static bool IsGenerate(WuXing a, WuXing b) {
             return BaZiDefine.Generation[a] == b;
+        }
+
+        /// <summary>檢查目標天干是否與任一相鄰天干形成五合合絆。</summary>
+        private static bool IsStemBound(TianGan target, params TianGan[] neighbors) {
+            return neighbors.Any(neighbor => BaZiDefine.FiveHe.Any(pair =>
+                pair.Contains(target) && pair.Contains(neighbor)
+            ));
+        }
+
+        /// <summary>檢查目標地支是否與任一相鄰地支形成六合合絆。</summary>
+        private static bool IsBranchBound(DiZhi target, params DiZhi[] neighbors) {
+            return neighbors.Any(neighbor => BaZiDefine.SixHe.Values.Any(pair =>
+                pair.Contains(target) && pair.Contains(neighbor)
+            ));
         }
 
         /// <summary>檢查 (日+月) 或 (日+時) 是否有三刑/相刑</summary>
@@ -677,7 +819,7 @@ namespace BaZi.Models {
                 } else if (zhu.GanWuXing == WuXing.Jin) {
                     newZhiWuXing = WuXing.Jin; //同上
                     LOG4N.Info($"    同柱天干為 '{zhu.Gan.ToGanString()}金'，'丑' 由 '土' 變 '金' (強迫變化)");
-                    return false;
+                    return true;
                 } else if (zhu.GanWuXing == WuXing.Tu) {
                     newZhiWuXing = WuXing.Tu; //同上。雖然原本就是丑土，但為了方便下方判斷四庫(不用再看同柱)，所以乾脆卡一個 if，下方就不用再判斷五行
                     LOG4N.Info($"    同柱天干為 '{zhu.Gan.ToGanString()}土'，'丑' 維持 '土'");

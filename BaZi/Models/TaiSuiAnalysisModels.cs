@@ -16,6 +16,15 @@ namespace BaZi.Models {
         IReadOnlyList<TaiSuiInteractionType> Interactions
     );
 
+    /// <summary>流年同支使原局既有互動再次集中的來源。</summary>
+    public sealed record TaiSuiReinforcedInteraction(
+        string RepeatedPillarName,
+        DiZhi RepeatedBranch,
+        string RelatedPillarName,
+        DiZhi RelatedBranch,
+        IReadOnlyList<TaiSuiInteractionType> Interactions
+    );
+
     /// <summary>指定流年與本命四柱的犯太歲及生肖相沖分析。</summary>
     public sealed record TaiSuiAnalysisResult(
         int Year,
@@ -26,7 +35,8 @@ namespace BaZi.Models {
         DiZhi NatalYearBranch,
         IReadOnlyList<TaiSuiInteractionType> DirectInteractions,
         IReadOnlyList<TaiSuiPillarInteraction> IndirectInteractions,
-        bool IsHourPillarIncluded
+        bool IsHourPillarIncluded,
+        IReadOnlyList<TaiSuiReinforcedInteraction>? ReinforcedInteractions = null
     ) {
         /// <summary>取得本命生肖是否與流年生肖形成六沖。</summary>
         public bool IsZodiacClash => DirectInteractions.Contains(TaiSuiInteractionType.SixClash);
@@ -36,5 +46,8 @@ namespace BaZi.Models {
 
         /// <summary>取得月、日、時支是否形成間接犯太歲關係。</summary>
         public bool HasIndirectTaiSui => IndirectInteractions.Count > 0;
+
+        /// <summary>取得原局既有互動是否因流年同支而再次集中。</summary>
+        public bool HasReinforcedInteraction => ReinforcedInteractions is { Count: > 0 };
     }
 }

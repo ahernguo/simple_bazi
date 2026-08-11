@@ -36,33 +36,31 @@
             <h5 class="card-title border-bottom pb-2">
                 <i class="fa-solid @GetToneIcon(section.Tone) me-2"></i>@section.Title
             </h5>
-            <p>@FormatText(section.Summary, section.TenGodSubject)</p>
+            <p>@FormatText(section.Summary, section.TenGodSubject, section.TenGodShowsFavorability)</p>
             @if (section.Details.Count > 0) {
                 <ul class="mb-0">
                     @foreach (var detail in section.Details) {
-                        <li class="mb-2">@FormatText(detail, section.TenGodSubject)</li>
+                        <li class="mb-2">@FormatText(detail, section.TenGodSubject, section.TenGodShowsFavorability)</li>
                     }
                 </ul>
             }
             @if (section.Notes is { Count: > 0 }) {
-                <div class="topic-notice mt-3 mb-0">
-                    <i class="fa-solid fa-circle-info topic-notice-icon" aria-hidden="true"></i>
+                <TopicNotice CssClass="mt-3 mb-0">
                     <ul class="compatibility-note-list mb-0">
                         @foreach (var note in section.Notes) {
-                            <li class="mb-1">@FormatText(note, section.TenGodSubject)</li>
+                            <li class="mb-1">@FormatText(note, section.TenGodSubject, section.TenGodShowsFavorability)</li>
                         }
                     </ul>
-                </div>
+                </TopicNotice>
             }
         </div>
     }
 
-    <div class="alert alert-secondary">
-        <h5><i class="fa-solid fa-shield-heart me-2"></i>使用限制</h5>
+    <AnalysisCard Title="使用限制" Icon="fa-shield-heart" CssClass="mb-4">
         <ul class="mb-0">
             @foreach (var limitation in Result.Limitations) {
                 <li class="mb-2">@limitation</li>
             }
         </ul>
-    </div>
+    </AnalysisCard>
 </div>

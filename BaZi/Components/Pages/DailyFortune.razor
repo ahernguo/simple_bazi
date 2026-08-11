@@ -1,0 +1,247 @@
+@page "/daily-fortune"
+@inherits Fluxor.Blazor.Web.Components.FluxorComponent
+@inject IState<BaZiState> BaZiState
+@inject FortuneService FortuneService
+@inject DailyFortuneService DailyFortuneService
+@inject NavigationManager Navigation
+
+@if (BaZiState.Value.Info is not BaZiInfo info) {
+    <div class="alert alert-info">請先回首頁輸入生日。</div>
+    <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/")'>回首頁</button>
+} else {
+    EnsureHouseholdDefault(info);
+    var years = FortuneService.GetLiuNianYears(info);
+    <div class="container mt-4 daily-fortune-page">
+        <h2 class="mb-4 text-center"><i class="fa-solid fa-calendar-day me-2"></i>流日</h2>
+
+        <AnalysisCard Title="流日查詢" Icon="fa-magnifying-glass" CssClass="query-card">
+            <div class="row g-3 align-items-end">
+                <div class="col-sm-6 col-lg-3">
+                    <label class="form-label" for="daily-year">年份</label>
+                    <select id="daily-year" class="form-select" @bind="_page.SelectedYear">
+                        <option value="">請選擇年份</option>
+                        @foreach (var year in years) {
+                            <option @key="year" value="@year">@year 年</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <label class="form-label" for="daily-month">月份</label>
+                    <select id="daily-month" class="form-select" @bind="_page.SelectedMonth">
+                        @for (var month = 1; month <= 12; month++) {
+                            <option value="@month">@month 月</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <label class="form-label" for="daily-topic">主題</label>
+                    <select id="daily-topic" class="form-select" @bind="_page.SelectedTopic">
+                        <option value="">全部生活訊號</option>
+                        @foreach (var topic in Topics) {
+                            <option value="@topic">@GetTopicName(topic)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <button type="button"
+                            class="btn btn-primary w-100"
+                            disabled="@(_page.SelectedYear is null)"
+                            @onclick="Query">
+                        <i class="fa-solid fa-magnifying-glass me-2"></i>查詢
+                    </button>
+                </div>
+            </div>
+
+            @if (_page.SelectedTopic == DailyFortuneTopic.Moving) {
+                <div class="household-panel mt-3 pt-3 border-top">
+                    <div class="fw-semibold mb-2">同住者年支生肖</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var branch in Branches) {
+                            var inputId = $"household-{branch}";
+                            <label class="household-option" for="@inputId">
+                                <input id="@inputId"
+                                       class="form-check-input me-1"
+                                       type="checkbox"
+                                       checked="@_page.HouseholdYearBranches.Contains(branch)"
+                                       @onchange="() => ToggleHouseholdBranch(branch)" />
+                                <ElementText Element="branch.ToWuXing()" Text="@GetZodiacLabel(branch)" />
+                            </label>
+                        }
+                    </div>
+                    <div class="form-text mt-2">至少選取實際同住者；命主年支已預先勾選。</div>
+                </div>
+            }
+        </AnalysisCard>
+
+        @if (_page.QueriedYear is int targetYear && _page.QueriedMonth is int targetMonth) {
+            var visibleDays = GetVisibleDays(info, targetYear, targetMonth);
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 mb-2">
+                <h4 class="mb-0">@targetYear 年 @targetMonth 月 · @GetQueryTitle()</h4>
+                <span class="badge text-bg-secondary">共 @visibleDays.Count 日</span>
+            </div>
+
+            @if (visibleDays.Count == 0) {
+                <AnalysisCard Title="查詢結果" Icon="fa-calendar-xmark">
+                    <div class="alert alert-info mb-0">這個月份沒有符合目前條件的流日。</div>
+                </AnalysisCard>
+            } else {
+                <div class="row g-3 daily-result-grid">
+                    @foreach (var result in visibleDays) {
+                        var signals = GetVisibleSignals(result);
+                        <div class="col-12 col-xl-6" @key="result.Day.Date">
+                            <AnalysisCard Title="@result.Day.Date.ToString("MM/dd dddd")"
+                                          Icon="fa-calendar-check"
+                                          CssClass="h-100 daily-result-card">
+                                <ChildContent>
+                                    <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+                                        <span class="daily-ganzhi"><GanZhiText Value="result.Day" /></span>
+                                        <span class="text-body-secondary">
+                                            流月 <ElementText Element="result.Context.MonthGan.ToWuXing()" Text="result.Context.MonthGan.ToGanString()" />
+                                            <ElementText Element="result.Context.MonthZhi.ToWuXing()" Text="result.Context.MonthZhi.ToZhiString()" />
+                                        </span>
+                                    </div>
+
+                                    @foreach (var signal in signals) {
+                                        <section class="daily-signal mb-3" @key="signal.Topic">
+                                            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                                <span class="badge @GetLevelCss(signal.Level)">@GetTopicName(signal.Topic)</span>
+                                                <strong>@signal.Title</strong>
+                                            </div>
+                                            <p class="mb-2">@signal.Summary</p>
+                                            @if (signal.GanTenGod is ShiShen ganTenGod && signal.ZhiTenGod is ShiShen zhiTenGod) {
+                                                <div class="small d-flex flex-wrap gap-3">
+                                                    <span>功能：天干 <TenGodText Info="info" TenGod="ganTenGod" />、地支 <TenGodText Info="info" TenGod="zhiTenGod" /></span>
+                                                    <span>
+                                                        格局喜忌：
+                                                        <TenGodText Info="info" TenGod="ganTenGod" Mode="TenGodDisplayMode.Favorability" Text="@($"天干{ganTenGod.ToShenString()}")" />、
+                                                        <TenGodText Info="info" TenGod="zhiTenGod" Mode="TenGodDisplayMode.Favorability" Text="@($"地支{zhiTenGod.ToShenString()}")" />
+                                                    </span>
+                                                </div>
+                                            }
+                                        </section>
+                                    }
+                                </ChildContent>
+
+                                <NoticeContent>
+                                    @foreach (var advice in signals.Select(signal => signal.Advice).Distinct()) {
+                                        <div>@advice</div>
+                                    }
+                                    @if (signals.Any(signal => signal.Topic == DailyFortuneTopic.Health)) {
+                                        <div>命理日期不能取代篩檢、診斷、用藥與就醫。</div>
+                                    }
+                                    @if (signals.Any(signal => signal.Topic == DailyFortuneTopic.TravelSafety)) {
+                                        <div>這是提高安全準備的提醒，不是事故預言。</div>
+                                    }
+                                </NoticeContent>
+                            </AnalysisCard>
+                        </div>
+                    }
+                </div>
+            }
+
+            <TopicNotice CssClass="mt-3 mb-0">
+                流日是排程窗口，不保證財務、工作、感情或健康結果；請把命理訊號轉成可核對的準備與風險管理。
+            </TopicNotice>
+        }
+    </div>
+}
+
+@code {
+    private static readonly DailyFortuneTopic[] Topics = Enum.GetValues<DailyFortuneTopic>();
+    private static readonly DiZhi[] Branches = Enum.GetValues<DiZhi>();
+    private readonly DailyFortunePageModel _page = new();
+    private IReadOnlyList<DailyFortuneResult> _results = [];
+    private DiZhi? _initializedYearBranch;
+
+    private void EnsureHouseholdDefault(BaZiInfo info) {
+        if (_initializedYearBranch == info.YearZhu.Zhi) {
+            return;
+        }
+
+        _page.HouseholdYearBranches.Clear();
+        _page.HouseholdYearBranches.Add(info.YearZhu.Zhi);
+        _initializedYearBranch = info.YearZhu.Zhi;
+    }
+
+    private void ToggleHouseholdBranch(DiZhi branch) {
+        if (!_page.HouseholdYearBranches.Remove(branch)) {
+            _page.HouseholdYearBranches.Add(branch);
+        }
+    }
+
+    private void Query() {
+        if (_page.SelectedYear is not int year) {
+            return;
+        }
+
+        _page.QueriedYear = year;
+        _page.QueriedMonth = _page.SelectedMonth;
+        _page.QueriedTopic = _page.SelectedTopic;
+        var info = BaZiState.Value.Info!;
+        _results = DailyFortuneService.AnalyzeMonth(info, year, _page.SelectedMonth, _page.HouseholdYearBranches);
+    }
+
+    private IReadOnlyList<DailyFortuneResult> GetVisibleDays(BaZiInfo info, int year, int month) {
+        if (_results.Count == 0 || _results[0].Day.Date.Year != year || _results[0].Day.Date.Month != month) {
+            _results = DailyFortuneService.AnalyzeMonth(info, year, month, _page.HouseholdYearBranches);
+        }
+
+        return _results.Where(result => GetVisibleSignals(result).Count > 0).ToArray();
+    }
+
+    private IReadOnlyList<DailyFortuneSignal> GetVisibleSignals(DailyFortuneResult result) {
+        if (_page.QueriedTopic is DailyFortuneTopic topic) {
+            return result.Signals.Where(signal => signal.Topic == topic).ToArray();
+        }
+
+        return result.Signals.Where(signal => signal.Topic != DailyFortuneTopic.Moving).ToArray();
+    }
+
+    private string GetQueryTitle() {
+        return _page.QueriedTopic is DailyFortuneTopic topic
+            ? GetTopicName(topic)
+            : "全部生活訊號";
+    }
+
+    private static string GetTopicName(DailyFortuneTopic topic) {
+        return topic switch {
+            DailyFortuneTopic.Wealth => "財務",
+            DailyFortuneTopic.Career => "工作",
+            DailyFortuneTopic.Romance => "桃花",
+            DailyFortuneTopic.Health => "健康",
+            DailyFortuneTopic.Interpersonal => "人際",
+            DailyFortuneTopic.TravelSafety => "交通",
+            DailyFortuneTopic.Moving => "搬家初篩",
+            _ => throw new ArgumentOutOfRangeException(nameof(topic), topic, null)
+        };
+    }
+
+    private static string GetLevelCss(DailySignalLevel level) {
+        return level switch {
+            DailySignalLevel.Opportunity => "text-bg-success",
+            DailySignalLevel.Attention => "text-bg-warning",
+            DailySignalLevel.HighAttention => "text-bg-danger",
+            DailySignalLevel.VerificationRequired => "text-bg-info",
+            _ => "text-bg-secondary"
+        };
+    }
+
+    private static string GetZodiacLabel(DiZhi branch) {
+        var zodiac = branch switch {
+            DiZhi.Zi => "鼠",
+            DiZhi.Chou => "牛",
+            DiZhi.Yin => "虎",
+            DiZhi.Mao => "兔",
+            DiZhi.Chen => "龍",
+            DiZhi.Si => "蛇",
+            DiZhi.Wu => "馬",
+            DiZhi.Wei => "羊",
+            DiZhi.Shen => "猴",
+            DiZhi.You => "雞",
+            DiZhi.Xu => "狗",
+            DiZhi.Hai => "豬",
+            _ => throw new ArgumentOutOfRangeException(nameof(branch), branch, null)
+        };
+        return $"{branch.ToZhiString()}（{zodiac}）";
+    }
+}

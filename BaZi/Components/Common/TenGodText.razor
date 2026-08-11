@@ -1,0 +1,33 @@
+@if (Mode == TenGodDisplayMode.Favorability) {
+    <span class="@FavorabilityCssClass" title="@Tooltip">@DisplayValue</span>
+} else {
+    <span class="topic-ten-god-reference">@DisplayValue</span>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public BaZiInfo Info { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public ShiShen TenGod { get; set; }
+
+    [Parameter]
+    public TenGodDisplayMode Mode { get; set; } = TenGodDisplayMode.Reference;
+
+    [Parameter]
+    public string? Text { get; set; }
+
+    private WuXing Element => TenGodElementResolver.Resolve(Info.RiZhu, TenGod);
+
+    private bool IsFavorable => Info.LikeWuXing.Contains(Element);
+
+    private string DisplayValue => Text ?? TenGod.ToShenString();
+
+    private string FavorabilityCssClass => IsFavorable
+        ? "topic-ten-god topic-ten-god-favorable"
+        : "topic-ten-god topic-ten-god-unfavorable";
+
+    private string Tooltip => IsFavorable
+        ? $"{TenGod.ToShenString()}屬{Element.ToWuXingString()}，依本命格局列為喜用神（相對有利）"
+        : $"{TenGod.ToShenString()}屬{Element.ToWuXingString()}，依本命格局列為忌神（相對不利）";
+}

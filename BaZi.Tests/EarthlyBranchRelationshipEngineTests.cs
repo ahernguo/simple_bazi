@@ -56,6 +56,20 @@ namespace BaZi.Tests {
             Assert.Equal(BranchRelationshipCompletion.Pair, match.Completion);
         }
 
+        [Theory]
+        [InlineData(DiZhi.Yin, DiZhi.Hai)]
+        [InlineData(DiZhi.Si, DiZhi.Shen)]
+        [InlineData(DiZhi.Zi, DiZhi.You)]
+        [InlineData(DiZhi.Wu, DiZhi.Mao)]
+        [InlineData(DiZhi.Xu, DiZhi.Wei)]
+        [InlineData(DiZhi.Chou, DiZhi.Chen)]
+        public void MatchPair_AllSixBreaks_ReturnPair(DiZhi first, DiZhi second) {
+            var match = Assert.Single(_engine.MatchPair(first, second), item =>
+                item.RelationType == BranchRelationshipType.SixBreak);
+
+            Assert.Equal(BranchRelationshipCompletion.Pair, match.Completion);
+        }
+
         [Fact]
         public void MatchPair_UnrelatedBranches_ReturnsNoRule() {
             IReadOnlyList<BranchRelationshipRuleMatch> matches = _engine.MatchPair(DiZhi.Zi, DiZhi.Yin);
@@ -143,6 +157,15 @@ namespace BaZi.Tests {
                 && hit.Members.SequenceEqual([DiZhi.Yin, DiZhi.Shen]));
             Assert.Equal(BranchRelationshipCompletion.Complete, complete.Completion);
             Assert.Equal(BranchRelationshipCompletion.Partial, partial.Completion);
+        }
+
+        [Fact]
+        public void Analyze_ThreeCombination_PreservesPartialCandidate() {
+            BranchRelationshipAnalysis analysis = _engine.Analyze(CreateChartA(), CreateChartB());
+
+            Assert.Contains(analysis.Hits, hit =>
+                hit.RelationType == BranchRelationshipType.ThreeCombination
+                && hit.Completion is BranchRelationshipCompletion.Partial or BranchRelationshipCompletion.Complete);
         }
 
         [Fact]

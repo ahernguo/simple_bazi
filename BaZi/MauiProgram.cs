@@ -77,6 +77,7 @@ namespace BaZi {
             builder.Services.AddSingleton<EarthlyBranchRelationshipEngine>();
             builder.Services.AddSingleton<CompatibilityService>();
             builder.Services.AddSingleton<FortuneService>();
+            builder.Services.AddSingleton<DailyFortuneService>();
             builder.Services.AddSingleton<SecurityService>();
             builder.Services.AddSingleton<IPreferences>(_ => Preferences.Default);
             builder.Services.AddSingleton<BirthInputPreferencesService>();

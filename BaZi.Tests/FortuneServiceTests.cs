@@ -224,6 +224,42 @@ namespace BaZi.Tests {
         }
 
         [Fact]
+        public void GetTaiSuiAnalysis_AnnualBranchRepeatsNatalInteraction_ReturnsReinforcement() {
+            var info = new BaZiInfo(OverlappingXingPoBirthDate, 2);
+            var service = new FortuneService();
+            var analysis = service.GetLiuNianYears(info)
+                .Select(year => service.GetTaiSuiAnalysis(info, year))
+                .FirstOrDefault(result => result?.HasReinforcedInteraction == true);
+
+            Assert.NotNull(analysis);
+            Assert.NotEmpty(analysis!.ReinforcedInteractions!);
+            Assert.All(analysis.ReinforcedInteractions!, reinforcement =>
+                Assert.NotEmpty(reinforcement.Interactions));
+        }
+
+        [Fact]
+        public void LiuNianTopicAnalysis_AnyYear_AddsChildTimingCard() {
+            var info = new BaZiInfo(BirthDate, 2);
+            var service = new FortuneService();
+            var targetYear = service.GetLiuNianYears(info).First();
+
+            var html = service.LiuNianTopicAnalysis(info, targetYear).ToString();
+
+            Assert.Contains("子女緣分", html);
+            Assert.Contains("子息星時機", html);
+        }
+
+        [Fact]
+        public void LiuYueTopicAnalysis_DoesNotExtrapolateChildTimingRuleToMonth() {
+            var info = new BaZiInfo(BirthDate, 2);
+            var service = new FortuneService();
+
+            var html = service.LiuYueTopicAnalysis(info, 2026, 0).ToString();
+
+            Assert.DoesNotContain("子女緣分", html);
+        }
+
+        [Fact]
         public void SelfXing_UsesHaiInsteadOfXu() {
             Assert.Contains(DiZhi.Hai, BaZiDefine.SelfXing);
             Assert.DoesNotContain(DiZhi.Xu, BaZiDefine.SelfXing);
@@ -284,7 +320,9 @@ namespace BaZi.Tests {
             var html = service.DaYunAnalysis(info, targetYear).Value;
 
             Assert.Contains("大運分析", html);
-            Assert.Contains($"{selectedDaYun.StartYear} 年 ~ {selectedDaYun.StartYear + 10} 年", html);
+            Assert.Contains($"{selectedDaYun.StartYear} 年～{selectedDaYun.EndYear} 年", html);
+            Assert.Contains("前五年", html);
+            Assert.Contains("以天干為主", html);
             Assert.Contains("topic-ten-god ", html);
             Assert.Contains("title=\"", html);
             Assert.Contains("依本命格局列為", html);
@@ -292,6 +330,23 @@ namespace BaZi.Tests {
                 html.Contains("topic-ten-god-favorable", StringComparison.Ordinal)
                 || html.Contains("topic-ten-god-unfavorable", StringComparison.Ordinal)
             );
+        }
+
+        [Fact]
+        public void DaYunAnalysis_LastFiveYears_UsesBranchAsPrimaryInfluence() {
+            var info = new BaZiInfo(BirthDate, 2);
+            var service = new FortuneService();
+            var selectedDaYun = info.DaYunList.First();
+            int targetYear = selectedDaYun.StartYear + 5;
+
+            var html = service.DaYunAnalysis(info, targetYear).Value;
+
+            Assert.Contains("後五年", html);
+            Assert.Contains("以地支為主", html);
+            Assert.Equal(DaYunPhase.LastFiveYears, selectedDaYun.GetPhase(targetYear));
+            Assert.Equal(DiZhi.Hai, selectedDaYun.Zhi);
+            Assert.Equal(ShiShen.QiSha, selectedDaYun.GetPrimaryTenGod(info.DayZhu.Gan, targetYear));
+            Assert.Contains("topic-notice mb-0", html);
         }
 
         [Fact]
@@ -388,7 +443,7 @@ namespace BaZi.Tests {
         }
 
         [Fact]
-        public void LiuNianTopicAnalysis_ExistingYear_UsesNeutralTenGodReferencesInThreeTopicCards() {
+        public void LiuNianTopicAnalysis_ExistingYear_UsesNeutralTenGodReferencesInFourTopicCards() {
             var info = new BaZiInfo(BirthDate, 2);
             var service = new FortuneService();
 
@@ -400,12 +455,13 @@ namespace BaZi.Tests {
             Assert.DoesNotContain("topic-ten-god-favorable", html);
             Assert.DoesNotContain("topic-ten-god-unfavorable", html);
             Assert.DoesNotContain("title=\"", html);
-            Assert.Equal(3, html.Split("class=\"topic-notice mb-0\"").Length - 1);
-            Assert.Equal(3, html.Split("fa-solid fa-triangle-exclamation topic-notice-icon").Length - 1);
+            Assert.Equal(4, html.Split("class=\"topic-notice mb-0\"").Length - 1);
+            Assert.Equal(4, html.Split("fa-solid fa-triangle-exclamation topic-notice-icon").Length - 1);
             Assert.DoesNotContain("alert alert-secondary mb-0", html);
             Assert.DoesNotContain("alert alert-danger mb-0", html);
             Assert.Contains("財富與事業", html);
             Assert.Contains("感情姻緣", html);
+            Assert.Contains("子女緣分", html);
             Assert.Contains("健康注意事項", html);
             Assert.Contains("本年訊號", html);
             Assert.Contains("醫療優先", html);

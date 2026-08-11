@@ -1,0 +1,33 @@
+<article class="card p-3 @CssClass">
+    <h5 class="card-title border-bottom pb-2">
+        @if (!string.IsNullOrWhiteSpace(Icon)) {
+            <i class="fa-solid @Icon me-2" aria-hidden="true"></i>
+        }
+        @Title
+    </h5>
+
+    @ChildContent
+
+    @if (NoticeContent is not null) {
+        <TopicNotice CssClass="mt-auto mb-0">
+            @NoticeContent
+        </TopicNotice>
+    }
+</article>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Icon { get; set; }
+
+    [Parameter, EditorRequired]
+    public RenderFragment ChildContent { get; set; } = default!;
+
+    [Parameter]
+    public RenderFragment? NoticeContent { get; set; }
+
+    [Parameter]
+    public string CssClass { get; set; } = "mt-3";
+}

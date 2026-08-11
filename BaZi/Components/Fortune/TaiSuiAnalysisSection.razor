@@ -9,7 +9,7 @@
                 <div class="text-secondary mb-1">本命生肖</div>
                 <div class="fs-5 fw-semibold">
                     @Analysis.NatalZodiac（年支
-                    <span class="@GetElementColorClass(Analysis.NatalYearBranch.ToWuXing())">@Analysis.NatalYearBranch.ToZhiString()</span>）
+                    <ElementText Element="Analysis.NatalYearBranch.ToWuXing()" Text="Analysis.NatalYearBranch.ToZhiString()" />）
                 </div>
             </div>
         </div>
@@ -17,11 +17,28 @@
             <div class="border rounded p-3 h-100">
                 <div class="text-secondary mb-1">@Analysis.Year 流年生肖</div>
                 <div class="fs-5 fw-semibold">
-                    @Analysis.AnnualZodiac（<span class="@GetElementColorClass(Analysis.AnnualStem.ToWuXing())">@Analysis.AnnualStem.ToGanString()</span><span class="@GetElementColorClass(Analysis.AnnualBranch.ToWuXing())">@Analysis.AnnualBranch.ToZhiString()</span>年）
+                    @Analysis.AnnualZodiac（<ElementText Element="Analysis.AnnualStem.ToWuXing()" Text="Analysis.AnnualStem.ToGanString()" /><ElementText Element="Analysis.AnnualBranch.ToWuXing()" Text="Analysis.AnnualBranch.ToZhiString()" />年）
                 </div>
             </div>
         </div>
     </div>
+
+    @if (Info is not null) {
+        var annualStemTenGod = Analysis.AnnualStem.ToShiShen(Info.DayZhu.Gan);
+        var annualBranchTenGod = Analysis.AnnualBranch.ToShiShen(Info.DayZhu.Gan);
+        <div class="border rounded p-3 mb-3">
+            <div class="mb-1">
+                <strong>流年十神功能：</strong>
+                天干 <TenGodText Info="Info" TenGod="annualStemTenGod" />、
+                地支 <TenGodText Info="Info" TenGod="annualBranchTenGod" />
+            </div>
+            <div>
+                <strong>格局喜忌：</strong>
+                <TenGodText Info="Info" TenGod="annualStemTenGod" Mode="TenGodDisplayMode.Favorability" Text="@($"天干{annualStemTenGod.ToShenString()}")" />、
+                <TenGodText Info="Info" TenGod="annualBranchTenGod" Mode="TenGodDisplayMode.Favorability" Text="@($"地支{annualBranchTenGod.ToShenString()}")" />
+            </div>
+        </div>
+    }
 
     @if (Analysis.HasDirectTaiSui) {
         <div class="alert alert-warning">
@@ -43,7 +60,7 @@
     @if (Analysis.IsZodiacClash) {
         <div class="alert alert-warning">
             <strong>生肖相沖：</strong>@(Analysis.NatalZodiac)與@(Analysis.AnnualZodiac)形成
-            <span class="@GetElementColorClass(Analysis.NatalYearBranch.ToWuXing())">@Analysis.NatalYearBranch.ToZhiString()</span><span class="@GetElementColorClass(Analysis.AnnualBranch.ToWuXing())">@Analysis.AnnualBranch.ToZhiString()</span>六沖，較需留意移動、變動與摩擦。
+            <ElementText Element="Analysis.NatalYearBranch.ToWuXing()" Text="Analysis.NatalYearBranch.ToZhiString()" /><ElementText Element="Analysis.AnnualBranch.ToWuXing()" Text="Analysis.AnnualBranch.ToZhiString()" />六沖，較需留意移動、變動與摩擦。
         </div>
     } else {
         <p><strong>生肖相沖：</strong>本命生肖與所選流年生肖未形成六沖。</p>
@@ -55,15 +72,15 @@
             @foreach (TaiSuiPillarInteraction interaction in Analysis.IndirectInteractions) {
                 <li class="mb-1" @key="interaction.PillarName">
                     @interaction.PillarName 地支
-                    <span class="@GetElementColorClass(interaction.NatalBranch.ToWuXing())">@interaction.NatalBranch.ToZhiString()</span>
+                    <ElementText Element="interaction.NatalBranch.ToWuXing()" Text="interaction.NatalBranch.ToZhiString()" />
                     與流年地支
-                    <span class="@GetElementColorClass(Analysis.AnnualBranch.ToWuXing())">@Analysis.AnnualBranch.ToZhiString()</span>
+                    <ElementText Element="Analysis.AnnualBranch.ToWuXing()" Text="Analysis.AnnualBranch.ToZhiString()" />
                     形成
                     @string.Join("、", interaction.Interactions.Select(GetIndirectLabel))，列為間接犯太歲。
                 </li>
                 @foreach (var interactionType in interaction.Interactions) {
                     <li class="mb-1 text-secondary" @key="(interaction.PillarName, interactionType)">
-                        <span>間接</span>@GetDirectLabel(interactionType)：@GetIndirectIssue(interactionType)但其力量會較直接犯太歲小一點，但仍需注意
+                        <span>間接</span>@GetDirectLabel(interactionType)：@GetIndirectIssue(interactionType)；作用通常小於年支直接犯太歲，但仍要處理對應的現實風險。
                     </li>
                 }
             }
@@ -72,22 +89,40 @@
         <p>已納入的月、日、時支與所選流年未形成間接犯太歲。</p>
     }
 
+    @if (Analysis.HasReinforcedInteraction) {
+        <h6 class="mt-3">原局互動再次集中</h6>
+        <ul class="mb-3">
+            @foreach (var reinforcement in Analysis.ReinforcedInteractions!) {
+                <li class="mb-1" @key="(reinforcement.RepeatedPillarName, reinforcement.RelatedPillarName)">
+                    流年地支與@reinforcement.RepeatedPillarName 地支
+                    <ElementText Element="reinforcement.RepeatedBranch.ToWuXing()" Text="reinforcement.RepeatedBranch.ToZhiString()" />
+                    同支，使原局和@reinforcement.RelatedPillarName 地支
+                    <ElementText Element="reinforcement.RelatedBranch.ToWuXing()" Text="reinforcement.RelatedBranch.ToZhiString()" />
+                    的 @string.Join("、", reinforcement.Interactions.Select(GetIndirectLabel)) 再次集中。
+                </li>
+            }
+        </ul>
+    }
+
     @if (!Analysis.IsHourPillarIncluded) {
         <div class="alert alert-info">
             因出生時辰不確定，本次未將時柱納入比較；補齊準確時辰後，結果可能改變。
         </div>
     }
 
-    <div class="topic-notice mb-0">
-        <i class="fa-solid fa-triangle-exclamation topic-notice-icon" aria-hidden="true"></i>
-        <div>犯太歲與六沖是流年互動及變動提醒，不代表一定倒楣或必然發生特定事件；仍須配合喜用神、大運、完整命盤與現實狀況判讀。</div>
-    </div>
+    <TopicNotice CssClass="mb-0">
+        犯太歲與六沖是流年互動及變動提醒，不代表一定倒楣或必然發生特定事件；仍須配合喜用神、大運、完整命盤與現實狀況判讀。
+    </TopicNotice>
 </div>
 
 @code {
     /// <summary>取得要呈現的犯太歲分析。</summary>
     [Parameter, EditorRequired]
     public TaiSuiAnalysisResult Analysis { get; set; } = null!;
+
+    /// <summary>取得本命資料，用於呈現流年十神與喜忌。</summary>
+    [Parameter]
+    public BaZiInfo? Info { get; set; }
 
     private static string GetDirectLabel(TaiSuiInteractionType interaction) {
         return interaction switch {
@@ -113,34 +148,24 @@
 
     private static string GetDirectIssue(TaiSuiInteractionType interaction) {
         return interaction switch {
-            TaiSuiInteractionType.SameBranch => "即本命年；運氣與情緒起伏較大，身心健康易有狀況。",
-            TaiSuiInteractionType.SixClash => "可能呈現快速、移動或變動的(運勢、想法、健康、突如其來的搬家等等)，特別注意車關與跌倒。",
-            TaiSuiInteractionType.Punishment => "可能出現糾結、摩擦或壓力。",
-            TaiSuiInteractionType.SixHarm => "可能出現人際阻礙或遭陷害(不是必然發生)。",
-            TaiSuiInteractionType.SixBreak => "可能出現破財、計畫受阻或生變；其力量相對較弱。",
+            TaiSuiInteractionType.SameBranch => "本命年使年度變動與自我壓力更集中，作息、健康與重要決策都要主動管理。",
+            TaiSuiInteractionType.SixClash => "移動、搬家、工作與想法變動容易加速；交通、防跌與行程緩衝要提高標準。",
+            TaiSuiInteractionType.Punishment => "糾結、摩擦與壓力容易累積，重要溝通與責任分工要留下紀錄。",
+            TaiSuiInteractionType.SixHarm => "信任敏感、誤解與人際阻礙較明顯，先查證再回應。",
+            TaiSuiInteractionType.SixBreak => "預算、承諾或計畫較容易被打斷與重排；其作用通常弱於值、沖。",
             _ => throw new ArgumentOutOfRangeException(nameof(interaction), interaction, null)
         };
     }
 
     private static string GetIndirectIssue(TaiSuiInteractionType interaction) {
         return interaction switch {
-            TaiSuiInteractionType.SameBranch => "運勢較多變動、注意身體健康。",
-            TaiSuiInteractionType.SixClash => "可能呈現快速、移動或變動的(運勢、想法、健康、突如其來的搬家等等)，特別注意車關與跌倒。",
-            TaiSuiInteractionType.Punishment => "可能出現糾結、摩擦或壓力。",
-            TaiSuiInteractionType.SixHarm => "可能出現小人或人事不順。",
-            TaiSuiInteractionType.SixBreak => "可能出現破財、計畫受阻或生變。",
+            TaiSuiInteractionType.SameBranch => "該宮位的變動與責任更集中，先管理作息及對應家人／生活領域。",
+            TaiSuiInteractionType.SixClash => "該宮位的移動、變動與摩擦加速，交通與行程需要更大緩衝。",
+            TaiSuiInteractionType.Punishment => "該宮位的糾結、摩擦與壓力容易累積。",
+            TaiSuiInteractionType.SixHarm => "該宮位較易出現誤解、信任敏感或人事阻礙。",
+            TaiSuiInteractionType.SixBreak => "該宮位的計畫、預算或承諾較容易被打斷與重排。",
             _ => throw new ArgumentOutOfRangeException(nameof(interaction), interaction, null)
         };
     }
 
-    private static string GetElementColorClass(WuXing element) {
-        return element switch {
-            WuXing.Mu => "element-wood",
-            WuXing.Huo => "element-fire",
-            WuXing.Tu => "element-earth",
-            WuXing.Jin => "element-metal",
-            WuXing.Shui => "element-water",
-            _ => string.Empty
-        };
-    }
 }

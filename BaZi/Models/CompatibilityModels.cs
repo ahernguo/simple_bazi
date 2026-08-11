@@ -73,7 +73,8 @@ namespace BaZi.Models {
         IReadOnlyList<string> Details,
         CompatibilityTone Tone = CompatibilityTone.Information,
         CompatibilityTenGodSubject TenGodSubject = CompatibilityTenGodSubject.None,
-        IReadOnlyList<string>? Notes = null
+        IReadOnlyList<string>? Notes = null,
+        bool TenGodShowsFavorability = false
     );
 
     /// <summary>合盤分析結果。</summary>

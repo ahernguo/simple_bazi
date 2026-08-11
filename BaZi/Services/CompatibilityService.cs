@@ -73,8 +73,8 @@ namespace BaZi.Services {
 
             var sections = relationship switch {
                 CompatibilityRelationship.Romance => AnalyzeRomance(self, other),
-                CompatibilityRelationship.Parent => AnalyzeTenGodRelationship(other, relationship),
-                CompatibilityRelationship.Child => AnalyzeTenGodRelationship(other, relationship),
+                CompatibilityRelationship.Parent => AnalyzeParent(self, other),
+                CompatibilityRelationship.Child => AnalyzeChild(self, other),
                 CompatibilityRelationship.Sibling => AnalyzeSibling(self, other),
                 CompatibilityRelationship.Friend => AnalyzeFriend(self, other),
                 CompatibilityRelationship.Colleague => AnalyzeTenGodRelationship(other, relationship),
@@ -96,6 +96,87 @@ namespace BaZi.Services {
                 GetLimitations(relationship),
                 branchRelationships,
                 internetSourceSections
+            );
+        }
+
+        private IReadOnlyList<CompatibilitySection> AnalyzeParent(BaZiInfo self, BaZiInfo other) {
+            return [
+                .. AnalyzeTenGodRelationship(other, CompatibilityRelationship.Parent),
+                CreateParentStarSection(self)
+            ];
+        }
+
+        private IReadOnlyList<CompatibilitySection> AnalyzeChild(BaZiInfo self, BaZiInfo other) {
+            return [
+                CreateChildAffinitySection(self),
+                .. AnalyzeTenGodRelationship(other, CompatibilityRelationship.Child)
+            ];
+        }
+
+        private static CompatibilitySection CreateParentStarSection(BaZiInfo self) {
+            var motherLocations = GetStarLocations(self, ShiShen.Yin);
+            var fatherLocations = GetStarLocations(self, ShiShen.Cai);
+            var affectedLocations = motherLocations.Concat(fatherLocations)
+                .Where(location => IsBranchUnderNatalPressure(self, location.Branch))
+                .DistinctBy(location => (location.PillarName, location.Group))
+                .ToArray();
+            var details = new List<string> {
+                $"母親、女性長輩或主要照顧者看印星：{DescribeLocations(motherLocations)}。",
+                $"父親或男性長輩看財星：{DescribeLocations(fatherLocations)}。"
+            };
+            if (affectedLocations.Length > 0) {
+                details.Add($"家人星所在支參與本命刑沖：{string.Join("、", affectedLocations.Select(location => $"{location.PillarName}地支{location.Branch.ToZhiString()}"))}。這代表家庭承接、支援或關係變動較容易被觸發，不等於家人一定生病或出事。");
+            } else {
+                details.Add("已知本命內，家人星所在支未直接參與六沖或相刑。");
+            }
+
+            return new CompatibilitySection(
+                "自己命盤的家人星",
+                "自己的命盤只反映自己如何承接家人事件；要判斷父母本人的狀況，仍以父母本人命盤、實際健康與生活資料為準。",
+                details,
+                affectedLocations.Length > 0 ? CompatibilityTone.Caution : CompatibilityTone.Information,
+                CompatibilityTenGodSubject.Self,
+                ["印星與財星是關係定位，不是一顆星固定對應一位家人。", "交通、健康、照護、財務與法律事項必須依現實證據及專業意見處理。"]
+            );
+        }
+
+        private static CompatibilitySection CreateChildAffinitySection(BaZiInfo self) {
+            var childGroup = self.Gender == Sex.Male ? ShiShen.GuanSha : ShiShen.ShihShang;
+            var childElement = self.Gender == Sex.Male
+                ? BaZiDefine.RestrictBy[self.RiZhu]
+                : BaZiDefine.Generation[self.RiZhu];
+            var locations = GetStarLocations(self, childGroup);
+            var details = new List<string> {
+                $"依{self.Gender.ToSexString()}命口徑，子息星為{childGroup.ToShenString()}，子息星五行為{childElement.ToWuXingString()}。",
+                locations.Count == 0
+                    ? "已知柱位未見明顯子息星；這只表示命盤訊號較弱，不等於沒有子女或不孕。"
+                    : $"子息星共見於{DescribeLocations(locations)}；數量只表示緣分訊號，不等於生育數量。"
+            };
+
+            var tone = CompatibilityTone.Information;
+            if (!self.IsBirthTimeAccurate) {
+                details.Add("出生時辰不確定，時柱子息宮完全不參與判定；補齊準確時辰後結果可能改變。");
+                tone = CompatibilityTone.Notice;
+            } else {
+                var hourHasChildStar = locations.Any(location => location.PillarName == "時柱");
+                var dayHourClash = IsClash(self.DayZhu.Zhi, self.HourZhu.Zhi);
+                var dayHourPunishment = IsPunishment(self.DayZhu.Zhi, self.HourZhu.Zhi);
+                details.Add(hourHasChildStar
+                    ? $"時柱子息宮直接見{childGroup.ToShenString()}，與子女的連結訊號較直接。"
+                    : $"時柱子息宮未直接見{childGroup.ToShenString()}；仍須保留其他柱的子息星訊號。");
+                if (dayHourClash || dayHourPunishment) {
+                    details.Add($"日支{self.DayZhu.Zhi.ToZhiString()}與時支{self.HourZhu.Zhi.ToZhiString()}形成{(dayHourClash ? "相沖" : "相刑")}，親子之間較容易出現距離、作息或溝通摩擦；不能據此判定子女健康或生產方式。");
+                    tone = CompatibilityTone.Caution;
+                }
+            }
+
+            return new CompatibilitySection(
+                "子息宮與子息星",
+                "時柱是子息宮，子息星與子息宮必須分開定位，再用實際意願、家庭條件與醫療資料核對。",
+                details,
+                tone,
+                CompatibilityTenGodSubject.Self,
+                ["子息星多寡不能推算必然生育數量、性別或生育力。", "備孕、懷孕、分娩與輔助生殖技術須由合格生殖醫學與婦產科團隊評估。"]
             );
         }
 
@@ -248,7 +329,8 @@ namespace BaZi.Services {
                 signalSummary,
                 [tendency],
                 supportive ? CompatibilityTone.Positive : CompatibilityTone.Caution,
-                CompatibilityTenGodSubject.Self
+                CompatibilityTenGodSubject.Self,
+                TenGodShowsFavorability: true
             ),
             new CompatibilitySection(
                 "手足本人的互動入口",
@@ -312,6 +394,66 @@ namespace BaZi.Services {
             return $"{group.Group.ToShenString()}{leading}：{advice}";
         }
 
+        private static IReadOnlyList<FamilyStarLocation> GetStarLocations(BaZiInfo info, ShiShen group) {
+            var pillars = new List<Zhu> { info.YearZhu, info.MonthZhu, info.DayZhu };
+            if (info.IsBirthTimeAccurate) {
+                pillars.Add(info.HourZhu);
+            }
+
+            return [.. pillars
+                .Select(pillar => new FamilyStarLocation(
+                    pillar.Id,
+                    pillar.Zhi,
+                    group,
+                    pillar.ZhuXing != ShiShen.RiZhu && pillar.ZhuXing.ToCombined() == group,
+                    pillar.FuXing.Any(star => star.ToCombined() == group)
+                ))
+                .Where(location => location.HasStem || location.HasHiddenStem)];
+        }
+
+        private static string DescribeLocations(IReadOnlyCollection<FamilyStarLocation> locations) {
+            if (locations.Count == 0) {
+                return "已知柱位未見明顯落點";
+            }
+
+            return string.Join("、", locations.Select(location => {
+                var source = (location.HasStem, location.HasHiddenStem) switch {
+                    (true, true) => "透干且地支藏干亦見",
+                    (true, false) => "天干透出",
+                    _ => "地支藏干可見"
+                };
+                return $"{location.PillarName}地支{location.Branch.ToZhiString()}（{source}）";
+            }));
+        }
+
+        private static bool IsBranchUnderNatalPressure(BaZiInfo info, DiZhi branch) {
+            var branches = new List<DiZhi> {
+                info.YearZhu.Zhi,
+                info.MonthZhu.Zhi,
+                info.DayZhu.Zhi
+            };
+            if (info.IsBirthTimeAccurate) {
+                branches.Add(info.HourZhu.Zhi);
+            }
+
+            return branches.Any(other => IsClash(branch, other)
+                    || (other != branch && IsPunishment(branch, other)))
+                || (BaZiDefine.SelfXing.Contains(branch) && branches.Count(other => other == branch) >= 2);
+        }
+
+        private static bool IsClash(DiZhi first, DiZhi second) {
+            return first != second
+                && BaZiDefine.Chong.Any(group => group.Contains(first) && group.Contains(second));
+        }
+
+        private static bool IsPunishment(DiZhi first, DiZhi second) {
+            if (first == second) {
+                return BaZiDefine.SelfXing.Contains(first);
+            }
+
+            return BaZiDefine.TwoXing.Any(group => group.Contains(first) && group.Contains(second));
+        }
+
         private static IReadOnlyList<string> GetSiblingLocations(BaZiInfo info) {
             IReadOnlyList<Zhu> pillars = info.IsBirthTimeAccurate
                 ? [info.YearZhu, info.MonthZhu, info.DayZhu, info.HourZhu]
@@ -362,7 +504,7 @@ namespace BaZi.Services {
                 && sourceKey == (WuXing.Tu, GeJu.ShenQiang)
                 && target.StrengthStatus == GeJu.ShenQiang
                 && target.RiZhu is WuXing.Mu or WuXing.Jin) {
-                return new DirectionResult(RuleMatch.NeedsReview, sourceKey, targetKey, "土身強配對在講義與旁白間有差異");
+                return new DirectionResult(RuleMatch.NeedsReview, sourceKey, targetKey, "土身強配對的原始規則存在差異");
             }
 
             var matches = rules.TryGetValue(sourceKey, out var targets) && targets.Contains(targetKey);
@@ -377,7 +519,7 @@ namespace BaZi.Services {
         ) {
             if (forward.Match == RuleMatch.NeedsReview || reverse.Match == RuleMatch.NeedsReview) {
                 var reasons = new[] { forward.Reason, reverse.Reason }.Where(reason => reason is not null).Distinct();
-                return $"此組合需要人工核對：{string.Join("；", reasons)}。徐老師並沒有完整定義此狀況，暫不推論。";
+                return $"此組合需要人工核對：{string.Join("；", reasons)}。現有規則未完整定義此狀況，因此不作確定推論。";
             }
 
             if (forward.Match == RuleMatch.Match && reverse.Match == RuleMatch.Match) {
@@ -403,7 +545,7 @@ namespace BaZi.Services {
 
         private static IReadOnlyList<string> GetLimitations(CompatibilityRelationship relationship) {
             var limitations = new List<string> {
-            "分析依課程中的八字日元法整理，屬傳統文化參考，不是人格診斷、科學預測或關係保證。",
+            "分析採八字日元法整理，屬傳統文化參考，不是人格診斷、科學預測或關係保證。",
             "命盤僅為先天的「傾向」或「意象」，雙方仍需以實際行為、溝通、意願來訂定最終關係。"
         };
 
@@ -433,6 +575,14 @@ namespace BaZi.Services {
             (WuXing Element, GeJu Strength) Source,
             (WuXing Element, GeJu Strength) Target,
             string? Reason
+        );
+
+        private sealed record FamilyStarLocation(
+            string PillarName,
+            DiZhi Branch,
+            ShiShen Group,
+            bool HasStem,
+            bool HasHiddenStem
         );
     }
 }

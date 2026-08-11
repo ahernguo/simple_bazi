@@ -5,7 +5,9 @@ namespace BaZi.Models {
         SixCombination,
         SixClash,
         SixHarm,
+        SixBreak,
         Punishment,
+        ThreeCombination,
         ThreeMeeting
     }
 

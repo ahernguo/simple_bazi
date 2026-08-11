@@ -23,7 +23,7 @@
                     <p><strong>國曆：</strong> @info.SolarDate</p>
                     <p><strong>農曆：</strong> @info.LunarDate</p>
                     <p><strong>生肖：</strong> @info.ShengXiao</p>
-                    <p><strong>格局：</strong> <span class="badge @GetStrengthBadgeClass(info.StrengthStatus)">@info.StrengthStatus.ToGeJuString() (@info.StrengthScore%)</span></p>
+                    <p><strong>格局：</strong> <span class="badge @GetStrengthBadgeClass(info.StrengthStatus)">@GetStrengthStatusText(info) (@info.StrengthScore%)</span></p>
                 </div>
             </div>
             <div class="col-md-6">
@@ -102,9 +102,53 @@
         </div>
 
         <div class="card mt-4 p-4">
-            <h5 class="card-title border-bottom pb-2">@info.StrengthStatus.ToGeJuString()</h5>
+            <h5 class="card-title border-bottom pb-2">@GetStrengthStatusText(info)</h5>
             @GetGeJuDesc(info)
         </div>
+
+        <AnalysisCard Title="格局計算明細" Icon="fa-scale-balanced" CssClass="mt-4">
+            <ChildContent>
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle mb-3">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th scope="col">柱位</th>
+                                <th scope="col">原始五行</th>
+                                <th scope="col">定案五行</th>
+                                <th scope="col">固定權重</th>
+                                <th scope="col">計入分數</th>
+                                <th scope="col">判定依據</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var position in info.StrengthCalculation.Positions) {
+                                <tr @key="position.Key">
+                                    <th scope="row">@position.Label</th>
+                                    <td><ElementText Element="position.OriginalElement" /></td>
+                                    <td><ElementText Element="position.EffectiveElement" /></td>
+                                    <td>@position.Weight%</td>
+                                    <td class="@(position.IsSupportive ? "text-success fw-semibold" : "text-secondary")">@position.Score%</td>
+                                    <td>@string.Join("；", position.Reasons)</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th scope="row" colspan="4">幫身總分</th>
+                                <td colspan="2" class="fw-semibold">@info.StrengthScore%</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </ChildContent>
+            <NoticeContent>
+                @if (info.RequiresStrengthVerification) {
+                    <span>目前分數落在<strong>@GetStrengthStatusText(info)</strong>區間，不能只憑分數定案。必須用多個大運、流年的實際事件與身心狀態複核，確認順勢方向後再採用從格補運。</span>
+                } else {
+                    <span>每個柱位只計一次固定權重；四庫、三合、半合、暗拱與三會只會改變該位置的定案五行，不會重複加分。</span>
+                }
+            </NoticeContent>
+        </AnalysisCard>
 
         <div class="card mt-4 p-4">
             <h5 class="card-title border-bottom pb-2">五行對應</h5>
@@ -165,7 +209,7 @@
         @if (fuYinResult.HasFuYin || fanYinResult.HasFanYin) {
             <hr class="overview-section-divider" aria-hidden="true" />
             <p class="text-secondary mb-4">
-                <strong>下方非 《徐玉蘭的人生八字應用課》 的內容，來源為網路</strong>
+                <strong>伏吟與反吟是補充判讀，必須連同喜忌、宮位及其他合沖一起看。</strong>
             </p>
         }
 
@@ -193,20 +237,19 @@
                     }
                 </ul>
 
-                <div class="topic-notice mt-3 mb-0">
-                    <i class="fa-solid fa-circle-info topic-notice-icon" aria-hidden="true"></i>
-                    <ul class="compatibility-note-list mb-0">
-                        <li class="mb-1"><span class="text-warning">情緒敏感</span>&ensp;命局伏吟的人，心思通常比一般人細密，但也容易多愁善感、庸人自擾</li>
-                        <li class="mb-1"><span class="text-warning">內耗較重</span>&ensp;遇到事情容易在心裡轉好幾圈、想太多</li>
-                        <li class="mb-1"><span class="text-success">因應之道</span>&ensp;<strong>學會放下執著</strong>，避免過度悲觀或反覆猶豫；多做實事、少想壞事，把心力轉移到充實自我或穩健理財上</li>
-                    </ul>
-                </div>
-
                 @if (!fuYinResult.IncludesHourPillar) {
                     <div class="alert alert-info">
                         因出生時辰不確定，本次未將時柱納入伏吟判斷；補齊準確時辰後，結果可能改變。
                     </div>
                 }
+
+                <TopicNotice CssClass="mt-3 mb-0">
+                    <ul class="compatibility-note-list mb-0">
+                        <li class="mb-1"><span class="text-warning">情緒敏感</span>&ensp;命局伏吟的人，心思通常比一般人細密，但也容易多愁善感、庸人自擾</li>
+                        <li class="mb-1"><span class="text-warning">內耗較重</span>&ensp;遇到事情容易在心裡轉好幾圈、想太多</li>
+                        <li class="mb-1"><span class="text-success">因應之道</span>&ensp;<strong>學會放下執著</strong>，避免過度悲觀或反覆猶豫；多做實事、少想壞事，把心力轉移到充實自我或穩健理財上</li>
+                    </ul>
+                </TopicNotice>
             </div>
         }
 
@@ -234,21 +277,20 @@
                     }
                 </ul>
 
-                <div class="topic-notice mt-3 mb-0">
-                    <i class="fa-solid fa-circle-info topic-notice-icon" aria-hidden="true"></i>
+                @if (!fanYinResult.IncludesHourPillar) {
+                    <div class="alert alert-info">
+                        因出生時辰不確定，本次未將時柱納入反吟判斷；補齊準確時辰後，結果可能改變。
+                    </div>
+                }
+
+                <TopicNotice CssClass="mt-3 mb-0">
                     <ul class="compatibility-note-list mb-0">
                         <li class="mb-1"><span class="text-warning">心態反覆</span>&ensp;命局反吟的人，想法容易反覆、缺乏安全感</li>
                         <li class="mb-1"><span class="text-warning">生活變動</span>&ensp;一生中常面臨工作轉換、搬家或人際關係的劇烈洗牌</li>
                         <li class="mb-1"><span class="text-success">化解原則</span>&ensp;行事宜求「穩」、保持定力，多修身養性以減少內心衝突</li>
                         <li class="mb-1"><span class="text-success">大運流年</span>&ensp;當遇到適合的大運或流年，或可將相沖的柱給合走，在大運或流年的時間內會讓反吟的狀況減輕</li>
                     </ul>
-                </div>
-
-                @if (!fuYinResult.IncludesHourPillar) {
-                    <div class="alert alert-info">
-                        因出生時辰不確定，本次未將時柱納入反吟判斷；補齊準確時辰後，結果可能改變。
-                    </div>
-                }
+                </TopicNotice>
             </div>
         }
     </div>
@@ -263,6 +305,12 @@
             GeJu.CongRuo => "bg-danger",
             _ => "bg-secondary"
         };
+    }
+
+    private static string GetStrengthStatusText(BaZiInfo info) {
+        return info.RequiresStrengthVerification
+            ? $"疑似{info.StrengthStatus.ToGeJuString()}"
+            : info.StrengthStatus.ToGeJuString();
     }
 
     private string GetElementColorClass(WuXing element) {
@@ -317,7 +365,7 @@
                 break;
             case GeJu.CongQiang:
                 desc = string.Format(
-                    @"<div>八字裡幫助 <span class=""{0}"">{1}</span> 能量的五行過多、其他五行太少，整體五行過於極端，應順從大勢，繼續補充幫助 <span class=""{0}"">{1}</span> 的能量</div>
+                    @"<div>八字裡幫助 <span class=""{0}"">{1}</span> 能量的五行過多、其他五行太少，目前屬疑似從強格。先用多個大運與流年的實際事件確認旺勢是否專一；確認成格後，才順從大勢並補充幫助 <span class=""{0}"">{1}</span> 的能量</div>
 <br/>
 <div><strong>喜&ensp;&ensp;歡：</strong> <span class=""{8}"">{9}</span>、<span class=""{0}"">{1}</span></div>
 <div><strong>不喜歡：</strong> <span class=""{2}"">{3}</span>、<span class=""{4}"">{5}</span>、<span class=""{6}"">{7}</span></div>",
@@ -335,7 +383,7 @@
                 break;
             case GeJu.CongRuo:
                 desc = string.Format(
-                    @"<div>八字裡幫助 <span class=""{0}"">{1}</span> 能量的五行過少，無法抗衡其他五行，應順從大勢，不要再補充幫助 <span class=""{0}"">{1}</span> 的能量</div>
+                    @"<div>八字裡幫助 <span class=""{0}"">{1}</span> 能量的五行過少，目前屬疑似從弱格。先用多個大運與流年的實際事件確認主勢；確認成格後，才順從剋、洩、耗方向，不再強行補充幫助 <span class=""{0}"">{1}</span> 的能量</div>
 <br/>
 <div><strong>喜&ensp;&ensp;歡：</strong> <span class=""{2}"">{3}</span>、<span class=""{4}"">{5}</span>、<span class=""{6}"">{7}</span>
 <div><strong>不喜歡：</strong> <span class=""{8}"">{9}</span>、<span class=""{0}"">{1}</span>",

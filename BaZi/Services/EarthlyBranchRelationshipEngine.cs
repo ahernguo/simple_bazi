@@ -70,6 +70,16 @@ namespace BaZi.Services {
                 ));
             }
 
+            if (BaZiDefine.Po.Any(rule => ContainsPair(rule, first, second))) {
+                matches.Add(new BranchRelationshipRuleMatch(
+                    BranchRelationshipType.SixBreak,
+                    members,
+                    BranchRelationshipCompletion.Pair,
+                    null,
+                    GetInterpretationKeys(BranchRelationshipType.SixBreak)
+                ));
+            }
+
             if (BaZiDefine.TwoXing
                 .Where(rule => rule.Count == 2)
                 .Any(rule => ContainsPair(rule, first, second))) {
@@ -217,6 +227,34 @@ namespace BaZi.Services {
                     completion,
                     null,
                     GetInterpretationKeys(BranchRelationshipType.Punishment),
+                    candidates
+                );
+            }
+
+            var threeCombinationGroups = BaZiDefine.ThreeHe
+                .GroupBy(rule => string.Join(",", rule.Value.Select(branch => (int)branch)))
+                .Select(group => new {
+                    Members = group.First().Value,
+                    TransformElement = group.Count() == 1 ? group.First().Key : (WuXing?)null
+                });
+            foreach (var group in threeCombinationGroups) {
+                var availableMembers = group.Members
+                    .Where(member => sources.Any(source => source.Branch == member))
+                    .ToArray();
+                if (availableMembers.Length < 2) {
+                    continue;
+                }
+
+                AddSelections(
+                    BranchRelationshipType.ThreeCombination,
+                    availableMembers,
+                    sources,
+                    scope,
+                    availableMembers.Length == group.Members.Length
+                        ? BranchRelationshipCompletion.Complete
+                        : BranchRelationshipCompletion.Partial,
+                    group.TransformElement,
+                    GetInterpretationKeys(BranchRelationshipType.ThreeCombination),
                     candidates
                 );
             }
@@ -400,7 +438,9 @@ namespace BaZi.Services {
                 BranchRelationshipType.SixCombination => ["attraction", "familiarity", "coordination"],
                 BranchRelationshipType.SixClash => ["difference", "change", "push-pull"],
                 BranchRelationshipType.SixHarm => ["implicit-discomfort", "misunderstanding", "trust-sensitivity"],
+                BranchRelationshipType.SixBreak => ["disruption", "instability", "repair-needed"],
                 BranchRelationshipType.Punishment => ["reactivity", "defensiveness", "accumulated-pressure"],
+                BranchRelationshipType.ThreeCombination => ["shared-direction", "coordination", "transformation-candidate"],
                 BranchRelationshipType.ThreeMeeting => ["shared-direction", "concentration", "transformation-candidate"],
                 _ => throw new ArgumentOutOfRangeException(nameof(relationType), relationType, null)
             };

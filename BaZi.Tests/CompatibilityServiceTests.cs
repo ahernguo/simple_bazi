@@ -30,6 +30,18 @@ namespace BaZi.Tests {
             Assert.Equal(_tenGodService.GetAllStars(info).Count, groups.Sum(group => group.Count));
         }
 
+        [Fact]
+        public void GetAllStars_UnknownBirthTime_ExcludesHourPillar() {
+            var accurate = _baZiService.GetBaZiInfo(new DateTime(1988, 8, 8, 8, 0, 0), 1, true);
+            var uncertain = _baZiService.GetBaZiInfo(new DateTime(1988, 8, 8, 8, 0, 0), 1, false);
+
+            var accurateStars = _tenGodService.GetAllStars(accurate);
+            var uncertainStars = _tenGodService.GetAllStars(uncertain);
+
+            Assert.True(accurateStars.Count > uncertainStars.Count);
+            Assert.Equal(2, _tenGodService.GetMainStars(uncertain).Count);
+        }
+
         [Theory]
         [InlineData(CompatibilityRelationship.Romance, "生肖初篩")]
         [InlineData(CompatibilityRelationship.Parent, "對方的主要十神")]
@@ -119,6 +131,59 @@ namespace BaZi.Tests {
             Assert.Contains(result.InternetSourceSections, section => section.Title == "資料完整度");
             Assert.Contains(result.InternetSourceSections, section => section.Title == "六合候選");
             Assert.Contains(result.InternetSourceSections, section => section.Title == "六沖互動");
+        }
+
+        [Fact]
+        public void AnalyzeChild_AddsChildPalaceAndChildStarSection() {
+            var service = CreateService();
+            var self = _baZiService.GetBaZiInfo(new DateTime(1990, 1, 1, 12, 0, 0), 2);
+            var child = _baZiService.GetBaZiInfo(new DateTime(2018, 6, 15, 9, 30, 0), 1);
+
+            var result = service.Analyze(self, child, CompatibilityRelationship.Child);
+
+            var section = Assert.Single(result.Sections, item => item.Title == "子息宮與子息星");
+            Assert.Contains("時柱是子息宮", section.Summary);
+            Assert.Contains(section.Details, detail => detail.Contains("子息星"));
+        }
+
+        [Fact]
+        public void AnalyzeParent_AddsFamilyStarReceiverSection() {
+            var service = CreateService();
+            var self = _baZiService.GetBaZiInfo(new DateTime(1990, 1, 1, 12, 0, 0), 2);
+            var parent = _baZiService.GetBaZiInfo(new DateTime(1960, 6, 15, 9, 30, 0), 1);
+
+            var result = service.Analyze(self, parent, CompatibilityRelationship.Parent);
+
+            var section = Assert.Single(result.Sections, item => item.Title == "自己命盤的家人星");
+            Assert.Contains(section.Details, detail => detail.Contains("印星"));
+            Assert.Contains(section.Details, detail => detail.Contains("財星"));
+        }
+
+        [Theory]
+        [InlineData(CompatibilityRelationship.Romance)]
+        [InlineData(CompatibilityRelationship.Parent)]
+        [InlineData(CompatibilityRelationship.Child)]
+        [InlineData(CompatibilityRelationship.Sibling)]
+        [InlineData(CompatibilityRelationship.Friend)]
+        [InlineData(CompatibilityRelationship.Colleague)]
+        public void Analyze_UserFacingStatus_DoesNotUseCourseAttribution(
+            CompatibilityRelationship relationship
+        ) {
+            var service = CreateService();
+            var self = _baZiService.GetBaZiInfo(new DateTime(1990, 1, 1, 12, 0, 0), 2);
+            var other = _baZiService.GetBaZiInfo(new DateTime(1992, 6, 15, 9, 30, 0), 1);
+
+            var result = service.Analyze(self, other, relationship);
+            var texts = result.Sections.SelectMany(section =>
+                new[] { section.Title, section.Summary }
+                    .Concat(section.Details)
+                    .Concat(section.Notes ?? []))
+                .Concat(result.Limitations);
+
+            Assert.All(texts, text => {
+                Assert.DoesNotContain("課程", text);
+                Assert.DoesNotContain("老師", text);
+            });
         }
 
         private CompatibilityService CreateService() {

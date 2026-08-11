@@ -16,20 +16,26 @@ namespace BaZi.Services {
         public IReadOnlyList<ShiShen> GetAllStars(BaZiInfo info) {
             ArgumentNullException.ThrowIfNull(info);
 
-            return [
+            var stars = new List<ShiShen> {
                 info.YearZhu.ZhuXing,
-            info.MonthZhu.ZhuXing,
-            info.HourZhu.ZhuXing,
-            .. info.YearZhu.FuXing,
-            .. info.MonthZhu.FuXing,
-            .. info.DayZhu.FuXing,
-            .. info.HourZhu.FuXing
-            ];
+                info.MonthZhu.ZhuXing
+            };
+            stars.AddRange(info.YearZhu.FuXing);
+            stars.AddRange(info.MonthZhu.FuXing);
+            stars.AddRange(info.DayZhu.FuXing);
+            if (info.IsBirthTimeAccurate) {
+                stars.Add(info.HourZhu.ZhuXing);
+                stars.AddRange(info.HourZhu.FuXing);
+            }
+
+            return stars;
         }
 
         public IReadOnlyList<ShiShen> GetMainStars(BaZiInfo info) {
             ArgumentNullException.ThrowIfNull(info);
-            return [info.YearZhu.ZhuXing, info.MonthZhu.ZhuXing, info.HourZhu.ZhuXing];
+            return info.IsBirthTimeAccurate
+                ? [info.YearZhu.ZhuXing, info.MonthZhu.ZhuXing, info.HourZhu.ZhuXing]
+                : [info.YearZhu.ZhuXing, info.MonthZhu.ZhuXing];
         }
 
         public IReadOnlyList<TenGodStatistic> GetStatistics(BaZiInfo info) {

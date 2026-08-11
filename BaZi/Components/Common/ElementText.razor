@@ -1,0 +1,25 @@
+<span class="@CssClass">@(Text ?? Element.ToWuXingString())</span>
+
+@code {
+    [Parameter, EditorRequired]
+    public WuXing Element { get; set; }
+
+    [Parameter]
+    public string? Text { get; set; }
+
+    [Parameter]
+    public bool Emphasized { get; set; } = true;
+
+    private string CssClass => $"{GetElementColorClass(Element)}{(Emphasized ? " fw-semibold" : string.Empty)}";
+
+    private static string GetElementColorClass(WuXing element) {
+        return element switch {
+            WuXing.Mu => "element-wood",
+            WuXing.Huo => "element-fire",
+            WuXing.Tu => "element-earth",
+            WuXing.Jin => "element-metal",
+            WuXing.Shui => "element-water",
+            _ => string.Empty
+        };
+    }
+}

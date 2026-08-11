@@ -117,16 +117,17 @@ namespace BaZi.Services {
             }
 
             var directInteractions = GetTaiSuiInteractions(info.YearZhu.Zhi, liuNian.Zhi);
-            var natalPillars = new List<(string Name, Zhu Pillar)> {
+            var allNatalPillars = new List<(string Name, Zhu Pillar)> {
+                ("年柱", info.YearZhu),
                 ("月柱", info.MonthZhu),
                 ("日柱", info.DayZhu)
             };
             if (info.IsBirthTimeAccurate) {
-                natalPillars.Add(("時柱", info.HourZhu));
+                allNatalPillars.Add(("時柱", info.HourZhu));
             }
 
             var indirectInteractions = new List<TaiSuiPillarInteraction>();
-            foreach ((string pillarName, Zhu pillar) in natalPillars) {
+            foreach ((string pillarName, Zhu pillar) in allNatalPillars.Where(item => item.Name != "年柱")) {
                 var interactions = GetTaiSuiInteractions(pillar.Zhi, liuNian.Zhi);
                 if (interactions.Count > 0) {
                     indirectInteractions.Add(new TaiSuiPillarInteraction(
@@ -134,6 +135,24 @@ namespace BaZi.Services {
                         pillar.Zhi,
                         interactions
                     ));
+                }
+            }
+
+            var reinforcedInteractions = new List<TaiSuiReinforcedInteraction>();
+            foreach ((string repeatedName, Zhu repeatedPillar) in allNatalPillars.Where(item => item.Pillar.Zhi == liuNian.Zhi)) {
+                foreach ((string relatedName, Zhu relatedPillar) in allNatalPillars.Where(item => item.Name != repeatedName)) {
+                    var interactions = GetTaiSuiInteractions(repeatedPillar.Zhi, relatedPillar.Zhi)
+                        .Where(interaction => interaction != TaiSuiInteractionType.SameBranch)
+                        .ToArray();
+                    if (interactions.Length > 0) {
+                        reinforcedInteractions.Add(new TaiSuiReinforcedInteraction(
+                            repeatedName,
+                            repeatedPillar.Zhi,
+                            relatedName,
+                            relatedPillar.Zhi,
+                            interactions
+                        ));
+                    }
                 }
             }
 
@@ -146,7 +165,8 @@ namespace BaZi.Services {
                 info.YearZhu.Zhi,
                 directInteractions,
                 indirectInteractions,
-                info.IsBirthTimeAccurate
+                info.IsBirthTimeAccurate,
+                reinforcedInteractions
             );
         }
 
@@ -793,6 +813,7 @@ namespace BaZi.Services {
         private void CreateYunDesc(BaZiInfo info, DaYun daYun, ShiShen yun, System.Text.StringBuilder html) {
             if (daYun is null)
                 return;
+            daYun.IsGoodYun = false;
             html.Append("<span>");
             /* 依照格局來判斷是否好運 */
             if (info.StrengthStatus == GeJu.ShenQiang) {
@@ -1312,12 +1333,21 @@ namespace BaZi.Services {
                 html.AppendLine(conflict.ToString());
                 html.AppendLine(@"    </div>");
             }
-            /* 前五年走天干的運，後五年走地支的運
-            * 但地支的力量是大於天干，這邊就單純用地支來判斷吧! */
             html.AppendLine(@"    <div class=""row ms-1 me-1 py-3"">");
-            var selectedYun = daYun.Zhi.ToShiShen(info.DayZhu.Gan);
+            var phase = daYun.GetPhase(targetYear);
+            var ganYun = daYun.Gan.ToShiShen(info.DayZhu.Gan);
+            var zhiYun = daYun.Zhi.ToShiShen(info.DayZhu.Gan);
+            var selectedYun = daYun.GetPrimaryTenGod(info.DayZhu.Gan, targetYear);
+            var secondaryYun = phase == DaYunPhase.FirstFiveYears ? zhiYun : ganYun;
             var selectedYunDisplay = FormatTenGod(info, selectedYun, selectedYun.ToYunString());
-            html.Append($"<span>{daYun.StartYear} 年 ~ {(daYun.StartYear + 10)} 年走 {selectedYunDisplay}</span>");
+            var secondaryYunDisplay = FormatTenGod(info, secondaryYun, secondaryYun.ToYunString());
+            var ganDisplay = FormatElement(daYun.Gan.ToWuXing(), daYun.Gan.ToGanString());
+            var zhiDisplay = FormatElement(daYun.Zhi.ToWuXing(), daYun.Zhi.ToZhiString());
+            var phaseText = phase == DaYunPhase.FirstFiveYears
+                ? $"前五年（{daYun.StartYear}～{Math.Min(daYun.StartYear + 4, daYun.EndYear)}）以天干為主"
+                : $"後五年（{daYun.StartYear + 5}～{daYun.EndYear}）以地支為主";
+            html.AppendLine($"        <span><strong>{daYun.StartYear} 年～{daYun.EndYear} 年：</strong>{ganDisplay}{zhiDisplay}</span>");
+            html.AppendLine($"        <span>{targetYear} 年位於{phaseText}，主要走 {selectedYunDisplay}；次要能量為 {secondaryYunDisplay}。</span>");
             CreateYunDesc(info, daYun, selectedYun, html);
             html.AppendLine(@"    </div>");
 
@@ -1325,13 +1355,14 @@ namespace BaZi.Services {
             if (nextDaYun != null && targetYear == nextDaYun.StartYear - 1) {
                 html.AppendLine(@"    <hr />");
                 html.AppendLine(@"    <div class=""row ms-1 me-1 py-3"">");
-                var nextYun = nextDaYun.Zhi.ToShiShen(info.DayZhu.Gan);
+                var nextYun = nextDaYun.Gan.ToShiShen(info.DayZhu.Gan);
                 var nextYunDisplay = FormatTenGod(info, nextYun, nextYun.ToYunString());
-                html.Append($"<span><strong class=\"text-danger\">[明年切換大運]</strong> {nextDaYun.StartYear} 年 ~ {(nextDaYun.StartYear + 10)} 年走 {nextYunDisplay}</span>");
+                html.Append($"<span><strong class=\"text-danger\">[明年切換大運]</strong> {nextDaYun.StartYear} 年～{nextDaYun.EndYear} 年；新大運前五年以天干為主，先走 {nextYunDisplay}。</span>");
                 CreateYunDesc(info, nextDaYun, nextYun, html);
                 html.AppendLine(@"    </div>");
             }
 
+            AppendTopicNotice(html, "大運前五年以天干為主，地支仍有作用；後五年以地支為主，天干作用較弱。流年天干與地支仍須一併判斷。");
             html.AppendLine(@"</div>");
             return new MarkupString(html.ToString());
         }
@@ -1420,6 +1451,7 @@ namespace BaZi.Services {
             var html = new System.Text.StringBuilder();
             AppendWealthCareerCard(info, daYun, periodGanZhi, period, html);
             AppendRelationshipCard(info, daYun, periodGanZhi, period, html);
+            AppendChildTimingCard(info, daYun, liuNian, periodGanZhi, period, html);
             AppendHealthCard(info, daYun, liuNian, periodGanZhi, period, html);
             return html.ToString();
         }
@@ -1464,7 +1496,7 @@ namespace BaZi.Services {
             if (ganHasWealth && zhiHasWealth) {
                 html.AppendLine($"            <li>{periodLabel}天干、地支皆見{wealthStar}，財運機會較集中、明顯；並非一定發財，僅表示機會較大。</li>");
             } else if ((ganHasWealth || zhiHasWealth) && (ganHasOutput || zhiHasOutput)) {
-                html.AppendLine($"            <li>{periodLabel}同見{wealthStar}與{outputStar}，形成課程所稱的「{outputStar}生{wealthStar}」，適合把專業、作品或提案轉成可驗證的收入機會。</li>");
+                html.AppendLine($"            <li>{periodLabel}同見{wealthStar}與{outputStar}，形成「{outputStar}生{wealthStar}」，適合把專業、作品或提案轉成可驗證的收入機會。</li>");
             } else if (ganHasWealth || zhiHasWealth) {
                 html.AppendLine($"            <li>{periodLabel}見{wealthStar}，代表資源與金錢議題較容易被引動；這是機會，不等於必然獲利。</li>");
             } else if (ganHasOutput || zhiHasOutput) {
@@ -1569,6 +1601,59 @@ namespace BaZi.Services {
             }
             html.AppendLine("    </div>");
             AppendTopicNotice(html, "感情判讀不代表必然遇見、結婚、分手或出現第三者，僅為一種訊號，仍須以實際關係來探討");
+            html.AppendLine("</div>");
+        }
+
+        private static void AppendChildTimingCard(
+            BaZiInfo info,
+            DaYun daYun,
+            LiuNian liuNian,
+            IGanZhi periodGanZhi,
+            PeriodScope period,
+            System.Text.StringBuilder html
+        ) {
+            if (period != PeriodScope.LiuNian) {
+                return;
+            }
+
+            var childElement = info.Gender == Sex.Male
+                ? BaZiDefine.RestrictBy[info.RiZhu]
+                : BaZiDefine.Generation[info.RiZhu];
+            var childStar = info.Gender == Sex.Male ? ShiShen.GuanSha : ShiShen.ShihShang;
+            var ganHasChildStar = periodGanZhi.Gan.ToWuXing() == childElement;
+            var zhiHasChildStar = periodGanZhi.Zhi.ToWuXing() == childElement;
+            var daYunPhase = daYun.GetPhase(liuNian.Year);
+            var daYunPrimaryElement = daYunPhase == DaYunPhase.FirstFiveYears
+                ? daYun.Gan.ToWuXing()
+                : daYun.Zhi.ToWuXing();
+            var daYunHasChildStar = daYunPrimaryElement == childElement;
+            var childStarText = FormatTopicTenGod(childStar);
+            var childElementText = FormatElement(childElement);
+            var ganDisplay = FormatElement(periodGanZhi.Gan.ToWuXing(), periodGanZhi.Gan.ToGanString());
+            var zhiDisplay = FormatElement(periodGanZhi.Zhi.ToWuXing(), periodGanZhi.Zhi.ToZhiString());
+
+            html.AppendLine("<div class=\"card p-3 mt-3\">");
+            html.AppendLine("    <h5 class=\"card-title border-bottom pb-2\"><i class=\"fa-solid fa-baby me-2\"></i>子女緣分</h5>");
+            html.AppendLine("    <div class=\"row ms-1 me-1 py-3\">");
+            html.AppendLine($"        <strong class=\"mb-2\">{liuNian.Year} 年子息星時機</strong>");
+            html.AppendLine($"        <span>依{info.Gender.ToSexString()}命口徑，子息星為{childStarText}，子息星五行為{childElementText}；流年為<strong>{ganDisplay}{zhiDisplay}</strong>。</span>");
+            html.AppendLine("        <ul class=\"mb-0 mt-2\">");
+            if (ganHasChildStar && zhiHasChildStar) {
+                html.AppendLine($"            <li>流年天干與地支主氣都見{childStarText}，子女緣分與家庭規劃訊號較集中。</li>");
+            } else if (ganHasChildStar || zhiHasChildStar) {
+                html.AppendLine($"            <li>流年{(ganHasChildStar ? "天干透出" : "地支主氣見")}{childStarText}，可列為子女緣分與家庭規劃的觀察時間窗。</li>");
+            } else {
+                html.AppendLine($"            <li>流年天干與地支主氣未直接見{childStarText}，本年沒有明顯子息星時間窗。</li>");
+            }
+            if (daYunHasChildStar) {
+                html.AppendLine($"            <li>目前大運{(daYunPhase == DaYunPhase.FirstFiveYears ? "前五年以天干" : "後五年以地支")}為主的階段也見{childStarText}，長期背景與流年訊號可一併觀察。</li>");
+            }
+            html.AppendLine("        </ul>");
+            html.AppendLine("    </div>");
+            if (!info.IsBirthTimeAccurate) {
+                html.AppendLine("    <div class=\"alert alert-info\">出生時辰不確定，時柱子息宮未納入；補齊準確時辰後，子息宮判讀可能改變。</div>");
+            }
+            AppendTopicNotice(html, "子息星只代表命理時間訊號，不保證懷孕、生育數量或療程結果；備孕、懷孕、分娩與輔助生殖技術必須依本人意願及生殖醫學專業評估。");
             html.AppendLine("</div>");
         }
 

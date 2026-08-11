@@ -74,7 +74,7 @@
             @FortuneService.DaYunAnalysis(info, targetYear)
             @FortuneService.LiuNianAnalysis(info, targetYear)
             @if (taiSuiAnalysis is not null) {
-                <TaiSuiAnalysisSection Analysis="taiSuiAnalysis" />
+                <TaiSuiAnalysisSection Analysis="taiSuiAnalysis" Info="info" />
             }
             @FortuneService.LiuNianTopicAnalysis(info, targetYear)
             <FortuneYinAnalysisSection Analyses="yinAnalyses" />

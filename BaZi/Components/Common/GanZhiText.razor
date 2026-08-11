@@ -1,0 +1,14 @@
+<span class="@CssClass">
+    <ElementText Element="Value.Gan.ToWuXing()" Text="Value.Gan.ToGanString()" Emphasized="Emphasized" />
+    <ElementText Element="Value.Zhi.ToWuXing()" Text="Value.Zhi.ToZhiString()" Emphasized="Emphasized" />
+</span>
+
+@code {
+    [Parameter, EditorRequired]
+    public IGanZhi Value { get; set; } = default!;
+
+    [Parameter]
+    public bool Emphasized { get; set; } = true;
+
+    private string CssClass => Emphasized ? "fw-semibold" : string.Empty;
+}

@@ -1,0 +1,15 @@
+<div class="topic-notice @CssClass">
+    <i class="fa-solid @Icon topic-notice-icon" aria-hidden="true"></i>
+    <div>@ChildContent</div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public RenderFragment ChildContent { get; set; } = default!;
+
+    [Parameter]
+    public string Icon { get; set; } = "fa-triangle-exclamation";
+
+    [Parameter]
+    public string CssClass { get; set; } = "mb-0";
+}
