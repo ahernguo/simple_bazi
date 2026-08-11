@@ -151,7 +151,7 @@ namespace BaZi.Services {
                     PersonalOverviewTone.Positive
                 )
                 ],
-                "夫妻星與夫妻宮只表示吸引力及互動傾向，不保證遇見、結婚、分手或第三者；吸引力強不一定是姻緣，有可能變成麻吉或閨密"
+                "夫妻星與夫妻宮只表示吸引力及互動傾向，不保證遇見、結婚、分手或第三者；吸引力強不一定是姻緣，有可能變成麻吉或閨密。任何親密互動都需雙方清楚同意；遇到威脅、跟蹤、暴力或強迫時，以人身安全優先。"
             );
         }
 
@@ -177,7 +177,7 @@ namespace BaZi.Services {
             var weakNames = string.Join("、", weakElements.Select(element => element.ToWuXingString()));
             var threeXing = GetNatalThreeXing(info);
             var riskDetails = threeXing.Count == 0
-                ? ["本命沒有湊成 寅巳申 -或- 丑戌未 三刑，無重大危害訊號，但仍請維持健康檢查與管理。"]
+                ? ["本命沒有湊成寅巳申或丑戌未三刑，無重大危害，但不代表會永遠健康，仍請維持健康檢查與管理。"]
                 : threeXing.Select(group => group == "寅巳申"
                     ? "本命湊成寅巳申三刑；交通、跌倒、外傷與既有心血管風險的加強管理。"
                     : "本命湊成丑戌未三刑；容易有小病、情緒起伏大，建議身體異常即就醫、情緒支持與定期健康管理。")
@@ -194,15 +194,11 @@ namespace BaZi.Services {
                 riskDetails,
                 PersonalOverviewTone.Caution
             );
-            var arrayPos = new List<PersonalOverviewSection> { posWeak };
-            if (threeXing.Count > 0) {
-                arrayPos.Add(posThreeXing);
-            }
             return new PersonalOverviewCard(
                 "健康",
                 "fa-heart-pulse",
                 $"表層五行為 {countSummary}；以 {weakNames} 為較需留意的弱項。",
-                arrayPos,
+                [posWeak, posThreeXing],
                 "五行與身體部位僅為「表徵」或「意象」，不能診斷疾病或決定治療。有症狀、家族史或檢查異常時，請直接依合格醫療專業處理。"
             );
         }
@@ -251,7 +247,7 @@ namespace BaZi.Services {
             return new PersonalOverviewCard(
                 "家人緣分",
                 "fa-people-roof",
-                $"{info.Gender.ToSexString()} 命以 {childElement.ToWuXingString()}（{childGroup.ToShenString()}）為子息星。",
+                $"子女緣分以子息星與子息宮分開判讀；{info.Gender.ToSexString()}命以 {childElement.ToWuXingString()}（{childGroup.ToShenString()}）為子息星。",
                 [
                     new PersonalOverviewSection(
                     "子息星分布",

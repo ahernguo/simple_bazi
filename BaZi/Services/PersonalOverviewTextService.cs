@@ -312,7 +312,8 @@ namespace BaZi.Services {
                 summary,
                 [
                     "利用具體事件核對感受與期待，八字僅呈現「表徵」或「意象」還需實際相處才能確定。",
-                    "任何親密互動都需要雙方清楚同意；亦需尊重對方的拒絕或不同意。"
+                    "任何親密互動都需要雙方清楚同意；亦需尊重對方的拒絕或不同意。",
+                    "沉默、禮貌互動或接受邀約都不等於戀愛同意。"
                 ],
                 hasPressure ? CompatibilityTone.Notice : CompatibilityTone.Positive,
                 Notes: ["命理命中屬傳統文化詮釋，不是人格診斷、科學預測或感情成功率。"]
