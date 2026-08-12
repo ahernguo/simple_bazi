@@ -82,7 +82,7 @@
 
             @if (visibleDays.Count == 0) {
                 <AnalysisCard Title="查詢結果" Icon="fa-calendar-xmark">
-                    <div class="alert alert-info mb-0">這個月份沒有符合目前條件的流日。</div>
+                    <div class="alert alert-info analysis-item-explanation mb-0">這個月份沒有符合目前條件的流日。</div>
                 </AnalysisCard>
             } else {
                 <div class="row g-3 daily-result-grid">
@@ -102,23 +102,27 @@
                                     </div>
 
                                     @foreach (var signal in signals) {
-                                        <section class="daily-signal mb-3" @key="signal.Topic">
-                                            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                                                <span class="badge @GetLevelCss(signal.Level)">@GetTopicName(signal.Topic)</span>
-                                                <strong>@signal.Title</strong>
-                                            </div>
-                                            <p class="mb-2">@signal.Summary</p>
-                                            @if (signal.GanTenGod is ShiShen ganTenGod && signal.ZhiTenGod is ShiShen zhiTenGod) {
-                                                <div class="small d-flex flex-wrap gap-3">
-                                                    <span>功能：天干 <TenGodText Info="info" TenGod="ganTenGod" />、地支 <TenGodText Info="info" TenGod="zhiTenGod" /></span>
-                                                    <span>
-                                                        格局喜忌：
-                                                        <TenGodText Info="info" TenGod="ganTenGod" Mode="TenGodDisplayMode.Favorability" Text="@($"天干{ganTenGod.ToShenString()}")" />、
-                                                        <TenGodText Info="info" TenGod="zhiTenGod" Mode="TenGodDisplayMode.Favorability" Text="@($"地支{zhiTenGod.ToShenString()}")" />
-                                                    </span>
+                                        <AnalysisItem CssClass="daily-signal mb-3" AlertClass="@GetAlertCss(signal.Level)" @key="signal.Topic">
+                                            <ChildContent>
+                                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                                    <span class="badge @GetLevelCss(signal.Level)">@GetTopicName(signal.Topic)</span>
+                                                    <strong>@signal.Title</strong>
                                                 </div>
-                                            }
-                                        </section>
+                                            </ChildContent>
+                                            <ExplanationContent>
+                                                <p class="mb-2">@signal.Summary</p>
+                                                @if (signal.GanTenGod is ShiShen ganTenGod && signal.ZhiTenGod is ShiShen zhiTenGod) {
+                                                    <div class="small d-flex flex-wrap gap-3">
+                                                        <span>功能：天干 <TenGodText Info="info" TenGod="ganTenGod" />、地支 <TenGodText Info="info" TenGod="zhiTenGod" /></span>
+                                                        <span>
+                                                            格局喜忌：
+                                                            <TenGodText Info="info" TenGod="ganTenGod" Mode="TenGodDisplayMode.Favorability" Text="@($"天干{ganTenGod.ToShenString()}")" />、
+                                                            <TenGodText Info="info" TenGod="zhiTenGod" Mode="TenGodDisplayMode.Favorability" Text="@($"地支{zhiTenGod.ToShenString()}")" />
+                                                        </span>
+                                                    </div>
+                                                }
+                                            </ExplanationContent>
+                                        </AnalysisItem>
                                     }
                                 </ChildContent>
 
@@ -223,6 +227,16 @@
             DailySignalLevel.HighAttention => "text-bg-danger",
             DailySignalLevel.VerificationRequired => "text-bg-info",
             _ => "text-bg-secondary"
+        };
+    }
+
+    private static string GetAlertCss(DailySignalLevel level) {
+        return level switch {
+            DailySignalLevel.Opportunity => "alert-success",
+            DailySignalLevel.Attention => "alert-warning",
+            DailySignalLevel.HighAttention => "alert-danger",
+            DailySignalLevel.VerificationRequired => "alert-info",
+            _ => "alert-info"
         };
     }
 

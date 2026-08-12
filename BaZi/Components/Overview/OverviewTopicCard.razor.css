@@ -12,37 +12,19 @@
 
 .overview-topic-card .card-title {
     color: var(--overview-foreground);
-    border-color: var(--overview-border-color) !important;
 }
 
 .overview-topic-summary {
-    color: var(--overview-foreground);
     font-size: 1.05rem;
 }
 
 .overview-topic-section {
     margin-bottom: 1rem;
-    padding: 1rem;
     color: var(--overview-foreground);
-    border-left: 0.3rem solid var(--overview-border-color);
-    border-radius: var(--bs-border-radius);
-    background-color: var(--overview-surface-background);
 }
 
 .overview-topic-section h5 {
     font-size: 1rem;
-}
-
-.overview-topic-section-information {
-    border-left-color: var(--bs-info);
-}
-
-.overview-topic-section-positive {
-    border-left-color: var(--bs-success);
-}
-
-.overview-topic-section-caution {
-    border-left-color: var(--bs-warning);
 }
 
 .overview-topic-section ul {
@@ -54,11 +36,5 @@
 }
 
 .overview-topic-card .topic-notice {
-    color: var(--overview-foreground);
-    background-color: var(--overview-notice-background);
-    border-color: var(--overview-border-color);
-}
-
-.overview-topic-card .topic-notice-icon {
-    color: var(--overview-foreground);
+    margin-top: auto;
 }

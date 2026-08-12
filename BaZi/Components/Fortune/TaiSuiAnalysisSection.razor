@@ -1,7 +1,8 @@
-<div class="card p-3 mt-3">
-    <h5 class="card-title border-bottom pb-2">
+<div class="card analysis-card p-3 mt-3">
+    <h5 class="card-title analysis-card-title">
         <i class="fa-solid fa-shield-halved me-2" aria-hidden="true"></i>犯太歲與生肖相沖
     </h5>
+    <hr class="analysis-card-divider" aria-hidden="true" />
 
     <div class="row g-3 mb-3">
         <div class="col-md-6">
@@ -41,7 +42,7 @@
     }
 
     @if (Analysis.HasDirectTaiSui) {
-        <div class="alert alert-warning">
+        <div class="alert alert-warning analysis-item-explanation">
             <strong>直接犯太歲：</strong>@string.Join("、", Analysis.DirectInteractions.Select(GetDirectLabel))。
             <ul class="mt-2 mb-0">
                 @foreach (TaiSuiInteractionType interaction in Analysis.DirectInteractions) {
@@ -52,13 +53,13 @@
             </ul>
         </div>
     } else {
-        <div class="alert alert-success">
+        <div class="alert alert-success analysis-item-explanation">
             本命年支與所選流年未形成值、沖、刑、害、破，沒有直接犯太歲。
         </div>
     }
 
     @if (Analysis.IsZodiacClash) {
-        <div class="alert alert-warning">
+        <div class="alert alert-warning analysis-item-explanation">
             <strong>生肖相沖：</strong>@(Analysis.NatalZodiac)與@(Analysis.AnnualZodiac)形成
             <ElementText Element="Analysis.NatalYearBranch.ToWuXing()" Text="@(Analysis.NatalYearBranch.ToZhiString())" /><ElementText Element="Analysis.AnnualBranch.ToWuXing()" Text="@(Analysis.AnnualBranch.ToZhiString())" />六沖，較需留意移動、變動與摩擦。
         </div>
@@ -70,19 +71,25 @@
     @if (Analysis.HasIndirectTaiSui) {
         <ul class="mb-3">
             @foreach (TaiSuiPillarInteraction interaction in Analysis.IndirectInteractions) {
-                <li class="mb-1" @key="interaction.PillarName">
-                    @interaction.PillarName 地支
-                    <ElementText Element="interaction.NatalBranch.ToWuXing()" Text="@(interaction.NatalBranch.ToZhiString())" />
-                    與流年地支
-                    <ElementText Element="Analysis.AnnualBranch.ToWuXing()" Text="@(Analysis.AnnualBranch.ToZhiString())" />
-                    形成
-                    @string.Join("、", interaction.Interactions.Select(GetIndirectLabel))，列為間接犯太歲。
+                <li class="mb-3" @key="interaction.PillarName">
+                    <AnalysisItem CssClass="mb-0" AlertClass="alert-warning">
+                        <ChildContent>
+                            @interaction.PillarName 地支
+                            <ElementText Element="interaction.NatalBranch.ToWuXing()" Text="@(interaction.NatalBranch.ToZhiString())" />
+                            與流年地支
+                            <ElementText Element="Analysis.AnnualBranch.ToWuXing()" Text="@(Analysis.AnnualBranch.ToZhiString())" />
+                            形成
+                            @string.Join("、", interaction.Interactions.Select(GetIndirectLabel))，列為間接犯太歲。
+                        </ChildContent>
+                        <ExplanationContent>
+                            @foreach (var interactionType in interaction.Interactions) {
+                                <div class="mb-1" @key="interactionType">
+                                    <strong><span>間接</span>@GetDirectLabel(interactionType)：</strong>@GetIndirectIssue(interactionType)；作用通常小於年支直接犯太歲，但仍要處理對應的現實風險。
+                                </div>
+                            }
+                        </ExplanationContent>
+                    </AnalysisItem>
                 </li>
-                @foreach (var interactionType in interaction.Interactions) {
-                    <li class="mb-1 text-secondary" @key="(interaction.PillarName, interactionType)">
-                        <span>間接</span>@GetDirectLabel(interactionType)：@GetIndirectIssue(interactionType)；作用通常小於年支直接犯太歲，但仍要處理對應的現實風險。
-                    </li>
-                }
             }
         </ul>
     } else {
@@ -105,7 +112,7 @@
     }
 
     @if (!Analysis.IsHourPillarIncluded) {
-        <div class="alert alert-info">
+        <div class="alert alert-info analysis-item-explanation">
             因出生時辰不確定，本次未將時柱納入比較；補齊準確時辰後，結果可能改變。
         </div>
     }

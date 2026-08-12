@@ -1,0 +1,25 @@
+<div class="analysis-item @CssClass">
+    <div class="analysis-item-main">
+        @ChildContent
+    </div>
+
+    @if (ExplanationContent is not null) {
+        <div class="alert @AlertClass analysis-item-explanation mb-0">
+            @ExplanationContent
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public RenderFragment ChildContent { get; set; } = default!;
+
+    [Parameter]
+    public RenderFragment? ExplanationContent { get; set; }
+
+    [Parameter]
+    public string AlertClass { get; set; } = "alert-info";
+
+    [Parameter]
+    public string CssClass { get; set; } = "mb-3";
+}

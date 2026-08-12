@@ -32,12 +32,13 @@
                 </p>
 
                 @foreach (var section in _result.InternetSourceSections) {
-                    <div class="card p-4 mb-4 compatibility-section @GetToneClass(section.Tone)" @key="section.Title">
-                        <h5 class="card-title border-bottom pb-2">
+                    <div class="card analysis-card p-4 mb-4" @key="section.Title">
+                        <h5 class="card-title analysis-card-title">
                             <i class="fa-solid @GetToneIcon(section.Tone) me-2"></i>@section.Title
                         </h5>
-                        <p><OverviewRichText Text="@section.Summary" /></p>
+                        <p class="analysis-card-description text-secondary"><OverviewRichText Text="@section.Summary" /></p>
                         @if (section.Details.Count > 0) {
+                            <hr class="analysis-card-divider" aria-hidden="true" />
                             <ul class="mb-0">
                                 @foreach (var detail in section.Details) {
                                     <li class="mb-2" @key="detail">

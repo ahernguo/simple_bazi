@@ -456,7 +456,9 @@ namespace BaZi.Tests {
             Assert.DoesNotContain("topic-ten-god-unfavorable", html);
             Assert.DoesNotContain("title=\"", html);
             Assert.Equal(4, html.Split("class=\"topic-notice mb-0\"").Length - 1);
-            Assert.Equal(4, html.Split("fa-solid fa-triangle-exclamation topic-notice-icon").Length - 1);
+            Assert.Equal(4, html.Split("fa-solid fa-quote-left topic-notice-icon").Length - 1);
+            Assert.Contains("analysis-card-divider", html);
+            Assert.Contains("analysis-item-explanation", html);
             Assert.DoesNotContain("alert alert-secondary mb-0", html);
             Assert.DoesNotContain("alert alert-danger mb-0", html);
             Assert.Contains("財富與事業", html);

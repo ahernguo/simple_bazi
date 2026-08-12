@@ -1,12 +1,22 @@
-<article class="card p-3 @CssClass">
-    <h5 class="card-title border-bottom pb-2">
+<article class="card analysis-card p-3 @CssClass">
+    <h5 class="card-title analysis-card-title">
         @if (!string.IsNullOrWhiteSpace(Icon)) {
             <i class="fa-solid @Icon me-2" aria-hidden="true"></i>
         }
         @Title
     </h5>
 
-    @ChildContent
+    @if (DescriptionContent is not null) {
+        <div class="analysis-card-description text-secondary">
+            @DescriptionContent
+        </div>
+    }
+
+    <hr class="analysis-card-divider" aria-hidden="true" />
+
+    <div class="analysis-card-content">
+        @ChildContent
+    </div>
 
     @if (NoticeContent is not null) {
         <TopicNotice CssClass="mt-auto mb-0">
@@ -21,6 +31,9 @@
 
     [Parameter]
     public string? Icon { get; set; }
+
+    [Parameter]
+    public RenderFragment? DescriptionContent { get; set; }
 
     [Parameter, EditorRequired]
     public RenderFragment ChildContent { get; set; } = default!;

@@ -13,10 +13,12 @@
     <div class="container mt-4">
         <h2 class="mb-4 text-center"><i class="fa-solid fa-calendar-week me-2"></i>流月</h2>
 
-        <div class="card p-3">
-            <h5 class="card-title border-bottom pb-2">流月查詢</h5>
+        <div class="card analysis-card p-3">
+            <h5 class="card-title analysis-card-title">流月查詢</h5>
+            <p class="analysis-card-description text-secondary">流月以節氣切換，不以國曆每月 1 日或農曆初一切換。</p>
+            <hr class="analysis-card-divider" aria-hidden="true" />
             @if (years.Count == 0) {
-                <div class="alert alert-warning mb-0">查無可供查詢的流月資料。</div>
+                <div class="alert alert-warning analysis-item-explanation mb-0">查無可供查詢的流月資料。</div>
             } else {
                 var months = FortuneService.GetLiuYueMonths(info, _page.SelectedYear);
                 <div class="row g-3 align-items-end">
@@ -55,19 +57,19 @@
                         </button>
                     </div>
                 </div>
-                <div class="form-text mt-2">流月以節氣切換，不以國曆每月 1 日或農曆初一切換。</div>
             }
         </div>
 
         @if (_page.QueriedYear is int targetYear && _page.QueriedMonthIndex is int targetMonthIndex) {
             var startInfo = FortuneService.GetLiuYueStartInfo(info, targetYear, targetMonthIndex);
             var yinAnalyses = FortuneService.GetLiuYueYinAnalysis(info, targetYear, targetMonthIndex);
-            <div class="card p-3 mt-3">
-                <h5 class="card-title border-bottom pb-2">流月節氣區間</h5>
+            <div class="card analysis-card p-3 mt-3">
+                <h5 class="card-title analysis-card-title">流月節氣區間</h5>
+                <hr class="analysis-card-divider" aria-hidden="true" />
                 @if (startInfo is null) {
-                    <div class="alert alert-warning mb-0">查無此流月的完整節氣區間。</div>
+                    <div class="alert alert-warning analysis-item-explanation mb-0">查無此流月的完整節氣區間。</div>
                 } else {
-                    <div class="alert alert-info mt-3 mb-0">
+                    <div class="alert alert-info analysis-item-explanation mb-0">
                         從 <strong>@startInfo.StartDate.ToString("yyyy/MM/dd")</strong>
                         ～ <strong>@startInfo.EndDate.ToString("yyyy/MM/dd")</strong>
                         為

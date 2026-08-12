@@ -1,14 +1,14 @@
-<div class="topic-notice @CssClass">
+<blockquote class="topic-notice @CssClass">
     <i class="fa-solid @Icon topic-notice-icon" aria-hidden="true"></i>
     <div>@ChildContent</div>
-</div>
+</blockquote>
 
 @code {
     [Parameter, EditorRequired]
     public RenderFragment ChildContent { get; set; } = default!;
 
     [Parameter]
-    public string Icon { get; set; } = "fa-triangle-exclamation";
+    public string Icon { get; set; } = "fa-quote-left";
 
     [Parameter]
     public string CssClass { get; set; } = "mb-0";

@@ -17,8 +17,9 @@
 
         <div class="row mb-4">
             <div class="col-md-6">
-                <div class="card p-3 h-100">
-                    <h5 class="card-title border-bottom pb-2">基本資訊</h5>
+                <div class="card analysis-card p-3 h-100">
+                    <h5 class="card-title analysis-card-title">基本資訊</h5>
+                    <hr class="analysis-card-divider" aria-hidden="true" />
                     <p><strong>性別：</strong> @info.Gender.ToSexString()</p>
                     <p><strong>國曆：</strong> @info.SolarDate</p>
                     <p><strong>農曆：</strong> @info.LunarDate</p>
@@ -27,8 +28,9 @@
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="card p-3 h-100">
-                    <h5 class="card-title border-bottom pb-2">日主核心</h5>
+                <div class="card analysis-card p-3 h-100">
+                    <h5 class="card-title analysis-card-title">日主核心</h5>
+                    <hr class="analysis-card-divider" aria-hidden="true" />
                     <div class="d-flex align-items-center justify-content-center h-100">
                         <div class="day-master-box text-center">
                             <h1 class="display-1 @GetElementColorClass(info.RiZhu)">@info.DayZhu.Gan.ToGanString()</h1>
@@ -96,13 +98,15 @@
             </div>
         </div>
 
-        <div class="card mt-4 p-4">
-            <h5 class="card-title border-bottom pb-2"><span class="@GetElementColorClass(info.RiZhu)">@info.DayZhu.Gan.ToGanString()@info.RiZhu.ToWuXingString()</span> 日主</h5>
+        <div class="card analysis-card mt-4 p-4">
+            <h5 class="card-title analysis-card-title"><span class="@GetElementColorClass(info.RiZhu)">@info.DayZhu.Gan.ToGanString()@info.RiZhu.ToWuXingString()</span> 日主</h5>
+            <hr class="analysis-card-divider" aria-hidden="true" />
             @GetRiZhuDesc(info)
         </div>
 
-        <div class="card mt-4 p-4">
-            <h5 class="card-title border-bottom pb-2">@GetStrengthStatusText(info)</h5>
+        <div class="card analysis-card mt-4 p-4">
+            <h5 class="card-title analysis-card-title">@GetStrengthStatusText(info)</h5>
+            <hr class="analysis-card-divider" aria-hidden="true" />
             @GetGeJuDesc(info)
         </div>
 
@@ -150,8 +154,9 @@
             </NoticeContent>
         </AnalysisCard>
 
-        <div class="card mt-4 p-4">
-            <h5 class="card-title border-bottom pb-2">五行對應</h5>
+        <div class="card analysis-card mt-4 p-4">
+            <h5 class="card-title analysis-card-title">五行對應</h5>
+            <hr class="analysis-card-divider" aria-hidden="true" />
             <div class="row ms-1 me-1 border-bottom-dash">
                 <div class="col-1 col-vc-hc @GetElementColorClass(BaZiDefine.Restricting[info.RiZhu])">@BaZiDefine.Restricting[info.RiZhu].ToWuXingString()</div>
                 <div class="col-3 col-vc-hc">正財/偏財</div>
@@ -214,31 +219,34 @@
         }
 
         @if (fuYinResult.HasFuYin) {
-            <div class="card p-4 mb-4">
-                <h5 class="card-title border-bottom pb-2">
+            <div class="card analysis-card p-4 mb-4">
+                <h5 class="card-title analysis-card-title">
                     <i class="fa-solid fa-repeat me-2" aria-hidden="true"></i>命盤伏吟
                 </h5>
-                <p>
+                <p class="analysis-card-description text-secondary">
                     四柱中有天干、地支完全相同的柱。
                 </p>
+                <hr class="analysis-card-divider" aria-hidden="true" />
                 <ul>
                     @foreach (var match in fuYinResult.Matches) {
-                        <li class="mb-2" @key="match">
-                            <strong>@string.Join("、", match.PillarNames)</strong>
-                            同為
-                            <strong>
-                                <span class="@GetElementColorClass(match.Gan.ToWuXing())">@match.Gan.ToGanString()</span><span class="@GetElementColorClass(match.Zhi.ToWuXing())">@match.Zhi.ToZhiString()</span>
-                            </strong>
-                            。
-                        </li>
-                        <li class="mb-2" @key="match">
-                            @match.Situation
+                        <li class="mb-3" @key="match">
+                            <AnalysisItem CssClass="mb-0" AlertClass="alert-info">
+                                <ChildContent>
+                                    <strong>@string.Join("、", match.PillarNames)</strong>
+                                    同為
+                                    <strong>
+                                        <span class="@GetElementColorClass(match.Gan.ToWuXing())">@match.Gan.ToGanString()</span><span class="@GetElementColorClass(match.Zhi.ToWuXing())">@match.Zhi.ToZhiString()</span>
+                                    </strong>
+                                    。
+                                </ChildContent>
+                                <ExplanationContent>@match.Situation</ExplanationContent>
+                            </AnalysisItem>
                         </li>
                     }
                 </ul>
 
                 @if (!fuYinResult.IncludesHourPillar) {
-                    <div class="alert alert-info">
+                    <div class="alert alert-info analysis-item-explanation">
                         因出生時辰不確定，本次未將時柱納入伏吟判斷；補齊準確時辰後，結果可能改變。
                     </div>
                 }
@@ -254,31 +262,34 @@
         }
 
         @if (fanYinResult.HasFanYin) {
-            <div class="card p-4 mb-4">
-                <h5 class="card-title border-bottom pb-2">
+            <div class="card analysis-card p-4 mb-4">
+                <h5 class="card-title analysis-card-title">
                     <i class="fa-solid fa-repeat me-2" aria-hidden="true"></i>命盤反吟
                 </h5>
-                <p>
+                <p class="analysis-card-description text-secondary">
                     四柱中有天干相剋、地支相剋相沖的狀況
                 </p>
+                <hr class="analysis-card-divider" aria-hidden="true" />
                 <ul>
                     @foreach (var match in fanYinResult.Matches) {
-                        <li class="mb-2" @key="match">
-                            <strong>@match.Pillars[0].Id</strong>
-                            <span class="@GetElementColorClass(match.Pillars[0].Gan.ToWuXing())">@match.Pillars[0].Gan.ToGanString()</span><span class="@GetElementColorClass(match.Pillars[0].Zhi.ToWuXing())">@match.Pillars[0].Zhi.ToZhiString()</span>
-                            &nbsp;與&nbsp;
-                            <strong>@match.Pillars[1].Id</strong>
-                            <span class="@GetElementColorClass(match.Pillars[1].Gan.ToWuXing())">@match.Pillars[1].Gan.ToGanString()</span><span class="@GetElementColorClass(match.Pillars[1].Zhi.ToWuXing())">@match.Pillars[1].Zhi.ToZhiString()</span>
-                            &nbsp;相剋相沖
-                        </li>
-                        <li class="mb-2" @key="match">
-                            @match.Situation
+                        <li class="mb-3" @key="match">
+                            <AnalysisItem CssClass="mb-0" AlertClass="alert-warning">
+                                <ChildContent>
+                                    <strong>@match.Pillars[0].Id</strong>
+                                    <span class="@GetElementColorClass(match.Pillars[0].Gan.ToWuXing())">@match.Pillars[0].Gan.ToGanString()</span><span class="@GetElementColorClass(match.Pillars[0].Zhi.ToWuXing())">@match.Pillars[0].Zhi.ToZhiString()</span>
+                                    &nbsp;與&nbsp;
+                                    <strong>@match.Pillars[1].Id</strong>
+                                    <span class="@GetElementColorClass(match.Pillars[1].Gan.ToWuXing())">@match.Pillars[1].Gan.ToGanString()</span><span class="@GetElementColorClass(match.Pillars[1].Zhi.ToWuXing())">@match.Pillars[1].Zhi.ToZhiString()</span>
+                                    &nbsp;相剋相沖
+                                </ChildContent>
+                                <ExplanationContent>@match.Situation</ExplanationContent>
+                            </AnalysisItem>
                         </li>
                     }
                 </ul>
 
                 @if (!fanYinResult.IncludesHourPillar) {
-                    <div class="alert alert-info">
+                    <div class="alert alert-info analysis-item-explanation">
                         因出生時辰不確定，本次未將時柱納入反吟判斷；補齊準確時辰後，結果可能改變。
                     </div>
                 }

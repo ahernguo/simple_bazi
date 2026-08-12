@@ -406,104 +406,80 @@ namespace BaZi.Services {
         }
 
         private void CreateThreeHeDesc(IList<IGanZhi> a, WuXing wuXing, System.Text.StringBuilder html) {
-            html.AppendLine(@"<div class=""row ms-1 me-1 py-3"">");
-            html.AppendLine(@"    <table>");
-            html.AppendLine($@"        <tr height=""40px"" valign=""top""><td colspan=""2"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span>、{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 與{a[2].Id} <span class=""border-bottom-dash"">{a[2].Zhi.ToZhiString()}</span> 形成「<strong class=""text-success"">三合{wuXing.ToWuXingString()}局</strong>」</td></tr>");
-            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-success"">幫助：</strong></td><td>補充所需的能量，提升整體運勢、壞事化小、趨吉避凶</td></tr>");
-            html.AppendLine(@"    </table>");
+            html.AppendLine(@"<div class=""analysis-item mb-3"">");
+            html.AppendLine($@"    <div class=""analysis-item-main"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span>、{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 與{a[2].Id} <span class=""border-bottom-dash"">{a[2].Zhi.ToZhiString()}</span> 形成「<strong class=""text-success"">三合{wuXing.ToWuXingString()}局</strong>」</div>");
+            html.AppendLine(@"    <div class=""alert alert-success analysis-item-explanation mb-0""><strong>幫助：</strong>補充所需的能量，提升整體運勢、壞事化小、趨吉避凶</div>");
             html.AppendLine(@"</div>");
         }
 
         private void CreateFiveHeDesc(IList<IGanZhi> a, int type, System.Text.StringBuilder html) {
-            html.AppendLine(@"<div class=""row ms-1 me-1 py-3"">");
-            html.AppendLine(@"    <table>");
-            html.AppendLine($@"        <tr height=""40px"" valign=""top""><td colspan=""2"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Gan.ToGanString()}</span> 與{a[1].Id} <span class=""border-bottom-dash"">{a[1].Gan.ToGanString()}</span> 形成「<strong class=""text-success"">合相</strong>」</td></tr>");
+            html.AppendLine(@"<div class=""analysis-item mb-3"">");
+            html.AppendLine($@"    <div class=""analysis-item-main"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Gan.ToGanString()}</span> 與{a[1].Id} <span class=""border-bottom-dash"">{a[1].Gan.ToGanString()}</span> 形成「<strong class=""text-success"">合相</strong>」</div>");
             if (type == 0) {
-                html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-success"">幫助：</strong></td><td>補充所需的能量，提升整體運勢、壞事化小、趨吉避凶</td></tr>");
+                html.AppendLine(@"    <div class=""alert alert-success analysis-item-explanation mb-0""><strong>幫助：</strong>補充所需的能量，提升整體運勢、壞事化小、趨吉避凶</div>");
             } else if (type == 1) {
-                html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-warning"">狀況：</strong></td><td>原本好的能量被用走，綁手綁腳、事情不順</td></tr>");
+                html.AppendLine(@"    <div class=""alert alert-warning analysis-item-explanation mb-0""><strong>狀況：</strong>原本好的能量被用走，綁手綁腳、事情不順</div>");
             } else {
-                html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-success"">幫助：</strong></td><td>削弱不好的能量，整體運勢加分</td></tr>");
+                html.AppendLine(@"    <div class=""alert alert-success analysis-item-explanation mb-0""><strong>幫助：</strong>削弱不好的能量，整體運勢加分</div>");
             }
-            html.AppendLine(@"    </table>");
             html.AppendLine(@"</div>");
         }
 
         private void CreateSixHeDesc(IList<IGanZhi> a, int type, System.Text.StringBuilder html) {
-            html.AppendLine(@"<div class=""row ms-1 me-1 py-3"">");
-            html.AppendLine(@"    <table>");
-            html.AppendLine($@"        <tr height=""40px"" valign=""top""><td colspan=""2"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span> 與{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 形成「<strong class=""text-success"">合相</strong>」</td></tr>");
+            html.AppendLine(@"<div class=""analysis-item mb-3"">");
+            html.AppendLine($@"    <div class=""analysis-item-main"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span> 與{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 形成「<strong class=""text-success"">合相</strong>」</div>");
             if (type == 0) {
-                html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-success"">幫助：</strong></td><td>補充所需的能量，提升整體運勢、壞事化小、趨吉避凶</td></tr>");
+                html.AppendLine(@"    <div class=""alert alert-success analysis-item-explanation mb-0""><strong>幫助：</strong>補充所需的能量，提升整體運勢、壞事化小、趨吉避凶</div>");
             } else if (type == 1) {
-                html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-warning"">狀況：</strong></td><td>原本好的能量被用走，綁手綁腳、事情不順</td></tr>");
+                html.AppendLine(@"    <div class=""alert alert-warning analysis-item-explanation mb-0""><strong>狀況：</strong>原本好的能量被用走，綁手綁腳、事情不順</div>");
             } else {
-                html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-success"">幫助：</strong></td><td>削弱不好的能量，整體運勢加分</td></tr>");
+                html.AppendLine(@"    <div class=""alert alert-success analysis-item-explanation mb-0""><strong>幫助：</strong>削弱不好的能量，整體運勢加分</div>");
             }
-            html.AppendLine(@"    </table>");
             html.AppendLine(@"</div>");
         }
 
         private void CreateTwoXingDesc(IList<IGanZhi> a, string means, string advice, string force, System.Text.StringBuilder html) {
-            html.AppendLine(@"<div class=""row ms-1 me-1 py-3"">");
-            html.AppendLine(@"    <table>");
-            html.AppendLine($@"        <tr height=""40px"" valign=""top""><td colspan=""2"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span> 與{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 形成「<strong class=""text-danger"">相刑</strong>」</td></tr>");
-            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong>阻力：</strong></td><td>外在、力度{force}</td></tr>");
-            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-warning"">狀況：</strong></td><td>{means}</td></tr>");
-            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-info"">建議：</strong></td><td>{advice}</td></tr>");
-            html.AppendLine(@"    </table>");
+            html.AppendLine(@"<div class=""analysis-item mb-3"">");
+            html.AppendLine($@"    <div class=""analysis-item-main"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span> 與{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 形成「<strong class=""text-danger"">相刑</strong>」</div>");
+            html.AppendLine($@"    <div class=""alert alert-warning analysis-item-explanation mb-2""><div><strong>阻力：</strong>外在、力度{force}</div><div><strong>狀況：</strong>{means}</div></div>");
+            html.AppendLine($@"    <div class=""alert alert-info analysis-item-explanation mb-0""><strong>建議：</strong>{advice}</div>");
             html.AppendLine(@"</div>");
         }
 
         private void CreateThreeXingDesc(IList<IGanZhi> a, string means, string advice, System.Text.StringBuilder html) {
-            html.AppendLine(@"<div class=""row ms-1 me-1 py-3"">");
-            html.AppendLine(@"    <table>");
-            html.AppendLine($@"        <tr height=""40px"" valign=""top""><td colspan=""2"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span>、{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 與{a[2].Id} <span class=""border-bottom-dash"">{a[2].Zhi.ToZhiString()}</span> 形成「<strong class=""text-danger"">三刑</strong>」</td></tr>");
-            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong>阻力：</strong></td><td>外在、力度強</td></tr>");
-            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-warning"">狀況：</strong></td><td>{means}</td></tr>");
-            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-info"">建議：</strong></td><td>{advice}</td></tr>");
-            html.AppendLine(@"    </table>");
+            html.AppendLine(@"<div class=""analysis-item mb-3"">");
+            html.AppendLine($@"    <div class=""analysis-item-main"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span>、{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 與{a[2].Id} <span class=""border-bottom-dash"">{a[2].Zhi.ToZhiString()}</span> 形成「<strong class=""text-danger"">三刑</strong>」</div>");
+            html.AppendLine($@"    <div class=""alert alert-warning analysis-item-explanation mb-2""><div><strong>阻力：</strong>外在、力度強</div><div><strong>狀況：</strong>{means}</div></div>");
+            html.AppendLine($@"    <div class=""alert alert-info analysis-item-explanation mb-0""><strong>建議：</strong>{advice}</div>");
             html.AppendLine(@"</div>");
         }
 
         private void CreateSelfXingDesc(IList<IGanZhi> a, string means, System.Text.StringBuilder html) {
-            html.AppendLine(@"<div class=""row ms-1 me-1 py-3"">");
-            html.AppendLine(@"    <table>");
-            html.AppendLine($@"        <tr height=""40px"" valign=""top""><td colspan=""2"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span> 與{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 形成「<strong class=""text-danger"">自刑</strong>」</td></tr>");
-            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong>阻力：</strong></td><td>內在、力度中</td></tr>");
-            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-warning"">狀況：</strong></td><td>{means}</td></tr>");
-            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-info"">建議：</strong></td><td>適度釋放壓力</td></tr>");
-            html.AppendLine(@"    </table>");
+            html.AppendLine(@"<div class=""analysis-item mb-3"">");
+            html.AppendLine($@"    <div class=""analysis-item-main"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span> 與{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 形成「<strong class=""text-danger"">自刑</strong>」</div>");
+            html.AppendLine($@"    <div class=""alert alert-warning analysis-item-explanation mb-2""><div><strong>阻力：</strong>內在、力度中</div><div><strong>狀況：</strong>{means}</div></div>");
+            html.AppendLine(@"    <div class=""alert alert-info analysis-item-explanation mb-0""><strong>建議：</strong>適度釋放壓力</div>");
             html.AppendLine(@"</div>");
         }
 
         private void CreateChongDesc(IList<IGanZhi> a, string means, System.Text.StringBuilder html) {
-            html.AppendLine(@"<div class=""row ms-1 me-1 py-3"">");
-            html.AppendLine(@"    <table>");
-            html.AppendLine($@"        <tr height=""40px"" valign=""top""><td colspan=""2"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span> 與{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 形成「<strong class=""text-danger"">相沖</strong>」</td></tr>");
-            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong>阻力：</strong></td><td>外在、力度中</td></tr>");
-            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-warning"">狀況：</strong></td><td>{means}</td></tr>");
-            html.AppendLine(@"    </table>");
+            html.AppendLine(@"<div class=""analysis-item mb-3"">");
+            html.AppendLine($@"    <div class=""analysis-item-main"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span> 與{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 形成「<strong class=""text-danger"">相沖</strong>」</div>");
+            html.AppendLine($@"    <div class=""alert alert-warning analysis-item-explanation mb-0""><div><strong>阻力：</strong>外在、力度中</div><div><strong>狀況：</strong>{means}</div></div>");
             html.AppendLine(@"</div>");
         }
 
         private void CreatePoDesc(IList<IGanZhi> a, string means, System.Text.StringBuilder html) {
-            html.AppendLine(@"<div class=""row ms-1 me-1 py-3"">");
-            html.AppendLine(@"    <table>");
-            html.AppendLine($@"        <tr height=""40px"" valign=""top""><td colspan=""2"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span> 與{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 形成「<strong class=""text-danger"">破</strong>」</td></tr>");
-            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong>阻力：</strong></td><td>內在、力度小</td></tr>");
-            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-warning"">狀況：</strong></td><td>{means}</td></tr>");
-            html.AppendLine(@"    </table>");
+            html.AppendLine(@"<div class=""analysis-item mb-3"">");
+            html.AppendLine($@"    <div class=""analysis-item-main"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span> 與{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 形成「<strong class=""text-danger"">破</strong>」</div>");
+            html.AppendLine($@"    <div class=""alert alert-warning analysis-item-explanation mb-0""><div><strong>阻力：</strong>內在、力度小</div><div><strong>狀況：</strong>{means}</div></div>");
             html.AppendLine(@"</div>");
         }
 
         private void CreateHaiDesc(IList<IGanZhi> a, string means, System.Text.StringBuilder html) {
-            html.AppendLine(@"<div class=""row ms-1 me-1 py-3"">");
-            html.AppendLine(@"    <table>");
-            html.AppendLine($@"        <tr height=""40px"" valign=""top""><td colspan=""2"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span> 與{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 形成「<strong class=""text-danger"">害</strong>」</td></tr>");
-            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong>阻力：</strong></td><td>內在、力度小</td></tr>");
-            html.AppendLine($@"        <tr><td width=""60px"" valign=""top""><strong class=""text-warning"">狀況：</strong></td><td>{means}</td></tr>");
-            html.AppendLine(@"    </table>");
+            html.AppendLine(@"<div class=""analysis-item mb-3"">");
+            html.AppendLine($@"    <div class=""analysis-item-main"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span> 與{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 形成「<strong class=""text-danger"">害</strong>」</div>");
+            html.AppendLine($@"    <div class=""alert alert-warning analysis-item-explanation mb-0""><div><strong>阻力：</strong>內在、力度小</div><div><strong>狀況：</strong>{means}</div></div>");
             html.AppendLine(@"</div>");
         }
 
@@ -732,8 +708,9 @@ namespace BaZi.Services {
             new List<IGanZhi>() { info.DayZhu, info.HourZhu }
         };
             var html = new System.Text.StringBuilder();
-            html.AppendLine("<div class=\"card p-3 mt-3\">");
-            html.AppendLine("    <h5 class=\"card-title border-bottom pb-2\">本身的衝突</h5>");
+            html.AppendLine("<div class=\"card analysis-card p-3 mt-3\">");
+            html.AppendLine("    <h5 class=\"card-title analysis-card-title\">本身的衝突</h5>");
+            html.AppendLine("    <hr class=\"analysis-card-divider\" aria-hidden=\"true\" />");
             var (bad, _) = CheckConflict(info, null, null, twoPair, html);
             html.AppendLine("</div>");
             desc = new MarkupString(html.ToString());
@@ -1323,17 +1300,18 @@ namespace BaZi.Services {
                 return new MarkupString();
 
             var html = new System.Text.StringBuilder();
-            html.AppendLine("<div class=\"card p-3 mt-3\">");
-            html.AppendLine("    <h5 class=\"card-title border-bottom pb-2\">大運分析</h5>");
+            html.AppendLine("<div class=\"card analysis-card p-3 mt-3\">");
+            html.AppendLine("    <h5 class=\"card-title analysis-card-title\">大運分析</h5>");
+            html.AppendLine("    <hr class=\"analysis-card-divider\" aria-hidden=\"true\" />");
             /* 先列出是否有衝突 */
             var conflict = new System.Text.StringBuilder();
             var bad = HasDaYunConflict(info, daYun, conflict);
             if (bad) {
-                html.AppendLine(@"    <div class=""row ms-1 me-1 py-3 border-bottom-dash"">");
+                html.AppendLine(@"    <div class=""mb-3"">");
                 html.AppendLine(conflict.ToString());
                 html.AppendLine(@"    </div>");
             }
-            html.AppendLine(@"    <div class=""row ms-1 me-1 py-3"">");
+            html.AppendLine(@"    <div class=""analysis-item mb-3"">");
             var phase = daYun.GetPhase(targetYear);
             var ganYun = daYun.Gan.ToShiShen(info.DayZhu.Gan);
             var zhiYun = daYun.Zhi.ToShiShen(info.DayZhu.Gan);
@@ -1346,19 +1324,24 @@ namespace BaZi.Services {
             var phaseText = phase == DaYunPhase.FirstFiveYears
                 ? $"前五年（{daYun.StartYear}～{Math.Min(daYun.StartYear + 4, daYun.EndYear)}）以天干為主"
                 : $"後五年（{daYun.StartYear + 5}～{daYun.EndYear}）以地支為主";
-            html.AppendLine($"        <span><strong>{daYun.StartYear} 年～{daYun.EndYear} 年：</strong>{ganDisplay}{zhiDisplay}</span>");
-            html.AppendLine($"        <span>{targetYear} 年位於{phaseText}，主要走 {selectedYunDisplay}；次要能量為 {secondaryYunDisplay}。</span>");
+            html.AppendLine("        <div class=\"analysis-item-main\">");
+            html.AppendLine($"            <div><strong>{daYun.StartYear} 年～{daYun.EndYear} 年：</strong>{ganDisplay}{zhiDisplay}</div>");
+            html.AppendLine($"            <div>{targetYear} 年位於{phaseText}，主要走 {selectedYunDisplay}；次要能量為 {secondaryYunDisplay}。</div>");
+            html.AppendLine("        </div>");
+            html.AppendLine("        <div class=\"alert alert-info analysis-item-explanation mb-0\">");
             CreateYunDesc(info, daYun, selectedYun, html);
+            html.AppendLine("        </div>");
             html.AppendLine(@"    </div>");
 
             var nextDaYun = info.DaYunList.FirstOrDefault(x => x.StartYear > daYun.StartYear);
             if (nextDaYun != null && targetYear == nextDaYun.StartYear - 1) {
-                html.AppendLine(@"    <hr />");
-                html.AppendLine(@"    <div class=""row ms-1 me-1 py-3"">");
+                html.AppendLine(@"    <div class=""analysis-item mb-3"">");
                 var nextYun = nextDaYun.Gan.ToShiShen(info.DayZhu.Gan);
                 var nextYunDisplay = FormatTenGod(info, nextYun, nextYun.ToYunString());
-                html.Append($"<span><strong class=\"text-danger\">[明年切換大運]</strong> {nextDaYun.StartYear} 年～{nextDaYun.EndYear} 年；新大運前五年以天干為主，先走 {nextYunDisplay}。</span>");
+                html.Append($"        <div class=\"analysis-item-main\"><strong class=\"text-danger\">[明年切換大運]</strong> {nextDaYun.StartYear} 年～{nextDaYun.EndYear} 年；新大運前五年以天干為主，先走 {nextYunDisplay}。</div>");
+                html.AppendLine("        <div class=\"alert alert-warning analysis-item-explanation mb-0\">");
                 CreateYunDesc(info, nextDaYun, nextYun, html);
+                html.AppendLine("        </div>");
                 html.AppendLine(@"    </div>");
             }
 
@@ -1483,14 +1466,18 @@ namespace BaZi.Services {
             var outputStar = FormatTopicTenGod(ShiShen.ShihShang);
             var careerStar = FormatTopicTenGod(ShiShen.GuanSha);
 
-            html.AppendLine("<div class=\"card p-3 mt-3\">");
-            html.AppendLine("    <h5 class=\"card-title border-bottom pb-2\"><i class=\"fa-solid fa-coins me-2\"></i>財富與事業</h5>");
-            html.AppendLine("    <div class=\"row ms-1 me-1 py-3 border-bottom-dash\">");
-            html.AppendLine($"        <strong class=\"mb-2\">{periodLabel}訊號</strong>");
+            html.AppendLine("<div class=\"card analysis-card p-3 mt-3\">");
+            html.AppendLine("    <h5 class=\"card-title analysis-card-title\"><i class=\"fa-solid fa-coins me-2\"></i>財富與事業</h5>");
+            html.AppendLine("    <hr class=\"analysis-card-divider\" aria-hidden=\"true\" />");
+            html.AppendLine("    <div class=\"analysis-item mb-3\">");
+            html.AppendLine($"        <strong class=\"analysis-item-main\">{periodLabel}訊號</strong>");
+            html.AppendLine("        <div class=\"alert alert-info analysis-item-explanation mb-0\">");
             html.AppendLine($"        <span><strong>{ganDisplay}{zhiDisplay}</strong>：天干為{ganTenGod}，地支主氣為{zhiTenGod}；你的財五行為{FormatElement(wealthElement)}（{wealthStar}）、事業五行為{FormatElement(careerElement)}（{careerStar}）。</span>");
+            html.AppendLine("        </div>");
             html.AppendLine("    </div>");
-            html.AppendLine("    <div class=\"row ms-1 me-1 py-3 border-bottom-dash\">");
-            html.AppendLine("        <strong class=\"mb-2\">機會判讀</strong>");
+            html.AppendLine("    <div class=\"analysis-item mb-3\">");
+            html.AppendLine("        <strong class=\"analysis-item-main\">機會判讀</strong>");
+            html.AppendLine("        <div class=\"alert alert-success analysis-item-explanation mb-0\">");
             html.AppendLine("        <ul class=\"mb-0\">");
 
             if (ganHasWealth && zhiHasWealth) {
@@ -1516,10 +1503,13 @@ namespace BaZi.Services {
             }
 
             html.AppendLine("        </ul>");
+            html.AppendLine("        </div>");
             html.AppendLine("    </div>");
-            html.AppendLine("    <div class=\"row ms-1 me-1 py-3\">");
-            html.AppendLine("        <strong class=\"mb-2\">承接與行動</strong>");
+            html.AppendLine("    <div class=\"analysis-item mb-3\">");
+            html.AppendLine("        <strong class=\"analysis-item-main\">承接與行動</strong>");
+            html.AppendLine("        <div class=\"alert alert-info analysis-item-explanation mb-0\">");
             html.AppendLine($"        <span>{GetCapacityAdvice(info, daYun)}</span>");
+            html.AppendLine("        </div>");
             html.AppendLine("    </div>");
             AppendTopicNotice(html, "財務與職涯內容為「意象」、「傾向」或「機會」，不應單獨作為投資、借貸、創業或轉職決策依據。");
             html.AppendLine("</div>");
@@ -1559,10 +1549,12 @@ namespace BaZi.Services {
                     || (ganElement == info.RiZhu && zhiHasSpouse));
             var spouseStarOnStem = spouseWithPeer && ganHasSpouse;
 
-            html.AppendLine("<div class=\"card p-3 mt-3\">");
-            html.AppendLine("    <h5 class=\"card-title border-bottom pb-2\"><i class=\"fa-solid fa-heart me-2\"></i>感情姻緣</h5>");
-            html.AppendLine("    <div class=\"row ms-1 me-1 py-3 border-bottom-dash\">");
-            html.AppendLine($"        <strong class=\"mb-2\">{periodLabel}桃花時機</strong>");
+            html.AppendLine("<div class=\"card analysis-card p-3 mt-3\">");
+            html.AppendLine("    <h5 class=\"card-title analysis-card-title\"><i class=\"fa-solid fa-heart me-2\"></i>感情姻緣</h5>");
+            html.AppendLine("    <hr class=\"analysis-card-divider\" aria-hidden=\"true\" />");
+            html.AppendLine("    <div class=\"analysis-item mb-3\">");
+            html.AppendLine($"        <strong class=\"analysis-item-main\">{periodLabel}桃花時機</strong>");
+            html.AppendLine("        <div class=\"alert alert-info analysis-item-explanation mb-0\">");
             html.AppendLine($"        <span>{periodLabel}<strong>{ganDisplay}{zhiDisplay}</strong>；依{info.Gender.ToSexString()}命口徑，你的夫妻星為{FormatElement(spouseElement)}（{spouseStar}）。</span>");
             html.AppendLine("        <ul class=\"mb-0 mt-2\">");
 
@@ -1583,22 +1575,25 @@ namespace BaZi.Services {
             }
 
             html.AppendLine("        </ul>");
+            html.AppendLine("        </div>");
             html.AppendLine("    </div>");
 
             if (spouseWithPeer) {
-                html.AppendLine("    <div class=\"alert alert-warning mt-3 mb-0\">");
+                html.AppendLine("    <div class=\"alert alert-warning analysis-item-explanation mb-3\">");
                 html.AppendLine($"        <strong>關係查證提醒：</strong>{periodLabel}同見夫妻星（{spouseStar}）與{peerStar}，表示競爭者、共同圈子或關係不透明的訊號{(spouseStarOnStem ? "，且夫妻星透在天干，訊號較為強烈" : "")}。有訊號不代表有實際作為，不可視為為劈腿或第三者的狀況，但可多留意彼此界線與關係。");
                 html.AppendLine("    </div>");
             }
 
             var (raDesc, raAccept) = GetRelationshipAdvice(info, daYun);
-            html.AppendLine("    <div class=\"row ms-1 me-1 py-3\">");
-            html.AppendLine("        <strong class=\"mb-2\">承接與相處</strong>");
+            html.AppendLine("    <div class=\"analysis-item mb-3\">");
+            html.AppendLine("        <strong class=\"analysis-item-main\">承接與相處</strong>");
+            html.AppendLine("        <div class=\"alert alert-info analysis-item-explanation mb-0\">");
             if (raAccept) {
                 html.AppendLine($"        <span>{raDesc} 單身者可增加安全且合意的認識機會；已有對象者可進一步討論關係或規劃未來，但仍需互相尊重，不能用日期向對方施壓。</span>");
             } else {
                 html.AppendLine($"        <span>{raDesc}</span>");
             }
+            html.AppendLine("        </div>");
             html.AppendLine("    </div>");
             AppendTopicNotice(html, "感情判讀不代表必然遇見、結婚、分手或出現第三者，僅為一種訊號，仍須以實際關係來探討");
             html.AppendLine("</div>");
@@ -1632,10 +1627,12 @@ namespace BaZi.Services {
             var ganDisplay = FormatElement(periodGanZhi.Gan.ToWuXing(), periodGanZhi.Gan.ToGanString());
             var zhiDisplay = FormatElement(periodGanZhi.Zhi.ToWuXing(), periodGanZhi.Zhi.ToZhiString());
 
-            html.AppendLine("<div class=\"card p-3 mt-3\">");
-            html.AppendLine("    <h5 class=\"card-title border-bottom pb-2\"><i class=\"fa-solid fa-baby me-2\"></i>子女緣分</h5>");
-            html.AppendLine("    <div class=\"row ms-1 me-1 py-3\">");
-            html.AppendLine($"        <strong class=\"mb-2\">{liuNian.Year} 年子息星時機</strong>");
+            html.AppendLine("<div class=\"card analysis-card p-3 mt-3\">");
+            html.AppendLine("    <h5 class=\"card-title analysis-card-title\"><i class=\"fa-solid fa-baby me-2\"></i>子女緣分</h5>");
+            html.AppendLine("    <hr class=\"analysis-card-divider\" aria-hidden=\"true\" />");
+            html.AppendLine("    <div class=\"analysis-item mb-3\">");
+            html.AppendLine($"        <strong class=\"analysis-item-main\">{liuNian.Year} 年子息星時機</strong>");
+            html.AppendLine("        <div class=\"alert alert-info analysis-item-explanation mb-0\">");
             html.AppendLine($"        <span>依{info.Gender.ToSexString()}命口徑，子息星為{childStarText}，子息星五行為{childElementText}；流年為<strong>{ganDisplay}{zhiDisplay}</strong>。</span>");
             html.AppendLine("        <ul class=\"mb-0 mt-2\">");
             if (ganHasChildStar && zhiHasChildStar) {
@@ -1649,9 +1646,10 @@ namespace BaZi.Services {
                 html.AppendLine($"            <li>目前大運{(daYunPhase == DaYunPhase.FirstFiveYears ? "前五年以天干" : "後五年以地支")}為主的階段也見{childStarText}，長期背景與流年訊號可一併觀察。</li>");
             }
             html.AppendLine("        </ul>");
+            html.AppendLine("        </div>");
             html.AppendLine("    </div>");
             if (!info.IsBirthTimeAccurate) {
-                html.AppendLine("    <div class=\"alert alert-info\">出生時辰不確定，時柱子息宮未納入；補齊準確時辰後，子息宮判讀可能改變。</div>");
+                html.AppendLine("    <div class=\"alert alert-info analysis-item-explanation\">出生時辰不確定，時柱子息宮未納入；補齊準確時辰後，子息宮判讀可能改變。</div>");
             }
             AppendTopicNotice(html, "子息星只代表命理時間訊號，不保證懷孕、生育數量或療程結果；備孕、懷孕、分娩與輔助生殖技術必須依本人意願及生殖醫學專業評估。");
             html.AppendLine("</div>");
@@ -1679,20 +1677,24 @@ namespace BaZi.Services {
             var ganDisplay = FormatElement(periodGanZhi.Gan.ToWuXing(), periodGanZhi.Gan.ToGanString());
             var zhiDisplay = FormatElement(periodGanZhi.Zhi.ToWuXing(), periodGanZhi.Zhi.ToZhiString());
 
-            html.AppendLine("<div class=\"card p-3 mt-3\">");
-            html.AppendLine("    <h5 class=\"card-title border-bottom pb-2\"><i class=\"fa-solid fa-heart-pulse me-2\"></i>健康注意事項</h5>");
-            html.AppendLine("    <div class=\"row ms-1 me-1 py-3 border-bottom-dash\">");
-            html.AppendLine("        <strong class=\"mb-2\">本命五行初判</strong>");
+            html.AppendLine("<div class=\"card analysis-card p-3 mt-3\">");
+            html.AppendLine("    <h5 class=\"card-title analysis-card-title\"><i class=\"fa-solid fa-heart-pulse me-2\"></i>健康注意事項</h5>");
+            html.AppendLine("    <hr class=\"analysis-card-divider\" aria-hidden=\"true\" />");
+            html.AppendLine("    <div class=\"analysis-item mb-3\">");
+            html.AppendLine("        <strong class=\"analysis-item-main\">本命五行初判</strong>");
+            html.AppendLine("        <div class=\"alert alert-info analysis-item-explanation mb-0\">");
             html.AppendLine($"        <span>八字主氣計數：{countDescription}。數量最少的五行為 <strong>{string.Join("、", weakElements.Select(element => FormatElement(element)))}</strong>；需留意：{weakDescription}。</span>");
+            html.AppendLine("        </div>");
             html.AppendLine("    </div>");
-            html.AppendLine("    <div class=\"row ms-1 me-1 py-3\">");
-            html.AppendLine($"        <strong class=\"mb-2\">{periodLabel}健康氣象</strong>");
-            html.AppendLine($"        <span class=\"mb-2\">{periodLabel}<strong>{ganDisplay}{zhiDisplay}</strong></span>");
+            html.AppendLine("    <div class=\"analysis-item mb-3\">");
+            html.AppendLine($"        <div class=\"analysis-item-main\"><strong>{periodLabel}健康氣象</strong> · {periodLabel}<strong>{ganDisplay}{zhiDisplay}</strong></div>");
+            html.AppendLine("        <div class=\"alert alert-warning analysis-item-explanation mb-0\">");
             html.AppendLine($"        <span>{GetHealthPeriodAdvice(info, weakElements, periodElements, periodLabel)}</span>");
+            html.AppendLine("        </div>");
             html.AppendLine("    </div>");
 
             if (threePunishment is not null) {
-                html.AppendLine("    <div class=\"alert alert-warning mb-3\">");
+                html.AppendLine("    <div class=\"alert alert-warning analysis-item-explanation mb-3\">");
                 html.AppendLine($"        <strong>三刑訊號：</strong>本命、大運與目前期間合看出現{threePunishment}。外傷、壓力或健康波動的高注意訊號，不代表一定會有狀況，但多注意行車安全、身體健康狀況。");
                 html.AppendLine("    </div>");
             }
@@ -1919,13 +1921,14 @@ namespace BaZi.Services {
             Func<System.Text.StringBuilder, (bool bad, IDictionary<HeHui, WuXing> heHui)> checkConflict
         ) {
             var html = new System.Text.StringBuilder();
-            html.AppendLine("<div class=\"card p-3 mt-3\">");
-            html.AppendLine($"    <h5 class=\"card-title border-bottom pb-2\">{title}</h5>");
+            html.AppendLine("<div class=\"card analysis-card p-3 mt-3\">");
+            html.AppendLine($"    <h5 class=\"card-title analysis-card-title\">{title}</h5>");
+            html.AppendLine("    <hr class=\"analysis-card-divider\" aria-hidden=\"true\" />");
             /* 先列出是否有衝突 */
             var conflict = new System.Text.StringBuilder();
             var (_, heHui) = checkConflict(conflict);
             if (conflict.Length > 0) {
-                html.AppendLine(@"    <div class=""row ms-1 me-1 py-3 border-bottom-dash"">");
+                html.AppendLine(@"    <div class=""mb-3"">");
                 html.AppendLine(conflict.ToString());
                 html.AppendLine(@"    </div>");
             }
@@ -1941,27 +1944,29 @@ namespace BaZi.Services {
             } else {    //沒有合會時，以地支的 '主氣' 為主
                 zhiYun = periodGanZhi.Zhi.ToWuXing().ToShiShen(info.RiZhu);
             }
-            html.AppendLine(@"    <div class=""row ms-1 me-1 py-3"">");
+            html.AppendLine(@"    <div class=""analysis-item mb-0"">");
             var ganColor = GetElementColorClass(periodGanZhi.Gan.ToWuXing());
             var zhiColor = GetElementColorClass(periodGanZhi.Zhi.ToWuXing());
             var ganYunDisplay = FormatTenGod(info, ganYun, ganYun.ToYunString());
             var zhiYunDisplay = FormatTenGod(info, zhiYun, zhiYun.ToYunString());
             if (zhiYun.HasFlag(ganYun)) {
-                html.Append($"<span>{displayPrefix}<strong><span class=\"{ganColor}\">{periodGanZhi.Gan.ToGanString()}</span><span class=\"{zhiColor}\">{periodGanZhi.Zhi.ToZhiString()}</span></strong>{displaySuffix} 走 {zhiYunDisplay}</span>");
+                html.Append($"        <div class=\"analysis-item-main\">{displayPrefix}<strong><span class=\"{ganColor}\">{periodGanZhi.Gan.ToGanString()}</span><span class=\"{zhiColor}\">{periodGanZhi.Zhi.ToZhiString()}</span></strong>{displaySuffix} 走 {zhiYunDisplay}</div>");
             } else {
-                html.Append($"<span>{displayPrefix}<strong><span class=\"{ganColor}\">{periodGanZhi.Gan.ToGanString()}</span><span class=\"{zhiColor}\">{periodGanZhi.Zhi.ToZhiString()}</span></strong>{displaySuffix} 走 {ganYunDisplay}、{zhiYunDisplay}</span>");
+                html.Append($"        <div class=\"analysis-item-main\">{displayPrefix}<strong><span class=\"{ganColor}\">{periodGanZhi.Gan.ToGanString()}</span><span class=\"{zhiColor}\">{periodGanZhi.Zhi.ToZhiString()}</span></strong>{displaySuffix} 走 {ganYunDisplay}、{zhiYunDisplay}</div>");
             }
+            html.AppendLine("        <div class=\"alert alert-info analysis-item-explanation mb-0\">");
             CreatePeriodDesc(info, daYun, ganYun, zhiYun, period, html);
+            html.AppendLine("        </div>");
             html.AppendLine(@"    </div>");
             html.AppendLine(@"</div>");
             return html.ToString();
         }
 
         private static void AppendTopicNotice(System.Text.StringBuilder html, string content) {
-            html.AppendLine("    <div class=\"topic-notice mb-0\">");
-            html.AppendLine("        <i class=\"fa-solid fa-triangle-exclamation topic-notice-icon\"></i>");
+            html.AppendLine("    <blockquote class=\"topic-notice mb-0\">");
+            html.AppendLine("        <i class=\"fa-solid fa-quote-left topic-notice-icon\" aria-hidden=\"true\"></i>");
             html.AppendLine($"        <div>{content}</div>");
-            html.AppendLine("    </div>");
+            html.AppendLine("    </blockquote>");
         }
 
         private static string FormatElement(WuXing element, string? displayText = null) {

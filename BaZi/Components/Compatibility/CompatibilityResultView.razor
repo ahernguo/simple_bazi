@@ -1,6 +1,7 @@
 <div class="compatibility-result">
-    <div class="card p-4 mb-4">
-        <h5 class="card-title border-bottom pb-2">命盤摘要</h5>
+    <div class="card analysis-card p-4 mb-4">
+        <h5 class="card-title analysis-card-title">命盤摘要</h5>
+        <hr class="analysis-card-divider" aria-hidden="true" />
         <div class="row g-3">
             <div class="col-md-6">
                 <div class="border rounded p-3 h-100">
@@ -32,20 +33,25 @@
     </div>
 
     @foreach (var section in Result.Sections) {
-        <div class="card p-4 mb-4 compatibility-section @GetToneClass(section.Tone)" @key="section.Title">
-            <h5 class="card-title border-bottom pb-2">
+        <div class="card analysis-card p-4 mb-4" @key="section.Title">
+            <h5 class="card-title analysis-card-title">
                 <i class="fa-solid @GetToneIcon(section.Tone) me-2"></i>@section.Title
             </h5>
-            <p>@FormatText(section.Summary, section.TenGodSubject, section.TenGodShowsFavorability)</p>
+            <hr class="analysis-card-divider" aria-hidden="true" />
+            <p class="mb-2">
+                @FormatText(section.Summary, section.TenGodSubject, section.TenGodShowsFavorability)
+            </p>
             @if (section.Details.Count > 0) {
-                <ul class="mb-0">
-                    @foreach (var detail in section.Details) {
-                        <li class="mb-2">@FormatText(detail, section.TenGodSubject, section.TenGodShowsFavorability)</li>
-                    }
-                </ul>
+                <div class="alert alert-info analysis-item-explanation mb-2" style="background: transparent !important;">
+                    <ul class="mb-0">
+                        @foreach (var detail in section.Details) {
+                            <li class="mb-1">@FormatText(detail, section.TenGodSubject, section.TenGodShowsFavorability)</li>
+                        }
+                    </ul>
+                </div>
             }
             @if (section.Notes is { Count: > 0 }) {
-                <TopicNotice CssClass="mt-3 mb-0">
+                <TopicNotice CssClass="mb-0">
                     <ul class="compatibility-note-list mb-0">
                         @foreach (var note in section.Notes) {
                             <li class="mb-1">@FormatText(note, section.TenGodSubject, section.TenGodShowsFavorability)</li>
@@ -56,11 +62,11 @@
         </div>
     }
 
-    <AnalysisCard Title="使用限制" Icon="fa-shield-heart" CssClass="mb-4">
+    <TopicNotice Icon="fa-shield-heart" CssClass="mb-4">
         <ul class="mb-0">
             @foreach (var limitation in Result.Limitations) {
                 <li class="mb-2">@limitation</li>
             }
         </ul>
-    </AnalysisCard>
+    </TopicNotice>
 </div>

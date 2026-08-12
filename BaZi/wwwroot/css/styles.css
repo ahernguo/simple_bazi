@@ -105,23 +105,96 @@ h1:focus {
     text-underline-offset: 0.2rem;
 }
 
+.analysis-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.analysis-card-title {
+    margin-bottom: 0.5rem;
+}
+
+.analysis-card-description {
+    margin-bottom: 0.75rem;
+}
+
+.analysis-card-description > :last-child {
+    margin-bottom: 0;
+}
+
+.analysis-card-divider {
+    margin: 0 0 1rem;
+    border: 0;
+    border-top: 0.125rem dashed var(--analysis-divider-color);
+    opacity: 1;
+}
+
+.analysis-card-content > :last-child {
+    margin-bottom: 0;
+}
+
+.analysis-item-main {
+    display: block;
+    margin-bottom: 0.625rem;
+}
+
+.analysis-item-main > :last-child,
+.analysis-item-explanation > :last-child {
+    margin-bottom: 0;
+}
+
+.analysis-item-explanation {
+    padding: 0.75rem 1rem;
+    color: var(--analysis-info-foreground);
+    background-color: var(--analysis-info-background);
+    border-color: var(--analysis-info-border);
+}
+
+.analysis-item-explanation.alert-success {
+    color: var(--analysis-success-foreground);
+    background-color: var(--analysis-success-background);
+    border-color: var(--analysis-success-border);
+}
+
+.analysis-item-explanation.alert-warning {
+    color: var(--analysis-warning-foreground);
+    background-color: var(--analysis-warning-background);
+    border-color: var(--analysis-warning-border);
+}
+
+.analysis-item-explanation.alert-danger {
+    color: var(--analysis-danger-foreground);
+    background-color: var(--analysis-danger-background);
+    border-color: var(--analysis-danger-border);
+}
+
 .topic-notice {
     display: flex;
     gap: 0.75rem;
     align-items: flex-start;
     padding: 0.875rem 1rem;
-    color: #adb5bd;
-    background-color: #212529;
-    border: 1px solid #343a40;
-    border-radius: var(--bs-border-radius);
+    color: var(--analysis-quote-foreground);
+    background-color: var(--analysis-quote-background);
+    border: 0;
+    border-left: 0.3rem solid var(--analysis-quote-border);
+    border-radius: 0 var(--bs-border-radius) var(--bs-border-radius) 0;
+    margin-right: 0;
+    margin-left: 0;
 }
 
-.topic-notice strong { color: #ced4da; }
+.topic-notice strong { color: inherit; }
+
+.topic-notice .text-info,
+.topic-notice .text-success,
+.topic-notice .text-warning,
+.topic-notice .text-danger {
+    color: inherit !important;
+}
 
 .topic-notice-icon {
     flex-shrink: 0;
     margin-top: 0.2rem;
-    color: #adb5bd;
+    color: var(--analysis-quote-icon);
 }
 
 /* 暗黑模式 */
@@ -134,6 +207,23 @@ h1:focus {
     --overview-divider-color: #6c757d;
     --overview-shadow-color: rgb(0 0 0 / 8%);
     --overview-ten-god-color: #6f42c1;
+    --analysis-divider-color: #8f969d;
+    --analysis-info-foreground: #055160;
+    --analysis-info-background: #cff4fc;
+    --analysis-info-border: #9eeaf9;
+    --analysis-success-foreground: #0f5132;
+    --analysis-success-background: #d1e7dd;
+    --analysis-success-border: #a3cfbb;
+    --analysis-warning-foreground: #664d03;
+    --analysis-warning-background: #fff3cd;
+    --analysis-warning-border: #ffecb5;
+    --analysis-danger-foreground: #842029;
+    --analysis-danger-background: #f8d7da;
+    --analysis-danger-border: #f1aeb5;
+    --analysis-quote-foreground: #3f3f35;
+    --analysis-quote-background: #fff8db;
+    --analysis-quote-border: #d6a700;
+    --analysis-quote-icon: #7a6200;
 }
 
 .dark-mode {
@@ -145,6 +235,23 @@ h1:focus {
     --overview-divider-color: #6c757d;
     --overview-shadow-color: rgb(0 0 0 / 45%);
     --overview-ten-god-color: #d0b7ff;
+    --analysis-divider-color: #697078;
+    --analysis-info-foreground: #b6effb;
+    --analysis-info-background: #123c46;
+    --analysis-info-border: #287382;
+    --analysis-success-foreground: #a3cfbb;
+    --analysis-success-background: #173d2d;
+    --analysis-success-border: #327657;
+    --analysis-warning-foreground: #ffe69c;
+    --analysis-warning-background: #4a390b;
+    --analysis-warning-border: #8a6d10;
+    --analysis-danger-foreground: #f1aeb5;
+    --analysis-danger-background: #491a1f;
+    --analysis-danger-border: #842f37;
+    --analysis-quote-foreground: #f3edcf;
+    --analysis-quote-background: #494326;
+    --analysis-quote-border: #c5a62d;
+    --analysis-quote-icon: #f0d86a;
     background-color: #121212;
     color: #e0e0e0;
 }
@@ -163,14 +270,9 @@ h1:focus {
 
 .dark-mode .btn-outline-primary { color: #4dabf7; border-color: #4dabf7; }
 .dark-mode .btn-outline-danger { color: #ff8787; border-color: #ff8787; }
+.dark-mode .text-secondary, .dark-mode .text-body-secondary { color: #adb5bd !important; }
 .dark-mode .topic-ten-god-favorable { color: #75b798; }
 .dark-mode .topic-ten-god-unfavorable { color: #ea868f; }
-.dark-mode .topic-notice {
-    color: #9da3a9;
-    background-color: #16191c;
-    border-color: #30363d;
-}
-
 /* 命盤樣式 */
 .bazi-chart {
     border: 2px solid #555;
