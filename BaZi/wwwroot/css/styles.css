@@ -268,6 +268,40 @@ h1:focus {
     border-color: #444;
 }
 
+.dark-mode .theme-table {
+    --bs-table-color: #e0e0e0;
+    --bs-table-bg: #1e1e1e;
+    --bs-table-border-color: #495057;
+    --bs-table-striped-color: #e0e0e0;
+    --bs-table-striped-bg: #252a30;
+    --bs-table-active-color: #fff;
+    --bs-table-active-bg: #2b3035;
+    --bs-table-hover-color: #fff;
+    --bs-table-hover-bg: #252a30;
+}
+
+.dark-mode .theme-table .table-secondary {
+    --bs-table-color: #f8f9fa;
+    --bs-table-bg: #343a40;
+    --bs-table-border-color: #5c636a;
+}
+
+.dark-mode .theme-table .table-warning {
+    --bs-table-color: var(--analysis-warning-foreground);
+    --bs-table-bg: var(--analysis-warning-background);
+    --bs-table-border-color: var(--analysis-warning-border);
+}
+
+.dark-mode .theme-table > tfoot {
+    --bs-table-color: #f8f9fa;
+    --bs-table-bg: #2b3035;
+    --bs-table-border-color: #5c636a;
+}
+
+.dark-mode .theme-table .text-success {
+    color: #75b798 !important;
+}
+
 .dark-mode .btn-outline-primary { color: #4dabf7; border-color: #4dabf7; }
 .dark-mode .btn-outline-danger { color: #ff8787; border-color: #ff8787; }
 .dark-mode .text-secondary, .dark-mode .text-body-secondary { color: #adb5bd !important; }
