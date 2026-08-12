@@ -224,7 +224,7 @@ namespace BaZi.Services {
 
             var summary = threePillarCharts.Count == 0
                 ? "雙方出生時辰皆標示為已知，本結果使用四柱分析。"
-                : $"{string.Join("與", threePillarCharts)}的出生時辰未知，本結果以三柱分析；未知時柱完全不參與規則判定。";
+                : $"{string.Join("與", threePillarCharts)}的時柱為吉時吉分，本結果以三柱分析；未知時柱完全不參與規則判定。";
             return new CompatibilitySection(
                 "資料完整度",
                 summary,
