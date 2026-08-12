@@ -112,13 +112,9 @@
                                             <ExplanationContent>
                                                 <p class="mb-2">@signal.Summary</p>
                                                 @if (signal.GanTenGod is ShiShen ganTenGod && signal.ZhiTenGod is ShiShen zhiTenGod) {
-                                                    <div class="small d-flex flex-wrap gap-3">
-                                                        <span>功能：天干 <TenGodText Info="info" TenGod="ganTenGod" />、地支 <TenGodText Info="info" TenGod="zhiTenGod" /></span>
-                                                        <span>
-                                                            格局喜忌：
-                                                            <TenGodText Info="info" TenGod="ganTenGod" Mode="TenGodDisplayMode.Favorability" Text="@($"天干{ganTenGod.ToShenString()}")" />、
-                                                            <TenGodText Info="info" TenGod="zhiTenGod" Mode="TenGodDisplayMode.Favorability" Text="@($"地支{zhiTenGod.ToShenString()}")" />
-                                                        </span>
+                                                    <div class="small">
+                                                        功能：天干 <TenGodText Info="info" TenGod="ganTenGod" Mode="TenGodDisplayMode.Favorability" />、
+                                                        地支 <TenGodText Info="info" TenGod="zhiTenGod" Mode="TenGodDisplayMode.Favorability" />
                                                     </div>
                                                 }
                                             </ExplanationContent>

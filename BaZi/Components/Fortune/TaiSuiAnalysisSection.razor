@@ -28,15 +28,10 @@
         var annualStemTenGod = Analysis.AnnualStem.ToShiShen(Info.DayZhu.Gan);
         var annualBranchTenGod = Analysis.AnnualBranch.ToShiShen(Info.DayZhu.Gan);
         <div class="border rounded p-3 mb-3">
-            <div class="mb-1">
-                <strong>流年十神功能：</strong>
-                天干 <TenGodText Info="Info" TenGod="annualStemTenGod" />、
-                地支 <TenGodText Info="Info" TenGod="annualBranchTenGod" />
-            </div>
             <div>
-                <strong>格局喜忌：</strong>
-                <TenGodText Info="Info" TenGod="annualStemTenGod" Mode="TenGodDisplayMode.Favorability" Text="@($"天干{annualStemTenGod.ToShenString()}")" />、
-                <TenGodText Info="Info" TenGod="annualBranchTenGod" Mode="TenGodDisplayMode.Favorability" Text="@($"地支{annualBranchTenGod.ToShenString()}")" />
+                <strong>流年十神功能：</strong>
+                天干 <TenGodText Info="Info" TenGod="annualStemTenGod" Mode="TenGodDisplayMode.Favorability" />、
+                地支 <TenGodText Info="Info" TenGod="annualBranchTenGod" Mode="TenGodDisplayMode.Favorability" />
             </div>
         </div>
     }
