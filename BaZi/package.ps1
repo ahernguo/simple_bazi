@@ -66,11 +66,7 @@ Write-Host ''
 Write-Host '[2/3] Cleaning up unnecessary language folders...'
 
 $keptDirectories = @(
-    'en-US'
     'zh-TW'
-    'zh-CN'
-    'zh-Hant'
-    'zh-Hans'
     'wwwroot'
     'Includes'
     'Configurations'
