@@ -39,6 +39,9 @@ namespace BaZi.Models {
         DaYun? DaYun
     );
 
+    /// <summary>實際觸發流日規則的十神來源。</summary>
+    public sealed record DailyFortuneTenGodFactor(string Source, ShiShen TenGod);
+
     /// <summary>單一流日訊號。</summary>
     public sealed record DailyFortuneSignal(
         DailyFortuneTopic Topic,
@@ -46,8 +49,7 @@ namespace BaZi.Models {
         string Title,
         string Summary,
         string Advice,
-        ShiShen? GanTenGod = null,
-        ShiShen? ZhiTenGod = null
+        IReadOnlyList<DailyFortuneTenGodFactor>? TenGodFactors = null
     );
 
     /// <summary>單日完整分析結果。</summary>

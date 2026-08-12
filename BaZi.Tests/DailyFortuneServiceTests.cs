@@ -39,6 +39,109 @@ namespace BaZi.Tests {
         }
 
         [Fact]
+        public void AnalyzeDate_WealthSignal_IncludesCapacityAndActualTenGodFactors() {
+            var info = new BaZiInfo(BirthDate, 2);
+            var service = new DailyFortuneService();
+            var result = FindResult(service, info, signal => signal.Topic == DailyFortuneTopic.Wealth);
+            var wealth = Assert.Single(result.Signals, signal => signal.Topic == DailyFortuneTopic.Wealth);
+
+            Assert.Contains(GetStrengthText(info.StrengthStatus), wealth.Summary);
+            Assert.True(wealth.Summary.Contains("大運") || wealth.Summary.Contains("查無"));
+            Assert.NotNull(wealth.TenGodFactors);
+            Assert.NotEmpty(wealth.TenGodFactors);
+            Assert.All(wealth.TenGodFactors, factor =>
+                Assert.Contains(factor.TenGod, new[] { ShiShen.Cai, ShiShen.ShihShang }));
+        }
+
+        [Fact]
+        public void AnalyzeDate_WeakChartInUnsupportiveDaYun_WealthIsAttention() {
+            var info = new BaZiInfo(new DateTime(1970, 1, 15, 12, 0, 0), 2);
+            const int year = 1973;
+            var service = new DailyFortuneService();
+            var result = FindResult(
+                service,
+                info,
+                signal => signal.Topic == DailyFortuneTopic.Wealth,
+                new DateTime(year, 1, 1)
+            );
+            var wealth = Assert.Single(result.Signals, signal => signal.Topic == DailyFortuneTopic.Wealth);
+
+            Assert.Equal(GeJu.ShenRuo, info.StrengthStatus);
+            Assert.Equal(DailySignalLevel.Attention, wealth.Level);
+            Assert.Contains("身弱", wealth.Summary);
+            Assert.Contains("大運", wealth.Summary);
+            Assert.Contains("支出", wealth.Advice);
+        }
+
+        [Fact]
+        public void AnalyzeDate_WeakChartInSupportiveDaYun_WealthIsOpportunity() {
+            var info = new BaZiInfo(new DateTime(1970, 1, 15, 12, 0, 0), 2);
+            var year = FindSupportiveDaYunYear(info);
+            var service = new DailyFortuneService();
+            var result = FindResult(
+                service,
+                info,
+                signal => signal.Topic == DailyFortuneTopic.Wealth,
+                new DateTime(year, 1, 1)
+            );
+            var wealth = Assert.Single(result.Signals, signal => signal.Topic == DailyFortuneTopic.Wealth);
+
+            Assert.Equal(GeJu.ShenRuo, info.StrengthStatus);
+            Assert.Equal(DailySignalLevel.Opportunity, wealth.Level);
+            Assert.Contains("大運在喜用方向", wealth.Summary);
+            Assert.DoesNotContain("支出", wealth.Advice);
+        }
+
+        [Fact]
+        public void AnalyzeDate_SuspectedCongChart_WealthRequiresVerification() {
+            var info = new BaZiInfo(new DateTime(1970, 2, 15, 12, 0, 0), 2);
+            var service = new DailyFortuneService();
+            var result = FindResult(service, info, signal => signal.Topic == DailyFortuneTopic.Wealth);
+            var wealth = Assert.Single(result.Signals, signal => signal.Topic == DailyFortuneTopic.Wealth);
+
+            Assert.True(info.RequiresStrengthVerification);
+            Assert.Equal(DailySignalLevel.VerificationRequired, wealth.Level);
+            Assert.Contains("疑似從強格", wealth.Summary);
+            Assert.Contains("回驗", wealth.Summary);
+        }
+
+        [Fact]
+        public void AnalyzeDate_CareerAndRomanceSignals_IncludeCapacityAssessment() {
+            var info = new BaZiInfo(BirthDate, 1);
+            var service = new DailyFortuneService();
+            var careerResult = FindResult(service, info, signal => signal.Topic == DailyFortuneTopic.Career);
+            var romanceResult = FindResult(service, info, signal => signal.Topic == DailyFortuneTopic.Romance);
+            var career = Assert.Single(careerResult.Signals, signal => signal.Topic == DailyFortuneTopic.Career);
+            var romance = Assert.Single(romanceResult.Signals, signal => signal.Topic == DailyFortuneTopic.Romance);
+
+            Assert.Contains(GetStrengthText(info.StrengthStatus), career.Summary);
+            Assert.Contains(GetStrengthText(info.StrengthStatus), romance.Summary);
+            Assert.NotNull(career.TenGodFactors);
+            Assert.NotNull(romance.TenGodFactors);
+        }
+
+        [Fact]
+        public void AnalyzeDate_HealthAndInterpersonalSignals_IncludePeriodOrFavorabilityContext() {
+            var info = new BaZiInfo(BirthDate, 2);
+            var service = new DailyFortuneService();
+            var healthResult = FindResult(service, info, signal => signal.Topic == DailyFortuneTopic.Health);
+            var interpersonalResult = FindResult(service, info, signal => signal.Topic == DailyFortuneTopic.Interpersonal);
+            var health = Assert.Single(healthResult.Signals, signal => signal.Topic == DailyFortuneTopic.Health);
+            var interpersonal = Assert.Single(
+                interpersonalResult.Signals,
+                signal => signal.Topic == DailyFortuneTopic.Interpersonal
+            );
+
+            Assert.True(health.Summary.Contains("大運") || health.Summary.Contains("查無"));
+            Assert.True(
+                interpersonal.Summary.Contains("長期喜忌")
+                || interpersonal.Summary.Contains("本命喜用")
+            );
+            Assert.NotNull(interpersonal.TenGodFactors);
+            Assert.All(interpersonal.TenGodFactors, factor => Assert.Equal(ShiShen.BiJie, factor.TenGod));
+        }
+
+        [Fact]
         public void AnalyzeDate_MovingWithSameYearBranch_DoesNotTreatSameBranchAsClash() {
             var info = new BaZiInfo(BirthDate, 2);
             var service = new DailyFortuneService();
@@ -63,6 +166,7 @@ namespace BaZi.Tests {
             var moving = Assert.Single(result.Signals, signal => signal.Topic == DailyFortuneTopic.Moving);
 
             Assert.Equal(DailySignalLevel.Attention, moving.Level);
+            Assert.Equal("搬家命盤初篩未通過", moving.Title);
             Assert.Contains("同住者年支", moving.Summary);
         }
 
@@ -97,16 +201,41 @@ namespace BaZi.Tests {
         private static DailyFortuneResult FindResult(
             DailyFortuneService service,
             BaZiInfo info,
-            Predicate<DailyFortuneSignal> predicate
+            Predicate<DailyFortuneSignal> predicate,
+            DateTime? startDate = null
         ) {
             for (var offset = 0; offset < 60; offset++) {
-                var result = service.AnalyzeDate(info, new DateTime(2026, 1, 1).AddDays(offset));
+                var result = service.AnalyzeDate(info, (startDate ?? new DateTime(2026, 1, 1)).AddDays(offset));
                 if (result.Signals.Any(signal => predicate(signal))) {
                     return result;
                 }
             }
 
             throw new Xunit.Sdk.XunitException("六十甲子循環內找不到預期訊號。");
+        }
+
+        private static string GetStrengthText(GeJu strengthStatus) {
+            return strengthStatus switch {
+                GeJu.ShenQiang => "身強",
+                GeJu.ShenRuo => "身弱",
+                GeJu.CongQiang => "從強格",
+                GeJu.CongRuo => "從弱格",
+                _ => throw new ArgumentOutOfRangeException(nameof(strengthStatus), strengthStatus, null)
+            };
+        }
+
+        private static int FindSupportiveDaYunYear(BaZiInfo info) {
+            foreach (DaYun daYun in info.DaYunList) {
+                for (var year = daYun.StartYear; year <= daYun.EndYear; year++) {
+                    var primaryTenGod = daYun.GetPrimaryTenGod(info.DayZhu.Gan, year);
+                    var element = TenGodElementResolver.Resolve(info.RiZhu, primaryTenGod);
+                    if (info.LikeWuXing.Contains(element)) {
+                        return year;
+                    }
+                }
+            }
+
+            throw new Xunit.Sdk.XunitException("測試命盤找不到喜用大運年份。");
         }
 
         private static DiZhi GetClashingBranch(DiZhi branch) {

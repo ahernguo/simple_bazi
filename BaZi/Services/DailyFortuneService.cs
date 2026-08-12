@@ -109,10 +109,10 @@ namespace BaZi.Services {
             );
             var signals = new List<DailyFortuneSignal>();
 
-            AddWealthSignal(info, day, signals);
-            AddCareerSignal(info, day, signals);
-            AddRomanceSignal(info, day, signals);
-            AddHealthSignals(info, day, signals);
+            AddWealthSignal(info, day, context, signals);
+            AddCareerSignal(info, day, context, signals);
+            AddRomanceSignal(info, day, context, signals);
+            AddHealthSignals(info, day, context, signals);
             AddInterpersonalSignal(info, day, context, signals);
             AddTravelSafetySignal(info, day, context, signals);
             AddMovingSignal(info, day, householdYearBranches, signals);
@@ -120,7 +120,12 @@ namespace BaZi.Services {
             return new DailyFortuneResult(day, context, signals);
         }
 
-        private static void AddWealthSignal(BaZiInfo info, LiuRi day, ICollection<DailyFortuneSignal> signals) {
+        private static void AddWealthSignal(
+            BaZiInfo info,
+            LiuRi day,
+            DailyPeriodContext context,
+            ICollection<DailyFortuneSignal> signals
+        ) {
             var wealth = BaZiDefine.Restricting[info.RiZhu];
             var output = BaZiDefine.Generation[info.RiZhu];
             var ganElement = day.Gan.ToWuXing();
@@ -144,18 +149,25 @@ namespace BaZi.Services {
                 return;
             }
 
+            var capacity = EvaluateOpportunityCapacity(info, day.Date.Year, context);
             signals.Add(new DailyFortuneSignal(
                 DailyFortuneTopic.Wealth,
-                DailySignalLevel.Opportunity,
-                "財務行動窗口",
-                summary,
-                "適合安排報價、收款、談合作與檢視現金流；機會不等於必然獲利。",
-                day.Gan.ToShiShen(info.DayZhu.Gan),
-                day.Zhi.ToShiShen(info.DayZhu.Gan)
+                capacity.Level,
+                capacity.CanAct ? "財務行動窗口" : "財務事件注意窗口",
+                $"{summary}{capacity.Summary}",
+                capacity.CanAct
+                    ? "可安排報價、收款、談合作與檢視現金流；先設定預算、付款與停損條件，機會不等於必然獲利。"
+                    : "先穩定現金流、工作負荷與支援資源，避免為求財擴張、借貸或加碼；此日也可能表現為支出或財來財去。",
+                GetTenGodFactors(info, day, [ShiShen.Cai, ShiShen.ShihShang])
             ));
         }
 
-        private static void AddCareerSignal(BaZiInfo info, LiuRi day, ICollection<DailyFortuneSignal> signals) {
+        private static void AddCareerSignal(
+            BaZiInfo info,
+            LiuRi day,
+            DailyPeriodContext context,
+            ICollection<DailyFortuneSignal> signals
+        ) {
             var career = BaZiDefine.RestrictBy[info.RiZhu];
             var wealth = BaZiDefine.Restricting[info.RiZhu];
             if (day.Gan.ToWuXing() != career) {
@@ -169,21 +181,32 @@ namespace BaZi.Services {
                 return;
             }
 
+            var capacity = EvaluateOpportunityCapacity(info, day.Date.Year, context);
             signals.Add(new DailyFortuneSignal(
                 DailyFortuneTopic.Career,
-                DailySignalLevel.Opportunity,
-                isPrimary ? "主要工作機會日" : "財生官的工作候選日",
-                isPrimary
+                capacity.Level,
+                capacity.CanAct
+                    ? (isPrimary ? "主要工作機會日" : "財生官的工作候選日")
+                    : "工作壓力與機會並見日",
+                (isPrimary
                     ? "官殺天干與含官殺能量的地支同時出現，工作與外在要求較集中。"
-                    : "官殺落在天干，地支帶財，形成財生官的工作訊號。",
-                "適合安排面試、提案、重要會議、簽約與工作決策，仍要完成資料與契約核對。",
-                day.Gan.ToShiShen(info.DayZhu.Gan),
-                day.Zhi.ToShiShen(info.DayZhu.Gan)
+                    : "官殺落在天干，地支帶財，形成財生官的工作訊號。")
+                    + capacity.Summary,
+                capacity.CanAct
+                    ? "可安排面試、提案或重要會議；簽約與轉職仍要核對工作量、薪資、責任及退出條件。"
+                    : "先控制工作負荷、補足人力與專業支援；重大簽約或轉職不要只因日期而決定。",
+                GetTenGodFactors(info, day, [ShiShen.GuanSha, ShiShen.Cai])
             ));
         }
 
-        private static void AddRomanceSignal(BaZiInfo info, LiuRi day, ICollection<DailyFortuneSignal> signals) {
+        private static void AddRomanceSignal(
+            BaZiInfo info,
+            LiuRi day,
+            DailyPeriodContext context,
+            ICollection<DailyFortuneSignal> signals
+        ) {
             var key = GetDayKey(day);
+            var capacity = EvaluateOpportunityCapacity(info, day.Date.Year, context);
             if (info.Gender == Sex.Male) {
                 var wealthSignal = signals.FirstOrDefault(signal => signal.Topic == DailyFortuneTopic.Wealth);
                 if (wealthSignal is null) {
@@ -192,12 +215,13 @@ namespace BaZi.Services {
 
                 signals.Add(new DailyFortuneSignal(
                     DailyFortuneTopic.Romance,
-                    DailySignalLevel.Opportunity,
-                    "男命桃花候選日",
-                    "財星是男命夫妻星，此日同時符合財旺或食傷生財條件。",
-                    "適合主動互動、安排約會或表達心意；關係結果仍取決於雙方意願與實際相處。",
-                    day.Gan.ToShiShen(info.DayZhu.Gan),
-                    day.Zhi.ToShiShen(info.DayZhu.Gan)
+                    capacity.Level,
+                    capacity.CanAct ? "男命桃花候選日" : "男命桃花承接注意日",
+                    $"財星是男命夫妻星，此日同時符合財旺或食傷生財條件。{capacity.Summary}",
+                    capacity.CanAct
+                        ? "可增加互動、安排約會或表達心意；關係結果仍取決於雙方意願與實際相處。"
+                        : "桃花訊號仍存在，但先放慢承諾與金錢投入，觀察界線、誠信、壓力及雙方意願。",
+                    GetTenGodFactors(info, day, [ShiShen.Cai, ShiShen.ShihShang])
                 ));
                 return;
             }
@@ -210,31 +234,39 @@ namespace BaZi.Services {
 
             signals.Add(new DailyFortuneSignal(
                 DailyFortuneTopic.Romance,
-                DailySignalLevel.Opportunity,
-                "女命桃花候選日",
-                isPure
+                capacity.Level,
+                capacity.CanAct ? "女命桃花候選日" : "女命桃花承接注意日",
+                (isPure
                     ? "夫妻星官殺的訊號集中，感情互動機會較明顯。"
-                    : "官殺與財星形成財生官的桃花訊號。",
-                "適合增加互動、安排約會或釐清關係；不以日期代替界線、尊重與雙方意願。",
-                day.Gan.ToShiShen(info.DayZhu.Gan),
-                day.Zhi.ToShiShen(info.DayZhu.Gan)
+                    : "官殺與財星形成財生官的桃花訊號。"
+                ) + capacity.Summary,
+                capacity.CanAct
+                    ? "可增加互動、安排約會或釐清關係；不以日期代替界線、尊重與雙方意願。"
+                    : "桃花訊號仍存在，但官殺也可能成為壓力；先觀察安全感、界線與相處品質，不急著作重大承諾。",
+                GetTenGodFactors(info, day, [ShiShen.GuanSha, ShiShen.Cai])
             ));
         }
 
-        private static void AddHealthSignals(BaZiInfo info, LiuRi day, ICollection<DailyFortuneSignal> signals) {
+        private static void AddHealthSignals(
+            BaZiInfo info,
+            LiuRi day,
+            DailyPeriodContext context,
+            ICollection<DailyFortuneSignal> signals
+        ) {
             if (info.StrengthStatus is GeJu.CongQiang or GeJu.CongRuo) {
-                AddCongHealthSignal(info, day, signals);
+                AddCongHealthSignal(info, day, context, signals);
                 return;
             }
 
             var key = GetDayKey(day);
             if (ExtremeHealthDays[info.RiZhu].Contains(key)) {
                 var affected = BaZiDefine.Restricting[info.RiZhu];
+                var background = EvaluateHealthBackground(info, day.Date.Year, context, affected);
                 signals.Add(new DailyFortuneSignal(
                     DailyFortuneTopic.Health,
-                    DailySignalLevel.Attention,
-                    "同五行極旺保養日",
-                    $"日主同五行能量集中，較需留意{HealthParts[affected]}的負擔。",
+                    background.IsStackedRisk ? DailySignalLevel.HighAttention : DailySignalLevel.Attention,
+                    background.IsStackedRisk ? "同五行極旺疊加注意日" : "同五行極旺保養日",
+                    $"日主同五行能量集中，較需留意{HealthParts[affected]}的負擔。{background.Summary}",
                     "行程排鬆、飲食清淡、多休息並降低高風險活動；有症狀直接依醫療專業處理。"
                 ));
             }
@@ -244,17 +276,23 @@ namespace BaZi.Services {
                     continue;
                 }
 
+                var background = EvaluateHealthBackground(info, day.Date.Year, context, weakElement);
                 signals.Add(new DailyFortuneSignal(
                     DailyFortuneTopic.Health,
-                    DailySignalLevel.Attention,
-                    "最弱五行保養日",
-                    $"命盤最弱的{weakElement.ToWuXingString()}受到強勢五行牽制，較需留意{HealthParts[weakElement]}。",
+                    background.IsStackedRisk ? DailySignalLevel.HighAttention : DailySignalLevel.Attention,
+                    background.IsStackedRisk ? "最弱五行疊加注意日" : "最弱五行保養日",
+                    $"命盤最弱的{weakElement.ToWuXingString()}受到強勢五行牽制，較需留意{HealthParts[weakElement]}。{background.Summary}",
                     "提前調整飲食、作息與運動強度；日期只用來安排保守作息，不作疾病診斷。"
                 ));
             }
         }
 
-        private static void AddCongHealthSignal(BaZiInfo info, LiuRi day, ICollection<DailyFortuneSignal> signals) {
+        private static void AddCongHealthSignal(
+            BaZiInfo info,
+            LiuRi day,
+            DailyPeriodContext context,
+            ICollection<DailyFortuneSignal> signals
+        ) {
             var elements = new[] { day.Gan.ToWuXing(), day.Zhi.ToWuXing() };
             var isBreaking = info.StrengthStatus == GeJu.CongQiang
                 ? elements.Any(element => element != info.RiZhu && element != BaZiDefine.GenerateBy[info.RiZhu])
@@ -263,11 +301,12 @@ namespace BaZi.Services {
                 return;
             }
 
+            var background = EvaluateCongBackground(info, day.Date.Year, context);
             signals.Add(new DailyFortuneSignal(
                 DailyFortuneTopic.Health,
-                DailySignalLevel.Attention,
-                "從格逆勢保養日",
-                "流日出現逆勢五行，容易打亂原本從格的能量方向。",
+                background.IsStackedRisk ? DailySignalLevel.HighAttention : DailySignalLevel.Attention,
+                background.IsStackedRisk ? "從格逆勢疊加注意日" : "從格逆勢保養日",
+                $"流日出現逆勢五行，容易打亂原本從格的能量方向。{background.Summary}",
                 "降低行程密度並維持規律作息；有症狀、慢性病或用藥問題時直接諮詢醫療專業。"
             ));
         }
@@ -285,16 +324,19 @@ namespace BaZi.Services {
             }
 
             var hasAnnualClash = IsClash(day.Zhi, context.YearZhi);
+            var peerContext = EvaluatePeerBackground(info, day.Date.Year, context);
+            var isHighAttention = hasAnnualClash || peerContext.IsStackedRisk;
             signals.Add(new DailyFortuneSignal(
                 DailyFortuneTopic.Interpersonal,
-                hasAnnualClash ? DailySignalLevel.HighAttention : DailySignalLevel.Attention,
-                hasAnnualClash ? "比劫疊加流年相沖" : "比劫互動密集日",
+                isHighAttention ? DailySignalLevel.HighAttention : DailySignalLevel.Attention,
                 hasAnnualClash
-                    ? "同我能量強，並與流年地支相沖，競爭、口舌與權責摩擦更容易集中。"
-                    : "流日天干、地支都推高同我比劫，人際競爭與意見碰撞較明顯。",
+                    ? "比劫疊加流年相沖"
+                    : (peerContext.IsStackedRisk ? "比劫跨期間疊加注意日" : "比劫互動密集日"),
+                hasAnnualClash
+                    ? $"同我能量強，並與流年地支相沖，競爭、口舌與權責摩擦更容易集中。{peerContext.Summary}"
+                    : $"流日天干、地支都推高同我比劫，人際競爭與意見碰撞較明顯。{peerContext.Summary}",
                 "重要溝通書面化；合作、分潤、權責與交付條件先寫清楚，避免情緒性表態。",
-                day.Gan.ToShiShen(info.DayZhu.Gan),
-                day.Zhi.ToShiShen(info.DayZhu.Gan)
+                GetTenGodFactors(info, day, [ShiShen.BiJie])
             ));
         }
 
@@ -361,7 +403,7 @@ namespace BaZi.Services {
                 signals.Add(new DailyFortuneSignal(
                     DailyFortuneTopic.Moving,
                     DailySignalLevel.Attention,
-                    "搬家日期不適合",
+                    "搬家命盤初篩未通過",
                     $"流日地支沖到同住者年支：{string.Join("、", clashedBranches.Select(branch => branch.ToZhiString()))}。",
                     "改選未沖到所有同住者年支的日期，再確認通書標示宜入宅或宜遷移。"
                 ));
@@ -376,6 +418,265 @@ namespace BaZi.Services {
                 "這只是命盤初篩；仍須確認通書標示宜入宅或宜遷移，再核對交屋、搬運、天候與安全條件。"
             ));
         }
+
+        private static CapacityAssessment EvaluateOpportunityCapacity(
+            BaZiInfo info,
+            int year,
+            DailyPeriodContext context
+        ) {
+            if (context.DaYun is null) {
+                return new CapacityAssessment(
+                    DailySignalLevel.VerificationRequired,
+                    false,
+                    $"本命為{info.StrengthStatus.ToGeJuString()}，但目前查無涵蓋 {year} 年的大運，尚不能把事件窗口解讀成可承接的結果。"
+                );
+            }
+
+            var daYunGroup = context.DaYun.GetPrimaryTenGod(info.DayZhu.Gan, year).ToCombined();
+            var daYunIsFavorable = IsFavorable(info, daYunGroup);
+            var yearGroups = GetYearTenGodGroups(info, context);
+            var favorableYearGroups = yearGroups.Where(group => IsFavorable(info, group)).ToArray();
+            var unfavorableYearGroups = yearGroups.Where(group => !IsFavorable(info, group)).ToArray();
+            var periodDescription = DescribePeriodContext(
+                info,
+                year,
+                context.DaYun,
+                daYunGroup,
+                favorableYearGroups,
+                unfavorableYearGroups
+            );
+
+            if (info.RequiresStrengthVerification) {
+                var direction = daYunIsFavorable && favorableYearGroups.Length > 0
+                    ? "目前大運與流年仍見順勢訊號"
+                    : "目前大運或流年帶有逆勢、破格訊號";
+                return new CapacityAssessment(
+                    DailySignalLevel.VerificationRequired,
+                    false,
+                    $"本命屬疑似{info.StrengthStatus.ToGeJuString()}，須用過往年份回驗後才能定格；{direction}。{periodDescription}"
+                );
+            }
+
+            if (daYunIsFavorable) {
+                var yearAdvice = (favorableYearGroups.Length, unfavorableYearGroups.Length) switch {
+                    ( > 0, 0) => "流年也在本命喜用方向，承接條件相對有支撐",
+                    ( > 0, > 0) => "流年有加分與耗洩並存，可把握窗口但要控制負荷",
+                    _ => "流年偏原局忌神方向，事件耗洩較強；因大運先提供支撐，仍可承接但應控制規模"
+                };
+                return new CapacityAssessment(
+                    DailySignalLevel.Opportunity,
+                    true,
+                    $"本命為{info.StrengthStatus.ToGeJuString()}，大運在喜用方向；{yearAdvice}。{periodDescription}"
+                );
+            }
+
+            if (unfavorableYearGroups.Length == 0) {
+                return new CapacityAssessment(
+                    DailySignalLevel.Attention,
+                    false,
+                    $"本命為{info.StrengthStatus.ToGeJuString()}，流年有短期補強，但大運主背景仍不在喜用方向，只宜視為暫時緩衝。{periodDescription}"
+                );
+            }
+
+            return new CapacityAssessment(
+                DailySignalLevel.Attention,
+                false,
+                $"本命為{info.StrengthStatus.ToGeJuString()}，目前大運不在喜用方向，流年也仍有耗洩或失衡訊號，宜保守承接。{periodDescription}"
+            );
+        }
+
+        private static HealthBackgroundAssessment EvaluateHealthBackground(
+            BaZiInfo info,
+            int year,
+            DailyPeriodContext context,
+            WuXing weakElement
+        ) {
+            if (context.DaYun is null) {
+                return new HealthBackgroundAssessment(false, $"目前查無涵蓋 {year} 年的大運，長期健康背景需另行確認。");
+            }
+
+            var daYunElement = GetActiveDaYunElement(info, context.DaYun, year);
+            var yearElements = GetYearElements(context);
+            var daYunSupports = Supports(daYunElement, weakElement);
+            var daYunChallenges = Challenges(daYunElement, weakElement);
+            var yearSupports = yearElements.Any(element => Supports(element, weakElement));
+            var yearChallenges = yearElements.Any(element => Challenges(element, weakElement));
+            var phase = GetDaYunPhaseLabel(context.DaYun, year);
+
+            if (daYunChallenges && yearChallenges) {
+                return new HealthBackgroundAssessment(
+                    true,
+                    $"大運{phase}主作用與流年都對此弱項帶有剋、洩或耗，形成跨期間疊加；這是提高保養優先級的訊號，不代表必然發病。"
+                );
+            }
+
+            if (daYunSupports && yearChallenges) {
+                return new HealthBackgroundAssessment(
+                    false,
+                    $"大運{phase}對此弱項有長期支撐，流年則有短期剋、洩或耗；保留大運支撐，但該年仍宜多留意。"
+                );
+            }
+
+            if (daYunChallenges && yearSupports) {
+                return new HealthBackgroundAssessment(
+                    false,
+                    $"大運{phase}對此弱項較不利，流年有短期補強與緩衝；宜把握時間檢查、休養或處理既有症狀。"
+                );
+            }
+
+            if (daYunSupports || yearSupports) {
+                return new HealthBackgroundAssessment(false, "大運或流年對此弱項仍見補強，可視為相對支撐，但不免除保養與就醫。");
+            }
+
+            return new HealthBackgroundAssessment(false, "大運與流年沒有明顯直接補強；維持保守作息，並以實際症狀及檢查結果為準。");
+        }
+
+        private static HealthBackgroundAssessment EvaluateCongBackground(
+            BaZiInfo info,
+            int year,
+            DailyPeriodContext context
+        ) {
+            if (context.DaYun is null) {
+                return new HealthBackgroundAssessment(false, $"目前查無涵蓋 {year} 年的大運，從格背景需另行確認。");
+            }
+
+            var daYunGroup = context.DaYun.GetPrimaryTenGod(info.DayZhu.Gan, year).ToCombined();
+            var daYunBreaks = !IsFavorable(info, daYunGroup);
+            var yearGroups = GetYearTenGodGroups(info, context);
+            var yearBreaks = yearGroups.Any(group => !IsFavorable(info, group));
+            var yearFollows = yearGroups.Any(group => IsFavorable(info, group));
+            var phase = GetDaYunPhaseLabel(context.DaYun, year);
+
+            if (daYunBreaks && yearBreaks) {
+                return new HealthBackgroundAssessment(
+                    true,
+                    $"疑似從格尚待回驗；大運{phase}主作用與流年都見逆勢訊號，形成跨期間疊加。"
+                );
+            }
+
+            if (daYunBreaks && yearFollows) {
+                return new HealthBackgroundAssessment(false, $"疑似從格尚待回驗；大運{phase}偏逆勢，流年仍有部分順勢緩衝。");
+            }
+
+            return new HealthBackgroundAssessment(false, $"疑似從格尚待回驗；大運{phase}或流年仍見順勢支撐，本日逆勢訊號偏短期。");
+        }
+
+        private static PeerBackgroundAssessment EvaluatePeerBackground(
+            BaZiInfo info,
+            int year,
+            DailyPeriodContext context
+        ) {
+            var peerIsFavorable = info.LikeWuXing.Contains(info.RiZhu);
+            if (context.DaYun is null) {
+                var missingSummary = peerIsFavorable
+                    ? "比劫在長期喜忌上可幫扶日主，但短期仍可能同時帶來分財與同儕競爭；目前查無大運可供疊加判斷。"
+                    : "比劫不在本命喜用方向，且短期仍可能帶來分財與同儕競爭；目前查無大運可供疊加判斷。";
+                return new PeerBackgroundAssessment(false, missingSummary);
+            }
+
+            var daYunGroup = context.DaYun.GetPrimaryTenGod(info.DayZhu.Gan, year).ToCombined();
+            var yearGroups = GetYearTenGodGroups(info, context);
+            var peerIsStacked = daYunGroup == ShiShen.BiJie || yearGroups.Contains(ShiShen.BiJie);
+            var phase = GetDaYunPhaseLabel(context.DaYun, year);
+            var summary = peerIsFavorable
+                ? "比劫在長期喜忌上可幫扶或順勢，但短期的分財、競爭與權責問題仍可同時成立。"
+                : "比劫不在本命喜用方向，除了短期競爭，也可能讓整體格局更失衡。";
+            if (peerIsStacked) {
+                summary += $"大運{phase}主作用或流年也見比劫，作用較集中。";
+            }
+
+            return new PeerBackgroundAssessment(!peerIsFavorable && peerIsStacked, summary);
+        }
+
+        private static IReadOnlyList<DailyFortuneTenGodFactor> GetTenGodFactors(
+            BaZiInfo info,
+            LiuRi day,
+            IReadOnlyCollection<ShiShen> targetGroups
+        ) {
+            var factors = new List<DailyFortuneTenGodFactor>();
+            var ganGroup = day.Gan.ToShiShen(info.DayZhu.Gan).ToCombined();
+            if (targetGroups.Contains(ganGroup)) {
+                factors.Add(new DailyFortuneTenGodFactor("天干", ganGroup));
+            }
+
+            foreach (var group in day.Zhi.ToFullWuXing()
+                         .Keys
+                         .Select(element => element.ToShiShen(info.RiZhu).ToCombined())
+                         .Where(targetGroups.Contains)
+                         .Distinct()) {
+                factors.Add(new DailyFortuneTenGodFactor("地支藏干", group));
+            }
+
+            return factors;
+        }
+
+        private static IReadOnlyList<ShiShen> GetYearTenGodGroups(BaZiInfo info, DailyPeriodContext context) {
+            return [
+                context.YearGan.ToShiShen(info.DayZhu.Gan).ToCombined(),
+                .. context.YearZhi.ToFullWuXing()
+                    .Keys
+                    .Select(element => element.ToShiShen(info.RiZhu).ToCombined())
+                    .Distinct()
+            ];
+        }
+
+        private static IReadOnlyList<WuXing> GetYearElements(DailyPeriodContext context) {
+            return [context.YearGan.ToWuXing(), .. context.YearZhi.ToFullWuXing().Keys];
+        }
+
+        private static WuXing GetActiveDaYunElement(BaZiInfo info, DaYun daYun, int year) {
+            var group = daYun.GetPrimaryTenGod(info.DayZhu.Gan, year).ToCombined();
+            return TenGodElementResolver.Resolve(info.RiZhu, group);
+        }
+
+        private static bool IsFavorable(BaZiInfo info, ShiShen group) {
+            var element = TenGodElementResolver.Resolve(info.RiZhu, group);
+            return info.LikeWuXing.Contains(element);
+        }
+
+        private static bool Supports(WuXing source, WuXing target) {
+            return source == target || BaZiDefine.Generation[source] == target;
+        }
+
+        private static bool Challenges(WuXing source, WuXing target) {
+            return source == BaZiDefine.RestrictBy[target]
+                || source == BaZiDefine.Generation[target]
+                || source == BaZiDefine.Restricting[target];
+        }
+
+        private static string DescribePeriodContext(
+            BaZiInfo info,
+            int year,
+            DaYun daYun,
+            ShiShen daYunGroup,
+            IReadOnlyCollection<ShiShen> favorableYearGroups,
+            IReadOnlyCollection<ShiShen> unfavorableYearGroups
+        ) {
+            var phase = GetDaYunPhaseLabel(daYun, year);
+            var daYunDirection = IsFavorable(info, daYunGroup) ? "喜用" : "忌神";
+            var yearDescription = (favorableYearGroups.Count, unfavorableYearGroups.Count) switch {
+                ( > 0, 0) => $"流年見{FormatTenGodGroups(favorableYearGroups)}，皆在喜用方向",
+                (0, > 0) => $"流年見{FormatTenGodGroups(unfavorableYearGroups)}，偏忌神方向",
+                _ => $"流年同見喜用的{FormatTenGodGroups(favorableYearGroups)}與需留意的{FormatTenGodGroups(unfavorableYearGroups)}"
+            };
+            return $"大運{phase}主作用為{daYunGroup.ToShenString()}（{daYunDirection}）；{yearDescription}。";
+        }
+
+        private static string GetDaYunPhaseLabel(DaYun daYun, int year) {
+            return daYun.GetPhase(year) == DaYunPhase.FirstFiveYears
+                ? "前五年天干"
+                : "後五年地支";
+        }
+
+        private static string FormatTenGodGroups(IEnumerable<ShiShen> groups) {
+            return string.Join("、", groups.Distinct().Select(group => group.ToShenString()));
+        }
+
+        private sealed record CapacityAssessment(DailySignalLevel Level, bool CanAct, string Summary);
+
+        private sealed record HealthBackgroundAssessment(bool IsStackedRisk, string Summary);
+
+        private sealed record PeerBackgroundAssessment(bool IsStackedRisk, string Summary);
 
         private static IReadOnlyList<WuXing> GetWeakElements(BaZiInfo info) {
             var counts = BaZiDefine.WuXingList.ToDictionary(element => element, _ => 0);

@@ -111,10 +111,14 @@
                                             </ChildContent>
                                             <ExplanationContent>
                                                 <p class="mb-2">@signal.Summary</p>
-                                                @if (signal.GanTenGod is ShiShen ganTenGod && signal.ZhiTenGod is ShiShen zhiTenGod) {
-                                                    <div class="small">
-                                                        功能：天干 <TenGodText Info="info" TenGod="ganTenGod" Mode="TenGodDisplayMode.Favorability" />、
-                                                        地支 <TenGodText Info="info" TenGod="zhiTenGod" Mode="TenGodDisplayMode.Favorability" />
+                                                @if (signal.TenGodFactors is { Count: > 0 } tenGodFactors) {
+                                                    <div class="small d-flex flex-wrap align-items-center gap-2">
+                                                        <span>本命作用：</span>
+                                                        @foreach (var factor in tenGodFactors) {
+                                                            <span @key="factor">
+                                                                @factor.Source <TenGodText Info="info" TenGod="factor.TenGod" Mode="TenGodDisplayMode.Favorability" />
+                                                            </span>
+                                                        }
                                                     </div>
                                                 }
                                             </ExplanationContent>
