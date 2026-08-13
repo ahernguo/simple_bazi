@@ -148,8 +148,6 @@ namespace BaZi.Models {
         public ShiShen Shen { get; }
         /// <summary>取得此運的流年</summary>
         public IReadOnlyList<LiuNian> LiuNianList { get; }
-        /// <summary>取得或設定是否為好運 (僅供註記)</summary>
-        public bool IsGoodYun { get; set; }
         #endregion
 
         #region Constructor
@@ -160,7 +158,6 @@ namespace BaZi.Models {
             StartYear = daYun.StartYear;
             LiuNianList = [.. daYun.GetLiuNian().Select(ln => new LiuNian(ln))];
             EndYear = LiuNianList.Count > 0 ? LiuNianList.Max(liuNian => liuNian.Year) : StartYear + 9;
-            IsGoodYun = false;
         }
         #endregion
 

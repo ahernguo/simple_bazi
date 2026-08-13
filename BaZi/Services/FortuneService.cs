@@ -405,10 +405,24 @@ namespace BaZi.Services {
             return false;
         }
 
-        private void CreateThreeHeDesc(IList<IGanZhi> a, WuXing wuXing, System.Text.StringBuilder html) {
+        private void CreateThreeHeDesc(
+            IList<IGanZhi> a,
+            WuXing wuXing,
+            bool isFavorable,
+            System.Text.StringBuilder html
+        ) {
+            var stateClass = isFavorable ? "text-success" : "text-danger";
+            var alertClass = isFavorable ? "alert-success" : "alert-warning";
+            var stateLabel = FormatFavorabilityLabel(
+                isFavorable,
+                $"三合形成{wuXing.ToWuXingString()}，依本命格局與目前大運背景列為{(isFavorable ? "喜用" : "忌神")}方向"
+            );
+            var description = isFavorable
+                ? $"合成五行落在{stateLabel}，可視為整體平衡的加分訊號；仍須搭配其他刑沖與現實狀況。"
+                : $"合成五行落在{stateLabel}，可能加重失衡；不能因形成三合就一律判成好事。";
             html.AppendLine(@"<div class=""analysis-item mb-3"">");
-            html.AppendLine($@"    <div class=""analysis-item-main"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span>、{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 與{a[2].Id} <span class=""border-bottom-dash"">{a[2].Zhi.ToZhiString()}</span> 形成「<strong class=""text-success"">三合{wuXing.ToWuXingString()}局</strong>」</div>");
-            html.AppendLine(@"    <div class=""alert alert-success analysis-item-explanation mb-0""><strong>幫助：</strong>補充所需的能量，提升整體運勢、壞事化小、趨吉避凶</div>");
+            html.AppendLine($@"    <div class=""analysis-item-main"">{a[0].Id} <span class=""border-bottom-dash"">{a[0].Zhi.ToZhiString()}</span>、{a[1].Id} <span class=""border-bottom-dash"">{a[1].Zhi.ToZhiString()}</span> 與{a[2].Id} <span class=""border-bottom-dash"">{a[2].Zhi.ToZhiString()}</span> 形成「<strong class=""{stateClass}"">三合{wuXing.ToWuXingString()}局</strong>」</div>");
+            html.AppendLine($@"    <div class=""alert {alertClass} analysis-item-explanation mb-0""><strong>格局判讀：</strong>{description}</div>");
             html.AppendLine(@"</div>");
         }
 
@@ -418,9 +432,9 @@ namespace BaZi.Services {
             if (type == 0) {
                 html.AppendLine(@"    <div class=""alert alert-success analysis-item-explanation mb-0""><strong>幫助：</strong>補充所需的能量，提升整體運勢、壞事化小、趨吉避凶</div>");
             } else if (type == 1) {
-                html.AppendLine(@"    <div class=""alert alert-warning analysis-item-explanation mb-0""><strong>狀況：</strong>原本好的能量被用走，綁手綁腳、事情不順</div>");
+                html.AppendLine($@"    <div class=""alert alert-warning analysis-item-explanation mb-0""><strong>狀況：</strong>原本的{FormatFavorabilityLabel(true, "被合走的五行依本命格局與目前大運背景列為喜用方向")}被用走，較容易感到受限或不順。</div>");
             } else {
-                html.AppendLine(@"    <div class=""alert alert-success analysis-item-explanation mb-0""><strong>幫助：</strong>削弱不好的能量，整體運勢加分</div>");
+                html.AppendLine($@"    <div class=""alert alert-success analysis-item-explanation mb-0""><strong>幫助：</strong>原本的{FormatFavorabilityLabel(false, "被合走的五行依本命格局與目前大運背景列為忌神方向")}受牽制，可視為減輕失衡的訊號。</div>");
             }
             html.AppendLine(@"</div>");
         }
@@ -431,9 +445,9 @@ namespace BaZi.Services {
             if (type == 0) {
                 html.AppendLine(@"    <div class=""alert alert-success analysis-item-explanation mb-0""><strong>幫助：</strong>補充所需的能量，提升整體運勢、壞事化小、趨吉避凶</div>");
             } else if (type == 1) {
-                html.AppendLine(@"    <div class=""alert alert-warning analysis-item-explanation mb-0""><strong>狀況：</strong>原本好的能量被用走，綁手綁腳、事情不順</div>");
+                html.AppendLine($@"    <div class=""alert alert-warning analysis-item-explanation mb-0""><strong>狀況：</strong>原本的{FormatFavorabilityLabel(true, "被合走的五行依本命格局與目前大運背景列為喜用方向")}被用走，較容易感到受限或不順。</div>");
             } else {
-                html.AppendLine(@"    <div class=""alert alert-success analysis-item-explanation mb-0""><strong>幫助：</strong>削弱不好的能量，整體運勢加分</div>");
+                html.AppendLine($@"    <div class=""alert alert-success analysis-item-explanation mb-0""><strong>幫助：</strong>原本的{FormatFavorabilityLabel(false, "被合走的五行依本命格局與目前大運背景列為忌神方向")}受牽制，可視為減輕失衡的訊號。</div>");
             }
             html.AppendLine(@"</div>");
         }
@@ -483,12 +497,16 @@ namespace BaZi.Services {
             html.AppendLine(@"</div>");
         }
 
-        private (bool bad, IDictionary<HeHui, WuXing> heHui) CheckConflict(BaZiInfo info, IList<IList<IGanZhi>>? ganPair, IList<IList<IGanZhi>>? threePair, IList<IList<IGanZhi>> twoPair, System.Text.StringBuilder html) {
+        private (bool bad, IDictionary<HeHui, WuXing> heHui) CheckConflict(
+            BaZiInfo info,
+            IList<IList<IGanZhi>>? ganPair,
+            IList<IList<IGanZhi>>? threePair,
+            IList<IList<IGanZhi>> twoPair,
+            Func<WuXing, bool> isFavorable,
+            System.Text.StringBuilder html
+        ) {
             var bad = false;
             var heHui = new Dictionary<HeHui, WuXing>();
-            if (info.CurrentDaYun is null)
-                return (bad, heHui);
-
             if (!info.IsBirthTimeAccurate) {
                 ganPair = ganPair is null ? null : RemoveHourPillarFromSources(info, ganPair);
                 threePair = threePair is null ? null : RemoveHourPillarFromSources(info, threePair);
@@ -499,7 +517,7 @@ namespace BaZi.Services {
                 // 檢查這個被合走的天干是喜用神還是忌神
                 var type = 0;
                 var sourceElement = ganInteraction[0].Gan.ToWuXing();
-                if (info.LikeWuXing.Contains(sourceElement)) {
+                if (isFavorable(sourceElement)) {
                     // 原本是喜用神，被合走反而會變不順
                     type = 1;
                 } else {
@@ -514,7 +532,7 @@ namespace BaZi.Services {
                 foreach (var wx in BaZiDefine.WuXingList) {
                     if (BaZiDefine.ThreeHe.ContainsKey(wx)
                         && TryFindInteraction(threePair, BaZiDefine.ThreeHe[wx], item => item.Zhi, 3, true, out var heInteraction, out _)) {
-                        CreateThreeHeDesc(heInteraction, wx, html);   // 三合沒有說會有合絆的狀況，只有說天干五合跟地支六合
+                        CreateThreeHeDesc(heInteraction, wx, isFavorable(wx), html);   // 三合沒有說會有合絆的狀況，只有說天干五合跟地支六合
                         if (!heHui.ContainsKey(HeHui.ThreeHe))
                             heHui.Add(HeHui.ThreeHe, wx);
                         break;
@@ -540,7 +558,7 @@ namespace BaZi.Services {
                         var type = 0;
                         var firstElement = heInteraction[0].Zhi.ToWuXing();
                         var secondElement = heInteraction[1].Zhi.ToWuXing();
-                        if (info.LikeWuXing.Contains(firstElement) || info.LikeWuXing.Contains(secondElement)) {
+                        if (isFavorable(firstElement) || isFavorable(secondElement)) {
                             // 原本是喜用神，被合走反而會變不順
                             type = 1;
                         } else {
@@ -554,12 +572,12 @@ namespace BaZi.Services {
                 }
             }
             // 檢查是否合會可以減輕刑度
-            var help = (heHui.ContainsKey(HeHui.ThreeHui) && info.LikeWuXing.Contains(heHui[HeHui.ThreeHui]))
-                || (heHui.ContainsKey(HeHui.ThreeHe) && info.LikeWuXing.Contains(heHui[HeHui.ThreeHe]))
-                || (heHui.ContainsKey(HeHui.SixHe) && info.LikeWuXing.Contains(heHui[HeHui.SixHe]));
-            var worse = (heHui.ContainsKey(HeHui.ThreeHui) && info.UnlikeWuXing.Contains(heHui[HeHui.ThreeHui]))
-                || (heHui.ContainsKey(HeHui.ThreeHe) && info.UnlikeWuXing.Contains(heHui[HeHui.ThreeHe]))
-                || (heHui.ContainsKey(HeHui.SixHe) && info.UnlikeWuXing.Contains(heHui[HeHui.SixHe]));
+            var help = (heHui.ContainsKey(HeHui.ThreeHui) && isFavorable(heHui[HeHui.ThreeHui]))
+                || (heHui.ContainsKey(HeHui.ThreeHe) && isFavorable(heHui[HeHui.ThreeHe]))
+                || (heHui.ContainsKey(HeHui.SixHe) && isFavorable(heHui[HeHui.SixHe]));
+            var worse = (heHui.ContainsKey(HeHui.ThreeHui) && !isFavorable(heHui[HeHui.ThreeHui]))
+                || (heHui.ContainsKey(HeHui.ThreeHe) && !isFavorable(heHui[HeHui.ThreeHe]))
+                || (heHui.ContainsKey(HeHui.SixHe) && !isFavorable(heHui[HeHui.SixHe]));
             var helpStr = "，但因有合相補分，會讓不順感降低一些";
             var worseStr = "，且因合相能量過強，會讓不順感更加嚴重";
             IList<IGanZhi> threeXingInteraction;
@@ -711,7 +729,7 @@ namespace BaZi.Services {
             html.AppendLine("<div class=\"card analysis-card p-3 mt-3\">");
             html.AppendLine("    <h5 class=\"card-title analysis-card-title\">本身的衝突</h5>");
             html.AppendLine("    <hr class=\"analysis-card-divider\" aria-hidden=\"true\" />");
-            var (bad, _) = CheckConflict(info, null, null, twoPair, html);
+            var (bad, _) = CheckConflict(info, null, null, twoPair, info.LikeWuXing.Contains, html);
             html.AppendLine("</div>");
             desc = new MarkupString(html.ToString());
             return bad;
@@ -729,7 +747,7 @@ namespace BaZi.Services {
             new List<IGanZhi>() { info.DayZhu, daYun },
             new List<IGanZhi>() { info.HourZhu, daYun }
         };
-            var (bad, _) = CheckConflict(info, null, threePair, twoPair, html);
+            var (bad, _) = CheckConflict(info, null, threePair, twoPair, info.LikeWuXing.Contains, html);
             return bad;
         }
 
@@ -756,7 +774,15 @@ namespace BaZi.Services {
             new List<IGanZhi>() { info.HourZhu, ln },
             new List<IGanZhi>() { daYun, ln }
         };
-            return CheckConflict(info, ganPair, threePair, twoPair, html);
+            var daYunContext = EvaluateDaYunContext(info, daYun, ln.Year);
+            return CheckConflict(
+                info,
+                ganPair,
+                threePair,
+                twoPair,
+                element => IsEffectivePeriodFavorable(info, daYunContext, element.ToShiShen(info.RiZhu)),
+                html
+            );
         }
 
         private (bool bad, IDictionary<HeHui, WuXing> heHui) HasYueConflict(
@@ -784,13 +810,18 @@ namespace BaZi.Services {
             new List<IGanZhi>() { daYun, liuYue },
             new List<IGanZhi>() { liuNian, liuYue }
         };
-            return CheckConflict(info, ganPair, threePair, twoPair, html);
+            var daYunContext = EvaluateDaYunContext(info, daYun, liuNian.Year);
+            return CheckConflict(
+                info,
+                ganPair,
+                threePair,
+                twoPair,
+                element => IsEffectivePeriodFavorable(info, daYunContext, element.ToShiShen(info.RiZhu)),
+                html
+            );
         }
 
-        private void CreateYunDesc(BaZiInfo info, DaYun daYun, ShiShen yun, System.Text.StringBuilder html) {
-            if (daYun is null)
-                return;
-            daYun.IsGoodYun = false;
+        private void CreateYunDesc(BaZiInfo info, ShiShen yun, System.Text.StringBuilder html) {
             html.Append("<span>");
             /* 依照格局來判斷是否好運 */
             if (info.StrengthStatus == GeJu.ShenQiang) {
@@ -802,7 +833,6 @@ namespace BaZi.Services {
                         } else {
                             html.Append("易得財，是個 <strong class=\"text-success\">好運</strong>");
                         }
-                        daYun.IsGoodYun = true;
                         break;
                     case ShiShen.ZhengGuan:
                     case ShiShen.QiSha:
@@ -811,7 +841,6 @@ namespace BaZi.Services {
                         } else {
                             html.Append("工作運好、受賞識升職、姻緣桃花佳(正緣、旺夫)，是個 <strong class=\"text-success\">好運</strong>");
                         }
-                        daYun.IsGoodYun = true;
                         break;
                     case ShiShen.ShihShen:
                     case ShiShen.ShangGuan:
@@ -820,7 +849,6 @@ namespace BaZi.Services {
                         } else {
                             html.Append("容易出名、才華被看見、文昌(考試)運好、易懷孕、育兒教兒好，是個 <strong class=\"text-success\">好運</strong>");
                         }
-                        daYun.IsGoodYun = true;
                         break;
                     case ShiShen.PianYin:
                     case ShiShen.ZhengYin:
@@ -866,7 +894,6 @@ namespace BaZi.Services {
                             } else {
                                 html.Append("得財容易、受男性長輩幫助、婚姻順利，是個 <strong class=\"text-success\">好運</strong>");
                             }
-                            daYun.IsGoodYun = true;
                             break;
                         case ShiShen.ZhengCai:
                         case ShiShen.PianCai:
@@ -899,7 +926,6 @@ namespace BaZi.Services {
                             } else {
                                 html.Append("升官、工作順利、貴人相助、姻緣加分，是個 <strong class=\"text-success\">好運</strong>");
                             }
-                            daYun.IsGoodYun = true;
                             break;
                         case ShiShen.ZhengCai:
                         case ShiShen.PianCai:
@@ -932,7 +958,6 @@ namespace BaZi.Services {
                             } else {
                                 html.Append("易得功名、得到好的下屬、子息運好，是個 <strong class=\"text-success\">好運</strong>");
                             }
-                            daYun.IsGoodYun = true;
                             break;
                         case ShiShen.ZhengCai:
                         case ShiShen.PianCai:
@@ -961,7 +986,6 @@ namespace BaZi.Services {
                     case ShiShen.BiJian:
                     case ShiShen.JieCai:
                         html.Append("運勢加分、做事整體順暢，是個 <strong class=\"text-success\">好運</strong>");
-                        daYun.IsGoodYun = true;
                         break;
                     case ShiShen.ZhengCai:
                     case ShiShen.PianCai:
@@ -989,7 +1013,6 @@ namespace BaZi.Services {
                     case ShiShen.ShihShen:
                     case ShiShen.ShangGuan:
                         html.Append("運勢加分、做事整體順暢，是個 <strong class=\"text-success\">好運</strong>");
-                        daYun.IsGoodYun = true;
                         break;
                     default:
                         throw new System.ComponentModel.InvalidEnumArgumentException(nameof(yun), (int)yun, typeof(ShiShen));
@@ -1186,101 +1209,191 @@ namespace BaZi.Services {
             }
         }
 
+        private sealed record DaYunContextAssessment(
+            DaYunPhase Phase,
+            ShiShen PrimaryTenGod,
+            ShiShen SecondaryTenGod,
+            bool PrimaryIsFavorable,
+            bool SecondaryIsFavorable
+        );
+
+        private sealed record PeriodDirectionAssessment(
+            ShiShen GanTenGod,
+            ShiShen ZhiTenGod,
+            IReadOnlyList<ShiShen> FavorableTenGods,
+            IReadOnlyList<ShiShen> UnfavorableTenGods
+        ) {
+            public bool HasFavorable => FavorableTenGods.Count > 0;
+
+            public bool HasUnfavorable => UnfavorableTenGods.Count > 0;
+        }
+
+        private static DaYunContextAssessment EvaluateDaYunContext(BaZiInfo info, DaYun daYun, int targetYear) {
+            var phase = daYun.GetPhase(targetYear);
+            var ganTenGod = daYun.Gan.ToShiShen(info.DayZhu.Gan).ToCombined();
+            var zhiTenGod = daYun.Zhi.ToShiShen(info.DayZhu.Gan).ToCombined();
+            var primaryTenGod = phase == DaYunPhase.FirstFiveYears ? ganTenGod : zhiTenGod;
+            var secondaryTenGod = phase == DaYunPhase.FirstFiveYears ? zhiTenGod : ganTenGod;
+            return new DaYunContextAssessment(
+                phase,
+                primaryTenGod,
+                secondaryTenGod,
+                IsOriginalFavorable(info, primaryTenGod),
+                IsOriginalFavorable(info, secondaryTenGod)
+            );
+        }
+
+        private static PeriodDirectionAssessment EvaluatePeriodDirection(
+            BaZiInfo info,
+            DaYunContextAssessment daYunContext,
+            ShiShen ganTenGod,
+            ShiShen zhiTenGod
+        ) {
+            var ganGroup = ganTenGod.ToCombined();
+            var zhiGroup = zhiTenGod.ToCombined();
+            var groups = new[] { ganGroup, zhiGroup }.Distinct().ToArray();
+            return new PeriodDirectionAssessment(
+                ganGroup,
+                zhiGroup,
+                groups.Where(group => IsEffectivePeriodFavorable(info, daYunContext, group)).ToArray(),
+                groups.Where(group => !IsEffectivePeriodFavorable(info, daYunContext, group)).ToArray()
+            );
+        }
+
+        private static PeriodDirectionAssessment EvaluatePeriodDirection(
+            BaZiInfo info,
+            DaYunContextAssessment daYunContext,
+            IGanZhi period
+        ) {
+            return EvaluatePeriodDirection(
+                info,
+                daYunContext,
+                period.Gan.ToShiShen(info.DayZhu.Gan),
+                period.Zhi.ToShiShen(info.DayZhu.Gan)
+            );
+        }
+
+        private static bool IsOriginalFavorable(BaZiInfo info, ShiShen tenGod) {
+            return info.LikeWuXing.Contains(GetTenGodElement(info, tenGod));
+        }
+
+        private static bool IsEffectivePeriodFavorable(
+            BaZiInfo info,
+            DaYunContextAssessment daYunContext,
+            ShiShen tenGod
+        ) {
+            var group = tenGod.ToCombined();
+            var isExhaustingDirection = group is ShiShen.Cai or ShiShen.GuanSha or ShiShen.ShihShang;
+            return UsesExhaustingPeriodDirection(info, daYunContext)
+                ? isExhaustingDirection
+                : !isExhaustingDirection;
+        }
+
+        private static bool UsesExhaustingPeriodDirection(BaZiInfo info, DaYunContextAssessment daYunContext) {
+            return info.StrengthStatus switch {
+                GeJu.ShenQiang or GeJu.CongRuo => true,
+                GeJu.CongQiang => false,
+                GeJu.ShenRuo => daYunContext.PrimaryIsFavorable,
+                _ => throw new System.ComponentModel.InvalidEnumArgumentException(
+                    nameof(info.StrengthStatus),
+                    (int)info.StrengthStatus,
+                    typeof(GeJu)
+                )
+            };
+        }
+
+        private static string DescribeDaYunContext(
+            BaZiInfo info,
+            DaYunContextAssessment context
+        ) {
+            var phase = context.Phase == DaYunPhase.FirstFiveYears ? "前五年天干" : "後五年地支";
+            var primary = FormatTenGod(info, context.PrimaryTenGod);
+            var secondary = FormatTenGod(info, context.SecondaryTenGod);
+            var interaction = context.PrimaryIsFavorable == context.SecondaryIsFavorable
+                ? $"主次能量同屬{FormatFavorabilityLabel(context.PrimaryIsFavorable, "依本命格局判斷大運主次能量的喜忌方向")}"
+                : $"主次一喜一忌，不能把整段大運寫成全好或全壞；目前仍以{phase}為主";
+            return $"大運{phase}主作用為{primary}，次要背景為{secondary}；{interaction}。";
+        }
+
+        private static string DescribePeriodDirection(
+            BaZiInfo info,
+            DaYunContextAssessment daYunContext,
+            PeriodDirectionAssessment assessment,
+            string periodLabel
+        ) {
+            var gan = FormatEffectiveTenGod(info, daYunContext, assessment.GanTenGod);
+            var zhi = FormatEffectiveTenGod(info, daYunContext, assessment.ZhiTenGod);
+            var result = (assessment.HasFavorable, assessment.HasUnfavorable) switch {
+                (true, false) => "兩側皆在當期喜用方向",
+                (false, true) => "兩側皆偏當期忌神方向",
+                _ => "喜用與忌神訊號並存"
+            };
+            return $"{periodLabel}天干為{gan}、地支主氣為{zhi}，{result}。";
+        }
+
+        private static string DescribeLayeredPeriodResult(
+            BaZiInfo info,
+            DaYunContextAssessment daYunContext,
+            PeriodDirectionAssessment yearAssessment,
+            PeriodDirectionAssessment currentAssessment,
+            PeriodScope period
+        ) {
+            if (info.RequiresStrengthVerification) {
+                return $"目前屬疑似{info.StrengthStatus.ToGeJuString()}，以下只依順勢／破格方向暫列；仍須用多個過往大運、流年與實際事件回驗後再定案。";
+            }
+
+            if (daYunContext.PrimaryIsFavorable) {
+                if (!yearAssessment.HasUnfavorable && !currentAssessment.HasUnfavorable) {
+                    return "大運主背景已有支撐，短期訊號也在可承接方向；可把握機會，但不代表結果保證。";
+                }
+
+                if (period == PeriodScope.LiuYue && yearAssessment.HasUnfavorable && currentAssessment.HasFavorable) {
+                    return "大運仍有支撐，流年較有耗損，本月則提供短期窗口；宜縮小規模並設定停損、界線與檢核點。";
+                }
+
+                return "大運主背景在喜用方向，但短期同時有耗損或失衡訊號；仍可承接，宜控制負荷與風險。";
+            }
+
+            if (yearAssessment.HasFavorable || currentAssessment.HasFavorable) {
+                return period == PeriodScope.LiuNian
+                    ? "大運主背景仍偏忌神，流年只能提供短期補強；可小步調整，不宜把一年好轉解讀成十年背景已翻轉。"
+                    : "大運主背景仍偏忌神；流年或流月雖有短期補強，也不宜反客為主，重大行動應保守。";
+            }
+
+            return "大運與短期訊號都偏失衡方向，宜保守安排、降低負荷，等待較有支撐的時間窗口。";
+        }
+
         private void CreatePeriodDesc(
             BaZiInfo info,
             DaYun daYun,
+            LiuNian liuNian,
             ShiShen ganYun,
             ShiShen zhiYun,
             PeriodScope period,
             System.Text.StringBuilder html
         ) {
-            if (daYun is null)
-                return;
-            var description = new System.Text.StringBuilder();
-            description.Append("<span>");
-            /* 取得此期間是走什麼運 */
             var gy = ganYun.ToCombined();
             var zy = zhiYun.ToCombined();
-            /* 依照格局來判斷是否好運 */
-            if (daYun.IsGoodYun) {
-                if (info.StrengthStatus == GeJu.ShenQiang) {
-                    var goodGy = (gy == ShiShen.Cai) || (gy == ShiShen.GuanSha) || (gy == ShiShen.ShihShang);
-                    var goodZy = (zy == ShiShen.Cai) || (zy == ShiShen.GuanSha) || (zy == ShiShen.ShihShang);
-                    description.Append(CreatePeriodByGoodYun(info.Gender, gy, zy, info.StrengthStatus == GeJu.ShenQiang));
-                    if (!goodGy && !goodZy)
-                        description.Append("。今年流年運勢不佳，但因處在好的十年大運中，可以降低不順感，只要撐過今年相信就會好轉！");
-                    else if (!goodGy || !goodZy)
-                        description.Append("。今年流年運勢有高也有低，但因處在好的十年大運中，可以降低不順感，只要撐過今年相信就會好轉！");
-                } else if (info.StrengthStatus == GeJu.ShenRuo) {
-                    var goodGy = (gy == ShiShen.Yin) || (gy == ShiShen.BiJie);
-                    var goodZy = (zy == ShiShen.Yin) || (zy == ShiShen.BiJie);
-                    description.Append(CreatePeriodByGoodYun(info.Gender, gy, zy, info.StrengthStatus == GeJu.ShenQiang));
-                    if (!goodGy && !goodZy)
-                        description.Append("。今年流年運勢不佳，但因處在好的十年大運中，可以降低不順感，只要撐過今年相信就會好轉！");
-                    else if (!goodGy || !goodZy)
-                        description.Append("。今年流年運勢有高也有低，但因處在好的十年大運中，可以降低不順感，只要撐過今年相信就會好轉！");
-                } else if (info.StrengthStatus == GeJu.CongQiang) {
-                    var goodGy = (gy == ShiShen.Yin) || (gy == ShiShen.BiJie);
-                    var goodZy = (zy == ShiShen.Yin) || (zy == ShiShen.BiJie);
-                    if (goodGy && goodZy)
-                        description.Append("流年能量持續加強你的運，整體做什麼都順");
-                    else if (!goodGy && !goodZy)
-                        description.Append("流年能量削弱運勢，做什麼都感覺卡卡、不順，只要撐過今年一切就會好轉");
-                    else
-                        description.Append("流年能量有加強也有削弱，偶爾好運偶爾壞運，但整體來說運勢平穩");
-                } else if (info.StrengthStatus == GeJu.CongRuo) {
-                    var goodGy = (gy == ShiShen.Cai) || (gy == ShiShen.GuanSha) || (gy == ShiShen.ShihShang);
-                    var goodZy = (zy == ShiShen.Cai) || (zy == ShiShen.GuanSha) || (zy == ShiShen.ShihShang);
-                    if (goodGy && goodZy)
-                        description.Append("流年能量持續加強你的運，整體做什麼都順");
-                    else if (!goodGy && !goodZy)
-                        description.Append("流年能量削弱運勢，做什麼都感覺卡卡、不順，只要撐過今年一切就會好轉");
-                    else
-                        description.Append("流年能量有加強也有削弱，偶爾好運偶爾壞運，但整體來說運勢平穩");
-                }
-            } else {
-                if (info.StrengthStatus == GeJu.ShenQiang) {
-                    var goodGy = (gy == ShiShen.Cai) || (gy == ShiShen.GuanSha) || (gy == ShiShen.ShihShang);
-                    var goodZy = (zy == ShiShen.Cai) || (zy == ShiShen.GuanSha) || (zy == ShiShen.ShihShang);
-                    description.Append(CreatePeriodByGoodYun(info.Gender, gy, zy, info.StrengthStatus == GeJu.ShenQiang));
-                    if (goodGy && goodZy)
-                        description.Append("。雖處在壞的十年大運中，但今年流年運勢不錯，好好記住身體與心靈的感覺，未來遇到低潮時可更有力氣度過！");
-                    else if (!goodGy && !goodZy)
-                        description.Append("。今年流年運勢不佳，且處在壞的十年大運中，不順感會較為嚴重，多注意身心靈健康");
-                    else
-                        description.Append("。今年流年運勢有高也有低，但因處在壞的十年大運中，低潮時多沉澱並學習，未來再次遇到低潮時便知如何度過！");
-                } else if (info.StrengthStatus == GeJu.ShenRuo) {
-                    var goodGy = (gy == ShiShen.Yin) || (gy == ShiShen.BiJie);
-                    var goodZy = (zy == ShiShen.Yin) || (zy == ShiShen.BiJie);
-                    description.Append(CreatePeriodByGoodYun(info.Gender, gy, zy, info.StrengthStatus == GeJu.ShenQiang));
-                    if (goodGy && goodZy)
-                        description.Append("。雖處在壞的十年大運中，但今年流年運勢不錯，好好記住身體與心靈的感覺，未來遇到低潮時可更有力氣度過！");
-                    else if (!goodGy && !goodZy)
-                        description.Append("。今年流年運勢不佳，且處在壞的十年大運中，不順感會較為嚴重，多注意身心靈健康");
-                    else
-                        description.Append("。今年流年運勢有高也有低，但因處在壞的十年大運中，低潮時多沉澱並學習，未來再次遇到低潮時便知如何度過！");
-                } else if (info.StrengthStatus == GeJu.CongQiang) {
-                    var goodGy = (gy == ShiShen.Yin) || (gy == ShiShen.BiJie);
-                    var goodZy = (zy == ShiShen.Yin) || (zy == ShiShen.BiJie);
-                    if (goodGy && goodZy)
-                        description.Append("。雖處在壞的十年大運中，但流年能量持續加強你的運，今年做什麼都順");
-                    else if (!goodGy && !goodZy)
-                        description.Append("。流年能量削弱運勢，且處在壞的十年大運中，做什麼都感覺卡卡、不順，多注意身心靈健康");
-                    else
-                        description.Append("。流年能量有加強也有削弱，但因處在壞的十年大運中，低潮時多沉澱並學習，未來再次遇到低潮時便知如何度過！");
-                } else if (info.StrengthStatus == GeJu.CongRuo) {
-                    var goodGy = (gy == ShiShen.Cai) || (gy == ShiShen.GuanSha) || (gy == ShiShen.ShihShang);
-                    var goodZy = (zy == ShiShen.Cai) || (zy == ShiShen.GuanSha) || (zy == ShiShen.ShihShang);
-                    if (goodGy && goodZy)
-                        description.Append("。雖處在壞的十年大運中，但流年能量持續加強你的運，今年做什麼都順");
-                    else if (!goodGy && !goodZy)
-                        description.Append("。流年能量削弱運勢，且處在壞的十年大運中，做什麼都感覺卡卡、不順，多注意身心靈健康");
-                    else
-                        description.Append("。流年能量有加強也有削弱，但因處在壞的十年大運中，低潮時多沉澱並學習，未來再次遇到低潮時便知如何度過！");
-                }
+            var daYunContext = EvaluateDaYunContext(info, daYun, liuNian.Year);
+            var yearAssessment = EvaluatePeriodDirection(info, daYunContext, liuNian);
+            var currentAssessment = EvaluatePeriodDirection(info, daYunContext, gy, zy);
+            var periodLabel = period == PeriodScope.LiuNian ? "流年" : "流月";
+            var eventDescription = CreatePeriodByGoodYun(
+                info.Gender,
+                gy,
+                zy,
+                UsesExhaustingPeriodDirection(info, daYunContext)
+            );
+
+            html.AppendLine($"<span>{AdaptPeriodDescription(eventDescription, period)}</span>");
+            html.AppendLine("<ul class=\"mb-0 mt-2\">");
+            html.AppendLine($"    <li><strong>大運背景：</strong>{DescribeDaYunContext(info, daYunContext)}</li>");
+            if (period == PeriodScope.LiuYue) {
+                html.AppendLine($"    <li><strong>流年背景：</strong>{DescribePeriodDirection(info, daYunContext, yearAssessment, "流年")}</li>");
             }
-            description.Append("</span>");
-            html.Append(AdaptPeriodDescription(description.ToString(), period));
+            html.AppendLine($"    <li><strong>{periodLabel}判讀：</strong>{DescribePeriodDirection(info, daYunContext, currentAssessment, periodLabel)}</li>");
+            html.AppendLine($"    <li><strong>綜合：</strong>{DescribeLayeredPeriodResult(info, daYunContext, yearAssessment, currentAssessment, period)}</li>");
+            html.AppendLine("</ul>");
         }
 
         private static string AdaptPeriodDescription(string description, PeriodScope period) {
@@ -1312,11 +1425,12 @@ namespace BaZi.Services {
                 html.AppendLine(@"    </div>");
             }
             html.AppendLine(@"    <div class=""analysis-item mb-3"">");
-            var phase = daYun.GetPhase(targetYear);
-            var ganYun = daYun.Gan.ToShiShen(info.DayZhu.Gan);
-            var zhiYun = daYun.Zhi.ToShiShen(info.DayZhu.Gan);
+            var daYunContext = EvaluateDaYunContext(info, daYun, targetYear);
+            var phase = daYunContext.Phase;
             var selectedYun = daYun.GetPrimaryTenGod(info.DayZhu.Gan, targetYear);
-            var secondaryYun = phase == DaYunPhase.FirstFiveYears ? zhiYun : ganYun;
+            var secondaryYun = phase == DaYunPhase.FirstFiveYears
+                ? daYun.Zhi.ToShiShen(info.DayZhu.Gan)
+                : daYun.Gan.ToShiShen(info.DayZhu.Gan);
             var selectedYunDisplay = FormatTenGod(info, selectedYun, selectedYun.ToYunString());
             var secondaryYunDisplay = FormatTenGod(info, secondaryYun, secondaryYun.ToYunString());
             var ganDisplay = FormatElement(daYun.Gan.ToWuXing(), daYun.Gan.ToGanString());
@@ -1329,18 +1443,21 @@ namespace BaZi.Services {
             html.AppendLine($"            <div>{targetYear} 年位於{phaseText}，主要走 {selectedYunDisplay}；次要能量為 {secondaryYunDisplay}。</div>");
             html.AppendLine("        </div>");
             html.AppendLine("        <div class=\"alert alert-info analysis-item-explanation mb-0\">");
-            CreateYunDesc(info, daYun, selectedYun, html);
+            CreateYunDesc(info, selectedYun, html);
+            html.AppendLine($"<div class=\"mt-2\">{DescribeDaYunContext(info, daYunContext)}</div>");
             html.AppendLine("        </div>");
             html.AppendLine(@"    </div>");
 
             var nextDaYun = info.DaYunList.FirstOrDefault(x => x.StartYear > daYun.StartYear);
             if (nextDaYun != null && targetYear == nextDaYun.StartYear - 1) {
                 html.AppendLine(@"    <div class=""analysis-item mb-3"">");
-                var nextYun = nextDaYun.Gan.ToShiShen(info.DayZhu.Gan);
+                var nextDaYunContext = EvaluateDaYunContext(info, nextDaYun, nextDaYun.StartYear);
+                var nextYun = nextDaYun.GetPrimaryTenGod(info.DayZhu.Gan, nextDaYun.StartYear);
                 var nextYunDisplay = FormatTenGod(info, nextYun, nextYun.ToYunString());
                 html.Append($"        <div class=\"analysis-item-main\"><strong class=\"text-danger\">[明年切換大運]</strong> {nextDaYun.StartYear} 年～{nextDaYun.EndYear} 年；新大運前五年以天干為主，先走 {nextYunDisplay}。</div>");
                 html.AppendLine("        <div class=\"alert alert-warning analysis-item-explanation mb-0\">");
-                CreateYunDesc(info, nextDaYun, nextYun, html);
+                CreateYunDesc(info, nextYun, html);
+                html.AppendLine($"<div class=\"mt-2\">{DescribeDaYunContext(info, nextDaYunContext)}</div>");
                 html.AppendLine("        </div>");
                 html.AppendLine(@"    </div>");
             }
@@ -1358,6 +1475,7 @@ namespace BaZi.Services {
             var html = GetPeriodHtml(
                 info,
                 daYun,
+                liuNian,
                 liuNian,
                 $"{targetYear} 流年分析",
                 $"{liuNian.Year} ",
@@ -1380,6 +1498,7 @@ namespace BaZi.Services {
             var html = GetPeriodHtml(
                 info,
                 daYun,
+                liuNian,
                 liuYue,
                 $"{targetYear} {liuYue.MonthInChinese}月流月分析",
                 $"{targetYear} 年 {liuYue.MonthInChinese}月 ",
@@ -1432,8 +1551,8 @@ namespace BaZi.Services {
             PeriodScope period
         ) {
             var html = new System.Text.StringBuilder();
-            AppendWealthCareerCard(info, daYun, periodGanZhi, period, html);
-            AppendRelationshipCard(info, daYun, periodGanZhi, period, html);
+            AppendWealthCareerCard(info, daYun, liuNian, periodGanZhi, period, html);
+            AppendRelationshipCard(info, daYun, liuNian, periodGanZhi, period, html);
             AppendChildTimingCard(info, daYun, liuNian, periodGanZhi, period, html);
             AppendHealthCard(info, daYun, liuNian, periodGanZhi, period, html);
             return html.ToString();
@@ -1442,6 +1561,7 @@ namespace BaZi.Services {
         private static void AppendWealthCareerCard(
             BaZiInfo info,
             DaYun daYun,
+            LiuNian liuNian,
             IGanZhi periodGanZhi,
             PeriodScope period,
             System.Text.StringBuilder html
@@ -1458,13 +1578,25 @@ namespace BaZi.Services {
             var ganHasCareer = ganElement == careerElement;
             var zhiHasCareer = CareerBranches[info.RiZhu].Contains(periodGanZhi.Zhi);
             var periodLabel = period == PeriodScope.LiuNian ? "本年" : "本月";
+            var daYunContext = EvaluateDaYunContext(info, daYun, liuNian.Year);
+            var currentAssessment = EvaluatePeriodDirection(info, daYunContext, periodGanZhi);
             var ganDisplay = FormatElement(ganElement, periodGanZhi.Gan.ToGanString());
             var zhiDisplay = FormatElement(zhiElement, periodGanZhi.Zhi.ToZhiString());
-            var ganTenGod = FormatTopicTenGod(periodGanZhi.Gan.ToShiShen(info.DayZhu.Gan));
-            var zhiTenGod = FormatTopicTenGod(periodGanZhi.Zhi.ToShiShen(info.DayZhu.Gan));
-            var wealthStar = FormatTopicTenGod(ShiShen.Cai);
-            var outputStar = FormatTopicTenGod(ShiShen.ShihShang);
-            var careerStar = FormatTopicTenGod(ShiShen.GuanSha);
+            var ganTenGod = FormatEffectiveTenGod(info, daYunContext, periodGanZhi.Gan.ToShiShen(info.DayZhu.Gan));
+            var zhiTenGod = FormatEffectiveTenGod(info, daYunContext, periodGanZhi.Zhi.ToShiShen(info.DayZhu.Gan));
+            var wealthStar = FormatEffectiveTenGod(info, daYunContext, ShiShen.Cai);
+            var outputStar = FormatEffectiveTenGod(info, daYunContext, ShiShen.ShihShang);
+            var careerStar = FormatEffectiveTenGod(info, daYunContext, ShiShen.GuanSha);
+            var exhaustingSignalsAreFavorable = IsEffectivePeriodFavorable(
+                info,
+                daYunContext,
+                ShiShen.Cai
+            );
+            var opportunityAlertClass = (currentAssessment.HasFavorable, currentAssessment.HasUnfavorable) switch {
+                (true, false) => "alert-success",
+                (false, true) => "alert-warning",
+                _ => "alert-info"
+            };
 
             html.AppendLine("<div class=\"card analysis-card p-3 mt-3\">");
             html.AppendLine("    <h5 class=\"card-title analysis-card-title\"><i class=\"fa-solid fa-coins me-2\"></i>財富與事業</h5>");
@@ -1477,27 +1609,41 @@ namespace BaZi.Services {
             html.AppendLine("    </div>");
             html.AppendLine("    <div class=\"analysis-item mb-3\">");
             html.AppendLine("        <strong class=\"analysis-item-main\">機會判讀</strong>");
-            html.AppendLine("        <div class=\"alert alert-success analysis-item-explanation mb-0\">");
+            html.AppendLine($"        <div class=\"alert {opportunityAlertClass} analysis-item-explanation mb-0\">");
             html.AppendLine("        <ul class=\"mb-0\">");
 
-            if (ganHasWealth && zhiHasWealth) {
-                html.AppendLine($"            <li>{periodLabel}天干、地支皆見{wealthStar}，財運機會較集中、明顯；並非一定發財，僅表示機會較大。</li>");
+            if (ganHasWealth && zhiHasWealth && exhaustingSignalsAreFavorable) {
+                html.AppendLine($"            <li>{periodLabel}天干、地支皆見{wealthStar}，且落在當期喜用方向，財務機會較集中；並非一定發財，仍要檢查現金流與風險。</li>");
+            } else if (ganHasWealth && zhiHasWealth) {
+                html.AppendLine($"            <li>{periodLabel}天干、地支皆見{wealthStar}，但落在當期忌神方向；財務議題會較集中，也可能表現為必要支出、負債或因財承壓，不可直接解讀為得財。</li>");
             } else if ((ganHasWealth || zhiHasWealth) && (ganHasOutput || zhiHasOutput)) {
-                html.AppendLine($"            <li>{periodLabel}同見{wealthStar}與{outputStar}，形成「{outputStar}生{wealthStar}」，適合把專業、作品或提案轉成可驗證的收入機會。</li>");
+                if (exhaustingSignalsAreFavorable) {
+                    html.AppendLine($"            <li>{periodLabel}同見{wealthStar}與{outputStar}，形成「{outputStar}生{wealthStar}」，且為當期喜用方向；可把專業、作品或提案轉成小規模、可驗證的收入機會。</li>");
+                } else {
+                    html.AppendLine($"            <li>{periodLabel}形式上同見{outputStar}生{wealthStar}，但兩者皆為當期忌神方向；較可能是為財奔波、投入過量或身心負荷，不能單據「食傷生財」就評為可得財。</li>");
+                }
             } else if (ganHasWealth || zhiHasWealth) {
-                html.AppendLine($"            <li>{periodLabel}見{wealthStar}，代表資源與金錢議題較容易被引動；這是機會，不等於必然獲利。</li>");
+                html.AppendLine(exhaustingSignalsAreFavorable
+                    ? $"            <li>{periodLabel}見{wealthStar}，且為當期喜用方向，資源與金錢機會較容易被引動；這是機會，不等於必然獲利。</li>"
+                    : $"            <li>{periodLabel}見{wealthStar}，但為當期忌神方向，金錢議題虽會被引動，也可能先表現為支出、負擔或財多身弱；不宜擴大風險。</li>");
             } else if (ganHasOutput || zhiHasOutput) {
-                html.AppendLine($"            <li>{periodLabel}以{outputStar}訊號為主，可透過技術、表達、內容或成果輸出間接帶動財；相較於直接{wealthStar}，力道較為間接。</li>");
+                html.AppendLine(exhaustingSignalsAreFavorable
+                    ? $"            <li>{periodLabel}以{outputStar}訊號為主，且為當期喜用方向；可透過技術、表達、內容或成果輸出間接帶動財。</li>"
+                    : $"            <li>{periodLabel}以{outputStar}訊號為主，但為當期忌神方向；容易產出想法多、執行消耗大的狀況，先控制工作量，不宜將輸出直接推論成獲利。</li>");
             } else {
                 html.AppendLine($"            <li>{periodLabel}未見明顯{wealthStar}或{outputStar}主訊號，表示近期財運較無特殊狀況，以正財穩定收入為主。</li>");
             }
 
-            if (ganHasCareer && zhiHasWealth) {
+            if (ganHasCareer && zhiHasWealth && exhaustingSignalsAreFavorable) {
                 html.AppendLine($"            <li>{periodLabel}形成「{careerStar}天干 × {wealthStar}地支」工作訊號，可優先準備面試、提案、簽約或重要工作決策。</li>");
             } else if (ganHasCareer || zhiHasCareer) {
-                html.AppendLine($"            <li>{periodLabel}見{careerStar}工作訊號，職責、上司、客戶或外在要求可能增加；準備充分時可主動爭取機會。</li>");
-            } else if (ganHasWealth || zhiHasWealth) {
+                html.AppendLine(exhaustingSignalsAreFavorable
+                    ? $"            <li>{periodLabel}見{careerStar}工作訊號，職責、上司、客戶或外在要求可能增加；準備充分時可主動爭取機會。</li>"
+                    : $"            <li>{periodLabel}見{careerStar}，但為當期忌神方向；較可能先表現為職責、上司、客戶或制度壓力，應先縮小承諾並確認資源。</li>");
+            } else if ((ganHasWealth || zhiHasWealth) && exhaustingSignalsAreFavorable) {
                 html.AppendLine($"            <li>{wealthStar}可生{careerStar}，若有轉職或升遷計畫，可把{periodLabel}列為候選窗口，再以職缺、能力與契約條件篩選。</li>");
+            } else if (ganHasWealth || zhiHasWealth) {
+                html.AppendLine($"            <li>{wealthStar}虽可生{careerStar}，但目前財星為當期忌神方向；金錢壓力可能連動工作負擔，不宜只因見財就推論升遷或轉職有利。</li>");
             } else {
                 html.AppendLine($"            <li>{periodLabel}未見明顯{careerStar}工作訊號，表示近期工作上較無特殊狀況，宜穩定累積履歷、技能與可量化成果。</li>");
             }
@@ -1508,7 +1654,7 @@ namespace BaZi.Services {
             html.AppendLine("    <div class=\"analysis-item mb-3\">");
             html.AppendLine("        <strong class=\"analysis-item-main\">承接與行動</strong>");
             html.AppendLine("        <div class=\"alert alert-info analysis-item-explanation mb-0\">");
-            html.AppendLine($"        <span>{GetCapacityAdvice(info, daYun)}</span>");
+            html.AppendLine($"        <span>{GetCapacityAdvice(info, daYun, liuNian, periodGanZhi, period)}</span>");
             html.AppendLine("        </div>");
             html.AppendLine("    </div>");
             AppendTopicNotice(html, "財務與職涯內容為「意象」、「傾向」或「機會」，不應單獨作為投資、借貸、創業或轉職決策依據。");
@@ -1518,6 +1664,7 @@ namespace BaZi.Services {
         private static void AppendRelationshipCard(
             BaZiInfo info,
             DaYun daYun,
+            LiuNian liuNian,
             IGanZhi periodGanZhi,
             PeriodScope period,
             System.Text.StringBuilder html
@@ -1531,16 +1678,23 @@ namespace BaZi.Services {
             var spouseBranches = SpouseBranches[(info.RiZhu, info.Gender)];
             var ganHasSpouse = ganElement == spouseElement;
             var zhiHasSpouse = spouseBranches.Contains(periodGanZhi.Zhi);
-            var daYunHasSpouse = daYun.Gan.ToWuXing() == spouseElement
-                || spouseBranches.Contains(daYun.Zhi);
+            var daYunContext = EvaluateDaYunContext(info, daYun, liuNian.Year);
+            var daYunGanHasSpouse = daYun.Gan.ToWuXing() == spouseElement;
+            var daYunZhiHasSpouse = spouseBranches.Contains(daYun.Zhi);
+            var daYunPrimaryHasSpouse = daYunContext.Phase == DaYunPhase.FirstFiveYears
+                ? daYunGanHasSpouse
+                : daYunZhiHasSpouse;
+            var daYunSecondaryHasSpouse = daYunContext.Phase == DaYunPhase.FirstFiveYears
+                ? daYunZhiHasSpouse
+                : daYunGanHasSpouse;
             var sameZodiacGroup = period == PeriodScope.LiuNian
                 && IsSameSanHeGroup(info.YearZhu.Zhi, periodGanZhi.Zhi);
             var periodLabel = period == PeriodScope.LiuNian ? "本年" : "本月";
             var ganDisplay = FormatElement(ganElement, periodGanZhi.Gan.ToGanString());
             var zhiDisplay = FormatElement(zhiElement, periodGanZhi.Zhi.ToZhiString());
             var birthYearBranch = FormatElement(info.YearZhu.Zhi.ToWuXing(), info.YearZhu.Zhi.ToZhiString());
-            var spouseStar = FormatTopicTenGod(spouseShiShen);
-            var peerStar = FormatTopicTenGod(ShiShen.BiJie);
+            var spouseStar = FormatEffectiveTenGod(info, daYunContext, spouseShiShen);
+            var peerStar = FormatEffectiveTenGod(info, daYunContext, ShiShen.BiJie);
 
             // 待核對：筆記 4-5 只明定「流年」夫妻星＋比劫為桃花危機，沒有把公式延伸到流月。
             // 因此流月只顯示夫妻星時機，不把相同組合直接判成感情競爭訊號。
@@ -1566,8 +1720,12 @@ namespace BaZi.Services {
                 html.AppendLine($"            <li>{periodLabel}未見夫妻星（{spouseStar}），較無桃花狀況</li>");
             }
 
-            if (daYunHasSpouse) {
-                html.AppendLine($"            <li>目前大運見夫妻星（{spouseStar}），十年背景與短期訊號均可觀察；不代表大運期間內必然交往或結婚。</li>");
+            if (daYunPrimaryHasSpouse) {
+                var phaseLabel = daYunContext.Phase == DaYunPhase.FirstFiveYears ? "前五年天干" : "後五年地支";
+                html.AppendLine($"            <li>目前大運的{phaseLabel}主作用見夫妻星（{spouseStar}），長期背景與短期訊號可一併觀察；不代表必然交往或結婚。</li>");
+            } else if (daYunSecondaryHasSpouse) {
+                var strongerPhase = daYunContext.Phase == DaYunPhase.FirstFiveYears ? "後五年地支" : "前五年天干";
+                html.AppendLine($"            <li>此柱大運另一側含夫妻星（{spouseStar}），但目前不是主作用；以{strongerPhase}階段較為明顯。</li>");
             }
 
             if (sameZodiacGroup) {
@@ -1584,10 +1742,17 @@ namespace BaZi.Services {
                 html.AppendLine("    </div>");
             }
 
-            var (raDesc, raAccept) = GetRelationshipAdvice(info, daYun);
+            var (raDesc, raAccept) = GetRelationshipAdvice(
+                info,
+                daYun,
+                liuNian,
+                periodGanZhi,
+                period,
+                ganHasSpouse || zhiHasSpouse
+            );
             html.AppendLine("    <div class=\"analysis-item mb-3\">");
             html.AppendLine("        <strong class=\"analysis-item-main\">承接與相處</strong>");
-            html.AppendLine("        <div class=\"alert alert-info analysis-item-explanation mb-0\">");
+            html.AppendLine($"        <div class=\"alert {(raAccept ? "alert-success" : "alert-info")} analysis-item-explanation mb-0\">");
             if (raAccept) {
                 html.AppendLine($"        <span>{raDesc} 單身者可增加安全且合意的認識機會；已有對象者可進一步討論關係或規劃未來，但仍需互相尊重，不能用日期向對方施壓。</span>");
             } else {
@@ -1622,7 +1787,8 @@ namespace BaZi.Services {
                 ? daYun.Gan.ToWuXing()
                 : daYun.Zhi.ToWuXing();
             var daYunHasChildStar = daYunPrimaryElement == childElement;
-            var childStarText = FormatTopicTenGod(childStar);
+            var daYunContext = EvaluateDaYunContext(info, daYun, liuNian.Year);
+            var childStarText = FormatEffectiveTenGod(info, daYunContext, childStar);
             var childElementText = FormatElement(childElement);
             var ganDisplay = FormatElement(periodGanZhi.Gan.ToWuXing(), periodGanZhi.Gan.ToGanString());
             var zhiDisplay = FormatElement(periodGanZhi.Zhi.ToWuXing(), periodGanZhi.Zhi.ToZhiString());
@@ -1666,10 +1832,6 @@ namespace BaZi.Services {
             var counts = CountChartElements(info);
             var minimumCount = counts.Values.Min();
             var weakElements = ElementOrder.Where(element => counts[element] == minimumCount).ToArray();
-            var periodElements = new[] {
-            periodGanZhi.Gan.ToWuXing(),
-            periodGanZhi.Zhi.ToWuXing()
-        };
             var countDescription = string.Join("、", ElementOrder.Select(element => $"{FormatElement(element)} {counts[element]}"));
             var weakDescription = string.Join("；", weakElements.Select(element => $"{FormatElement(element)}：{HealthParts[element]}"));
             var periodLabel = period == PeriodScope.LiuNian ? "本年" : "本月";
@@ -1689,7 +1851,7 @@ namespace BaZi.Services {
             html.AppendLine("    <div class=\"analysis-item mb-3\">");
             html.AppendLine($"        <div class=\"analysis-item-main\"><strong>{periodLabel}健康氣象</strong> · {periodLabel}<strong>{ganDisplay}{zhiDisplay}</strong></div>");
             html.AppendLine("        <div class=\"alert alert-warning analysis-item-explanation mb-0\">");
-            html.AppendLine($"        <span>{GetHealthPeriodAdvice(info, weakElements, periodElements, periodLabel)}</span>");
+            html.AppendLine(GetHealthPeriodAdvice(info, daYun, liuNian, periodGanZhi, period, weakElements));
             html.AppendLine("        </div>");
             html.AppendLine("    </div>");
 
@@ -1703,86 +1865,250 @@ namespace BaZi.Services {
             html.AppendLine("</div>");
         }
 
-        private static string GetCapacityAdvice(BaZiInfo info, DaYun daYun) {
-            // 待核對：筆記 3-4 對從格轉職有「成格比照身強」與「從強／從弱各自順勢」兩種衝突口徑。
-            // 外部八字日元法資料只支持從格宜順勢的通則，故此處不採用「從強成格仍選財、官殺」的未確認規則。
-            var wealthStar = FormatTopicTenGod(ShiShen.Cai);
-            var careerStar = FormatTopicTenGod(ShiShen.GuanSha);
-            var outputStar = FormatTopicTenGod(ShiShen.ShihShang);
-            var sealStar = FormatTopicTenGod(ShiShen.Yin);
-            var peerStar = FormatTopicTenGod(ShiShen.BiJie);
-            return info.StrengthStatus switch {
-                GeJu.ShenQiang => $"身強有較多承接力，可在{wealthStar}或{careerStar}承接財務與工作機會，但仍應設定預算、停損與契約檢查。",
-                GeJu.ShenRuo when IsSupportiveDaYun(info, daYun) => $"身弱但目前大運以{sealStar}、{peerStar}幫扶，可承接財務與工作機會；合作仍須寫清權責、出資與退出機制。",
-                GeJu.ShenRuo => $"身弱且目前大運仍偏{wealthStar}、{careerStar}或{outputStar}，應留意{wealthStar}過多而身弱與工作壓力；先穩定現金流、健康與支援資源，再擴張或轉職。",
-                GeJu.CongQiang or GeJu.CongRuo => "從格以大運、流年來判斷，輔以實際事件回驗。",
+        private static string GetCapacityAdvice(
+            BaZiInfo info,
+            DaYun daYun,
+            LiuNian liuNian,
+            IGanZhi periodGanZhi,
+            PeriodScope period
+        ) {
+            var daYunContext = EvaluateDaYunContext(info, daYun, liuNian.Year);
+            var yearAssessment = EvaluatePeriodDirection(info, daYunContext, liuNian);
+            var currentAssessment = EvaluatePeriodDirection(info, daYunContext, periodGanZhi);
+            var wealthStar = FormatEffectiveTenGod(info, daYunContext, ShiShen.Cai);
+            var careerStar = FormatEffectiveTenGod(info, daYunContext, ShiShen.GuanSha);
+            var outputStar = FormatEffectiveTenGod(info, daYunContext, ShiShen.ShihShang);
+            var sealStar = FormatTenGod(info, ShiShen.Yin);
+            var peerStar = FormatTenGod(info, ShiShen.BiJie);
+            var layers = new System.Text.StringBuilder();
+            layers.Append(DescribeDaYunContext(info, daYunContext));
+            layers.Append(DescribePeriodDirection(info, daYunContext, yearAssessment, "流年"));
+            if (period == PeriodScope.LiuYue) {
+                layers.Append(DescribePeriodDirection(info, daYunContext, currentAssessment, "流月"));
+            }
+            layers.Append(DescribeLayeredPeriodResult(info, daYunContext, yearAssessment, currentAssessment, period));
+
+            var action = info.StrengthStatus switch {
+                GeJu.ShenRuo when daYunContext.PrimaryIsFavorable => $"大運主作用已用{sealStar}、{peerStar}幫扶，{wealthStar}、{careerStar}或{outputStar}可作為當期機會方向；仍須控制資金與工作負荷。",
+                GeJu.ShenRuo => $"大運主作用仍未扶起日主，{wealthStar}、{careerStar}或{outputStar}較可能先形成負荷；優先穩定現金流、健康與支援資源。",
+                GeJu.ShenQiang => $"{wealthStar}、{careerStar}與{outputStar}可作為耗、剋、洩的機會方向；仍應設定預算、停損與契約檢查。",
+                GeJu.CongQiang or GeJu.CongRuo => "從格只依順勢／破格方向暫列，不因看見財星就直接推論得財。",
                 _ => "請先確認格局與大運背景，再判斷是否能承接機會。"
             };
+            return $"{layers} {action}";
         }
 
-        private static (string desc, bool accept) GetRelationshipAdvice(BaZiInfo info, DaYun daYun) {
-            var spouseStar = FormatTopicTenGod(
-                info.Gender == Sex.Male ? ShiShen.Cai : ShiShen.GuanSha
-            );
-            var sealStar = FormatTopicTenGod(ShiShen.Yin);
-            var peerStar = FormatTopicTenGod(ShiShen.BiJie);
-            return info.StrengthStatus switch {
-                GeJu.ShenQiang => ($"身強可直接觀察夫妻星（{spouseStar}）時間窗，並把能量轉為清楚表達、界線與具體行動。", true),
-                GeJu.ShenRuo when IsSupportiveDaYun(info, daYun) => ($"身弱但目前{sealStar}、{peerStar}大運已有幫扶，可承接感情機會。", true),
-                GeJu.ShenRuo => ($"身弱且大運仍耗洩時，夫妻星（{spouseStar}）可能成為壓力；先建立身心穩定、支持系統與關係界線。", false),
-                GeJu.CongQiang or GeJu.CongRuo => ($"從格的桃花時機仍找夫妻星（{spouseStar}），但承接方式以大運、流年的喜用神為準。", false),
-                _ => ("請先確認格局與大運背景，再判斷承接方式。", false)
-            };
+        private static (string Desc, bool Accept) GetRelationshipAdvice(
+            BaZiInfo info,
+            DaYun daYun,
+            LiuNian liuNian,
+            IGanZhi periodGanZhi,
+            PeriodScope period,
+            bool hasSpouseSignal
+        ) {
+            var daYunContext = EvaluateDaYunContext(info, daYun, liuNian.Year);
+            var yearAssessment = EvaluatePeriodDirection(info, daYunContext, liuNian);
+            var currentAssessment = EvaluatePeriodDirection(info, daYunContext, periodGanZhi);
+            var spouseTenGod = info.Gender == Sex.Male ? ShiShen.Cai : ShiShen.GuanSha;
+            var spouseStar = FormatEffectiveTenGod(info, daYunContext, spouseTenGod);
+            var spouseIsFavorable = IsEffectivePeriodFavorable(info, daYunContext, spouseTenGod);
+            var canAccept = hasSpouseSignal
+                && !info.RequiresStrengthVerification
+                && daYunContext.PrimaryIsFavorable
+                && yearAssessment.HasFavorable
+                && !yearAssessment.HasUnfavorable
+                && currentAssessment.HasFavorable
+                && !currentAssessment.HasUnfavorable
+                && spouseIsFavorable;
+            var layers = new System.Text.StringBuilder();
+            layers.Append(DescribeDaYunContext(info, daYunContext));
+            layers.Append(DescribePeriodDirection(info, daYunContext, yearAssessment, "流年"));
+            if (period == PeriodScope.LiuYue) {
+                layers.Append(DescribePeriodDirection(info, daYunContext, currentAssessment, "流月"));
+            }
+
+            if (!hasSpouseSignal) {
+                return ($"{layers}目前期間未直接見夫妻星（{spouseStar}），先以日常互動與關係經營為主。", false);
+            }
+
+            if (canAccept) {
+                return ($"{layers}夫妻星（{spouseStar}）位於當期可承接方向，且大運、流年具支撐。", true);
+            }
+
+            var caution = info.RequiresStrengthVerification
+                ? "疑似從格仍須先用過往事件回驗；目前只把夫妻星視為時間訊號。"
+                : "夫妻星時間窗已出現，但大運、流年或流月的承接條件仍有耗損；先建立身心穩定、支持系統與關係界線。";
+            return ($"{layers}{caution}", false);
+        }
+
+        private sealed record HealthLayerAssessment(
+            IReadOnlyList<WuXing> SupportedWeakElements,
+            IReadOnlyList<WuXing> ChallengedWeakElements
+        ) {
+            public bool HasSupport => SupportedWeakElements.Count > 0;
+
+            public bool HasChallenge => ChallengedWeakElements.Count > 0;
+        }
+
+        private sealed record DaYunHealthAssessment(
+            HealthLayerAssessment Primary,
+            HealthLayerAssessment Secondary
+        ) {
+            public bool HasSupport => Primary.HasSupport
+                || (!Primary.HasChallenge && Secondary.HasSupport);
+
+            public bool HasChallenge => Primary.HasChallenge
+                || (!Primary.HasSupport && Secondary.HasChallenge);
         }
 
         private static string GetHealthPeriodAdvice(
             BaZiInfo info,
-            IReadOnlyCollection<WuXing> weakElements,
-            IReadOnlyCollection<WuXing> periodElements,
-            string periodLabel
+            DaYun daYun,
+            LiuNian liuNian,
+            IGanZhi periodGanZhi,
+            PeriodScope period,
+            IReadOnlyCollection<WuXing> weakElements
         ) {
-            // 待核對：筆記 5-2 的丙寅、癸酉、甲子、乙未等特定流日缺少一致選取理由。
-            // 本卡只使用 5-1 已明定的弱五行生剋與從格順勢規則，不把上述日期反推成流年或流月固定規則。
+            // 待核對：筆記 5-2 的特定流日缺少一致選取理由，此處只採 5-1 的分層規則。
+            var daYunContext = EvaluateDaYunContext(info, daYun, liuNian.Year);
+            var daYunPrimaryElement = daYunContext.Phase == DaYunPhase.FirstFiveYears
+                ? daYun.Gan.ToWuXing()
+                : daYun.Zhi.ToWuXing();
+            var daYunSecondaryElement = daYunContext.Phase == DaYunPhase.FirstFiveYears
+                ? daYun.Zhi.ToWuXing()
+                : daYun.Gan.ToWuXing();
+            var yearElements = new[] { liuNian.Gan.ToWuXing(), liuNian.Zhi.ToWuXing() };
+            var currentElements = new[] { periodGanZhi.Gan.ToWuXing(), periodGanZhi.Zhi.ToWuXing() };
+            var phaseLabel = daYunContext.Phase == DaYunPhase.FirstFiveYears
+                ? "前五年天干為主"
+                : "後五年地支為主";
+            var html = new System.Text.StringBuilder();
+            html.AppendLine("<ul class=\"mb-0\">");
+
             if (info.StrengthStatus is GeJu.CongQiang or GeJu.CongRuo) {
-                var favorableCount = periodElements.Count(info.LikeWuXing.Contains);
-                return favorableCount switch {
-                    2 => $"從格以順勢、成格為健康判讀主軸；{periodLabel}兩側五行皆在目前喜用方向，可視為相對有支撐，但不代表免除健檢與保養。",
-                    0 => $"從格以順勢、破格為主；{periodLabel}兩側五行都偏離目前喜用方向，宜降低過勞與高風險活動，並按實際症狀就醫。",
-                    _ => $"從格在{periodLabel}同時出現順勢與逆勢訊號，宜保守安排作息並用實際身體狀況回驗，不以缺什麼就補什麼。"
-                };
+                html.AppendLine($"    <li><strong>大運背景：</strong>{DescribeCongDaYunHealthLayer(info, daYunPrimaryElement, daYunSecondaryElement, phaseLabel)}</li>");
+                html.AppendLine($"    <li><strong>流年背景：</strong>{DescribeCongHealthLayer(info, yearElements, "流年")}</li>");
+                if (period == PeriodScope.LiuYue) {
+                    html.AppendLine($"    <li><strong>流月窗口：</strong>{DescribeCongHealthLayer(info, currentElements, "流月")}</li>");
+                }
+                html.AppendLine("    <li><strong>綜合：</strong>從格健康判讀以順勢、成格／破格為主，不因短期五行剛好補到命盤缺項就改判；疑似從格仍須用實際健康狀況與過往年份回驗。</li>");
+                html.AppendLine("</ul>");
+                return html.ToString();
             }
 
+            var daYunAssessment = new DaYunHealthAssessment(
+                EvaluateHealthLayer(weakElements, [daYunPrimaryElement]),
+                EvaluateHealthLayer(weakElements, [daYunSecondaryElement])
+            );
+            var yearAssessment = EvaluateHealthLayer(weakElements, yearElements);
+            var currentAssessment = EvaluateHealthLayer(weakElements, currentElements);
+            html.AppendLine($"    <li><strong>大運背景：</strong>{DescribeDaYunHealthLayer(daYunAssessment, phaseLabel)}。</li>");
+            html.AppendLine($"    <li><strong>流年背景：</strong>{DescribeHealthLayer(yearAssessment, "流年")}。</li>");
+            if (period == PeriodScope.LiuYue) {
+                html.AppendLine($"    <li><strong>流月窗口：</strong>{DescribeHealthLayer(currentAssessment, "流月")}。</li>");
+            }
+            html.AppendLine($"    <li><strong>綜合：</strong>{DescribeHealthLayerResult(daYunAssessment, yearAssessment, currentAssessment, period)}</li>");
+            html.AppendLine("</ul>");
+            return html.ToString();
+        }
+
+        private static HealthLayerAssessment EvaluateHealthLayer(
+            IReadOnlyCollection<WuXing> weakElements,
+            IReadOnlyCollection<WuXing> sourceElements
+        ) {
             var supported = weakElements
-                .Where(weakElement => periodElements.Any(element =>
+                .Where(weakElement => sourceElements.Any(element =>
                     element == weakElement || BaZiDefine.Generation[element] == weakElement))
                 .ToArray();
             var challenged = weakElements
-                .Where(weakElement => periodElements.Any(element =>
+                .Where(weakElement => sourceElements.Any(element =>
                     element == BaZiDefine.RestrictBy[weakElement]
                     || element == BaZiDefine.Generation[weakElement]
                     || element == BaZiDefine.Restricting[weakElement]))
                 .ToArray();
-            var supportedText = string.Join("、", supported.Select(element => FormatElement(element)));
-            var challengedText = string.Join("、", challenged.Select(element => FormatElement(element)));
-
-            if (supported.Length > 0 && challenged.Length > 0) {
-                return $"{periodLabel}對弱項同時有補強與剋、洩、耗訊號（補強：{supportedText}；留意：{challengedText}），大運仍是較長期背景。把它當作健康氣象提醒，安排規律作息與必要檢查。";
-            }
-
-            if (challenged.Length > 0) {
-                return $"{periodLabel}對弱項 {challengedText} 出現剋、洩或耗的訊號，需多注意、保養的期間；行程排鬆、充足休息並避免疲勞駕駛。";
-            }
-
-            if (supported.Length > 0) {
-                return $"{periodLabel}對弱項 {supportedText} 有同我或生我的補強訊號，可視為相對好轉或幫助；仍應維持一般預防保健，不因命理加分忽略症狀。";
-            }
-
-            return $"{periodLabel}對本命最弱五行沒有明顯直接補強或剋、洩、耗訊號；維持例行保健，並以實際病史、症狀與檢查結果為準。";
+            return new HealthLayerAssessment(supported, challenged);
         }
 
-        private static bool IsSupportiveDaYun(BaZiInfo info, DaYun daYun) {
-            var daYunMainStar = daYun.Zhi.ToShiShen(info.DayZhu.Gan).ToCombined();
-            return daYunMainStar is ShiShen.Yin or ShiShen.BiJie;
+        private static string DescribeHealthLayer(HealthLayerAssessment assessment, string periodLabel) {
+            var supported = string.Join("、", assessment.SupportedWeakElements.Select(element => FormatElement(element)));
+            var challenged = string.Join("、", assessment.ChallengedWeakElements.Select(element => FormatElement(element)));
+            return (assessment.HasSupport, assessment.HasChallenge) switch {
+                (true, true) => $"{periodLabel}同時補強 {supported}，也對 {challenged} 帶來剋、洩或耗",
+                (true, false) => $"{periodLabel}對弱項 {supported} 有同我或生我的補強",
+                (false, true) => $"{periodLabel}對弱項 {challenged} 帶來剋、洩或耗",
+                _ => $"{periodLabel}對本命最弱五行沒有明顯直接作用"
+            };
+        }
+
+        private static string DescribeDaYunHealthLayer(
+            DaYunHealthAssessment assessment,
+            string phaseLabel
+        ) {
+            var primary = DescribeHealthLayer(assessment.Primary, "主作用");
+            var secondary = DescribeHealthLayer(assessment.Secondary, "次要背景");
+            return $"{phaseLabel}；{primary}；{secondary}。綜合以主作用為優先，次要背景只作加減分";
+        }
+
+        private static string DescribeHealthLayerResult(
+            DaYunHealthAssessment daYun,
+            HealthLayerAssessment liuNian,
+            HealthLayerAssessment current,
+            PeriodScope period
+        ) {
+            var currentRisk = period == PeriodScope.LiuNian ? liuNian.HasChallenge : current.HasChallenge;
+            var currentSupport = period == PeriodScope.LiuNian ? liuNian.HasSupport : current.HasSupport;
+            if (daYun.HasChallenge && liuNian.HasChallenge && currentRisk) {
+                return "大運、流年與目前期間對弱項形成跨層耗損，保養優先級較高；這是注意訊號，不代表必然發病。";
+            }
+
+            if (daYun.HasSupport && currentRisk) {
+                return "大運仍有長期支撐，短期則出現剋、洩或耗；留意當期狀況，但不把短期波動寫成整段大運都差。";
+            }
+
+            if (daYun.HasChallenge && (liuNian.HasSupport || currentSupport)) {
+                return "大運背景較需留意，流年或目前期間提供短期補強；可把握時間檢查、休養或處理既有症狀。";
+            }
+
+            if (daYun.HasSupport || liuNian.HasSupport || currentSupport) {
+                return "目前至少一個時間層對弱項有補強，可視為相對支撐；仍應維持例行保健並依實際症狀就醫。";
+            }
+
+            return "各時間層沒有明顯補強；維持保守作息，並以病史、症狀與檢查結果為準。";
+        }
+
+        private static string DescribeCongHealthLayer(
+            BaZiInfo info,
+            IReadOnlyCollection<WuXing> elements,
+            string periodLabel
+        ) {
+            var favorable = elements.Where(info.LikeWuXing.Contains).Distinct().ToArray();
+            var unfavorable = elements.Where(info.UnlikeWuXing.Contains).Distinct().ToArray();
+            var favorableText = string.Join("、", favorable.Select(element => FormatElement(element)));
+            var unfavorableText = string.Join("、", unfavorable.Select(element => FormatElement(element)));
+            return (favorable.Length, unfavorable.Length) switch {
+                ( > 0, 0) => $"{periodLabel}見 {favorableText}，皆在{FormatFavorabilityLabel(true, "從格依順勢原則列為喜用方向")}",
+                (0, > 0) => $"{periodLabel}見 {unfavorableText}，皆偏{FormatFavorabilityLabel(false, "從格依破格原則列為忌神方向")}",
+                _ => $"{periodLabel}同見喜用的 {favorableText} 與忌神的 {unfavorableText}，順勢與逆勢並存"
+            };
+        }
+
+        private static string DescribeCongDaYunHealthLayer(
+            BaZiInfo info,
+            WuXing primaryElement,
+            WuXing secondaryElement,
+            string phaseLabel
+        ) {
+            var primary = FormatElement(primaryElement);
+            var secondary = FormatElement(secondaryElement);
+            var primaryDirection = FormatFavorabilityLabel(
+                info.LikeWuXing.Contains(primaryElement),
+                "從格依順勢／破格原則判斷大運當期主作用"
+            );
+            var secondaryDirection = FormatFavorabilityLabel(
+                info.LikeWuXing.Contains(secondaryElement),
+                "從格依順勢／破格原則判斷大運當期次要背景"
+            );
+            return $"{phaseLabel}；主作用 {primary} 為{primaryDirection}，次要背景 {secondary} 為{secondaryDirection}；主次不同時不將整段大運寫成全好或全壞。";
         }
 
         private static IReadOnlyDictionary<WuXing, int> CountChartElements(BaZiInfo info) {
@@ -1913,6 +2239,7 @@ namespace BaZi.Services {
         private string GetPeriodHtml(
             BaZiInfo info,
             DaYun daYun,
+            LiuNian liuNian,
             IGanZhi periodGanZhi,
             string title,
             string displayPrefix,
@@ -1947,15 +2274,16 @@ namespace BaZi.Services {
             html.AppendLine(@"    <div class=""analysis-item mb-0"">");
             var ganColor = GetElementColorClass(periodGanZhi.Gan.ToWuXing());
             var zhiColor = GetElementColorClass(periodGanZhi.Zhi.ToWuXing());
-            var ganYunDisplay = FormatTenGod(info, ganYun, ganYun.ToYunString());
-            var zhiYunDisplay = FormatTenGod(info, zhiYun, zhiYun.ToYunString());
+            var daYunContext = EvaluateDaYunContext(info, daYun, liuNian.Year);
+            var ganYunDisplay = FormatEffectiveTenGod(info, daYunContext, ganYun, ganYun.ToYunString());
+            var zhiYunDisplay = FormatEffectiveTenGod(info, daYunContext, zhiYun, zhiYun.ToYunString());
             if (zhiYun.HasFlag(ganYun)) {
                 html.Append($"        <div class=\"analysis-item-main\">{displayPrefix}<strong><span class=\"{ganColor}\">{periodGanZhi.Gan.ToGanString()}</span><span class=\"{zhiColor}\">{periodGanZhi.Zhi.ToZhiString()}</span></strong>{displaySuffix} 走 {zhiYunDisplay}</div>");
             } else {
                 html.Append($"        <div class=\"analysis-item-main\">{displayPrefix}<strong><span class=\"{ganColor}\">{periodGanZhi.Gan.ToGanString()}</span><span class=\"{zhiColor}\">{periodGanZhi.Zhi.ToZhiString()}</span></strong>{displaySuffix} 走 {ganYunDisplay}、{zhiYunDisplay}</div>");
             }
             html.AppendLine("        <div class=\"alert alert-info analysis-item-explanation mb-0\">");
-            CreatePeriodDesc(info, daYun, ganYun, zhiYun, period, html);
+            CreatePeriodDesc(info, daYun, liuNian, ganYun, zhiYun, period, html);
             html.AppendLine("        </div>");
             html.AppendLine(@"    </div>");
             html.AppendLine(@"</div>");
@@ -1976,16 +2304,54 @@ namespace BaZi.Services {
 
         private static string FormatTenGod(BaZiInfo info, ShiShen tenGod, string? displayText = null) {
             var element = GetTenGodElement(info, tenGod);
-            var isFavorable = info.LikeWuXing.Contains(element);
+            return FormatTenGod(
+                tenGod,
+                element,
+                IsOriginalFavorable(info, tenGod),
+                "依本命格局",
+                displayText
+            );
+        }
+
+        private static string FormatEffectiveTenGod(
+            BaZiInfo info,
+            DaYunContextAssessment daYunContext,
+            ShiShen tenGod,
+            string? displayText = null
+        ) {
+            var element = GetTenGodElement(info, tenGod);
+            var basis = info.StrengthStatus switch {
+                GeJu.ShenRuo when daYunContext.PrimaryIsFavorable => "依身弱且大運主作用已幫扶的當期規則",
+                GeJu.CongQiang or GeJu.CongRuo => "依從格順勢／破格規則",
+                _ => "依本命格局與目前大運主作用"
+            };
+            return FormatTenGod(
+                tenGod,
+                element,
+                IsEffectivePeriodFavorable(info, daYunContext, tenGod),
+                basis,
+                displayText
+            );
+        }
+
+        private static string FormatTenGod(
+            ShiShen tenGod,
+            WuXing element,
+            bool isFavorable,
+            string basis,
+            string? displayText
+        ) {
             var stateClass = isFavorable ? "topic-ten-god-favorable" : "topic-ten-god-unfavorable";
             var stateText = isFavorable ? "喜用神（相對有利）" : "忌神（相對不利）";
             var tenGodText = tenGod.ToShenString();
-            var tooltip = $"{tenGodText}屬{element.ToWuXingString()}，依本命格局列為{stateText}";
+            var tooltip = $"{tenGodText}屬{element.ToWuXingString()}，{basis}列為{stateText}";
             return $"<span class=\"topic-ten-god {stateClass}\" title=\"{tooltip}\">{displayText ?? tenGodText}</span>";
         }
 
-        private static string FormatTopicTenGod(ShiShen tenGod, string? displayText = null) {
-            return $"<span class=\"topic-ten-god-reference\">{displayText ?? tenGod.ToShenString()}</span>";
+        private static string FormatFavorabilityLabel(bool isFavorable, string tooltip) {
+            var stateClass = isFavorable ? "topic-ten-god-favorable" : "topic-ten-god-unfavorable";
+            var text = isFavorable ? "喜用方向" : "忌神方向";
+            return $"<span class=\"topic-ten-god {stateClass}\" title=\"{tooltip}\">{text}</span>";
         }
 
         private static WuXing GetTenGodElement(BaZiInfo info, ShiShen tenGod) {

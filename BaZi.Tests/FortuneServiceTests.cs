@@ -276,8 +276,25 @@ namespace BaZi.Tests {
             Assert.Contains("庚", html);
             Assert.Contains("寅", html);
             Assert.Contains("節氣月", html);
+            Assert.Contains("大運背景", html);
+            Assert.Contains("流年背景", html);
+            Assert.Contains("流月判讀", html);
             Assert.DoesNotContain("今年流年運勢", html);
             Assert.DoesNotContain("這一年", html);
+        }
+
+        [Fact]
+        public void LiuYueAnalysis_SupportiveDaYun_DoesNotDependOnDaYunAnalysisCallOrder() {
+            var info = new BaZiInfo(new DateTime(1970, 1, 15, 12, 0, 0), 2);
+            var service = new FortuneService();
+            var targetYear = FindDaYunYear(info, true);
+
+            var beforeDaYunAnalysis = service.LiuYueAnalysis(info, targetYear, 0).Value;
+            _ = service.DaYunAnalysis(info, targetYear);
+            var afterDaYunAnalysis = service.LiuYueAnalysis(info, targetYear, 0).Value;
+
+            Assert.Equal(GeJu.ShenRuo, info.StrengthStatus);
+            Assert.Equal(beforeDaYunAnalysis, afterDaYunAnalysis);
         }
 
         [Fact]
@@ -303,7 +320,7 @@ namespace BaZi.Tests {
             Assert.Contains("午", html);
             Assert.Contains("topic-ten-god ", html);
             Assert.Contains("title=\"", html);
-            Assert.Contains("依本命格局列為", html);
+            Assert.Contains("列為", html);
             Assert.True(
                 html.Contains("topic-ten-god-favorable", StringComparison.Ordinal)
                 || html.Contains("topic-ten-god-unfavorable", StringComparison.Ordinal)
@@ -347,6 +364,31 @@ namespace BaZi.Tests {
             Assert.Equal(DiZhi.Hai, selectedDaYun.Zhi);
             Assert.Equal(ShiShen.QiSha, selectedDaYun.GetPrimaryTenGod(info.DayZhu.Gan, targetYear));
             Assert.Contains("topic-notice mb-0", html);
+        }
+
+        [Fact]
+        public void DaYunAnalysis_MixedFavorability_StatesPrimaryAndSecondaryAreMixed() {
+            var info = new BaZiInfo(BirthDate, 2);
+            var service = new FortuneService();
+            var selectedDaYun = info.DaYunList.First(daYun => {
+                var ganElement = TenGodElementResolver.Resolve(
+                    info.RiZhu,
+                    daYun.GetPrimaryTenGod(info.DayZhu.Gan, daYun.StartYear)
+                );
+                var zhiElement = TenGodElementResolver.Resolve(
+                    info.RiZhu,
+                    daYun.GetPrimaryTenGod(info.DayZhu.Gan, daYun.StartYear + 5)
+                );
+                return info.LikeWuXing.Contains(ganElement) != info.LikeWuXing.Contains(zhiElement);
+            });
+
+            var firstFiveYearsHtml = service.DaYunAnalysis(info, selectedDaYun.StartYear).Value;
+            var lastFiveYearsHtml = service.DaYunAnalysis(info, selectedDaYun.StartYear + 5).Value;
+
+            Assert.Contains("主次一喜一忌", firstFiveYearsHtml);
+            Assert.Contains("主次一喜一忌", lastFiveYearsHtml);
+            Assert.Contains("前五年天干主作用", firstFiveYearsHtml);
+            Assert.Contains("後五年地支主作用", lastFiveYearsHtml);
         }
 
         [Fact]
@@ -443,18 +485,19 @@ namespace BaZi.Tests {
         }
 
         [Fact]
-        public void LiuNianTopicAnalysis_ExistingYear_UsesNeutralTenGodReferencesInFourTopicCards() {
+        public void LiuNianTopicAnalysis_ExistingYear_ColorsTenGodFavorabilityWithTooltips() {
             var info = new BaZiInfo(BirthDate, 2);
             var service = new FortuneService();
 
             var html = service.LiuNianTopicAnalysis(info, 2026).Value;
 
             Assert.Contains("element-fire fw-semibold", html);
-            Assert.Contains("topic-ten-god-reference", html);
-            Assert.DoesNotContain("topic-ten-god ", html);
-            Assert.DoesNotContain("topic-ten-god-favorable", html);
-            Assert.DoesNotContain("topic-ten-god-unfavorable", html);
-            Assert.DoesNotContain("title=\"", html);
+            Assert.Contains("topic-ten-god ", html);
+            Assert.Contains("topic-ten-god-favorable", html);
+            Assert.Contains("topic-ten-god-unfavorable", html);
+            Assert.Contains("title=\"", html);
+            Assert.Contains("喜用神（相對有利）", html);
+            Assert.Contains("忌神（相對不利）", html);
             Assert.Equal(4, html.Split("class=\"topic-notice mb-0\"").Length - 1);
             Assert.Equal(4, html.Split("fa-solid fa-quote-left topic-notice-icon").Length - 1);
             Assert.Contains("analysis-card-divider", html);
@@ -479,11 +522,88 @@ namespace BaZi.Tests {
             Assert.Contains("本月訊號", html);
             Assert.Contains("本月桃花時機", html);
             Assert.Contains("本月健康氣象", html);
-            Assert.Contains("topic-ten-god-reference", html);
-            Assert.DoesNotContain("topic-ten-god-favorable", html);
-            Assert.DoesNotContain("topic-ten-god-unfavorable", html);
-            Assert.DoesNotContain("title=\"", html);
+            Assert.Contains("大運背景", html);
+            Assert.Contains("流年背景", html);
+            Assert.Contains("流月窗口", html);
+            Assert.Contains("topic-ten-god ", html);
+            Assert.Contains("topic-ten-god-favorable", html);
+            Assert.Contains("topic-ten-god-unfavorable", html);
+            Assert.Contains("title=\"", html);
             Assert.DoesNotContain("關係查證提醒", html);
+        }
+
+        [Fact]
+        public void LiuNianTopicAnalysis_WeakChartInSupportiveDaYun_TreatsWealthAsCurrentOpportunityDirection() {
+            var info = new BaZiInfo(new DateTime(1970, 1, 15, 12, 0, 0), 2);
+            var service = new FortuneService();
+            var targetYear = FindDaYunYear(info, true);
+
+            var html = service.LiuNianTopicAnalysis(info, targetYear).Value;
+
+            Assert.Equal(GeJu.ShenRuo, info.StrengthStatus);
+            Assert.Contains("依身弱且大運主作用已幫扶的當期規則列為喜用神", html);
+            Assert.Contains("大運主作用已用", html);
+            Assert.Contains("可作為當期機會方向", html);
+        }
+
+        [Fact]
+        public void LiuNianTopicAnalysis_WeakChartInUnsupportiveDaYun_TreatsWealthAsLoad() {
+            var info = new BaZiInfo(new DateTime(1970, 1, 15, 12, 0, 0), 2);
+            var service = new FortuneService();
+            var targetYear = FindDaYunYear(info, false);
+
+            var html = service.LiuNianTopicAnalysis(info, targetYear).Value;
+
+            Assert.Equal(GeJu.ShenRuo, info.StrengthStatus);
+            Assert.Contains("大運主作用仍未扶起日主", html);
+            Assert.Contains("較可能先形成負荷", html);
+        }
+
+        [Fact]
+        public void LiuNianTopicAnalysis_WeakChartInUnsupportiveDaYun_DoesNotTreatOutputGeneratingWealthAsGuaranteedGain() {
+            var info = new BaZiInfo(new DateTime(1970, 1, 15, 12, 0, 0), 2);
+            var service = new FortuneService();
+            var html = info.DaYunList
+                .SelectMany(daYun => daYun.LiuNianList.Select(liuNian => (daYun, liuNian)))
+                .Where(item => !IsDaYunPrimaryFavorable(info, item.daYun, item.liuNian.Year))
+                .Select(item => service.LiuNianTopicAnalysis(info, item.liuNian.Year).Value)
+                .FirstOrDefault(value => value?.Contains("形式上同見", StringComparison.Ordinal) == true);
+
+            Assert.NotNull(html);
+            Assert.Contains("不能單據「食傷生財」就評為可得財", html!);
+        }
+
+        [Fact]
+        public void LiuNianTopicAnalysis_HealthCard_UsesDaYunPhaseAndSecondaryBackground() {
+            var info = new BaZiInfo(BirthDate, 2);
+            var service = new FortuneService();
+            var daYun = info.DaYunList.First();
+
+            var firstFiveYearsHtml = service.LiuNianTopicAnalysis(info, daYun.StartYear).Value;
+            var lastFiveYearsHtml = service.LiuNianTopicAnalysis(info, daYun.StartYear + 5).Value;
+
+            Assert.Contains("前五年天干為主；主作用", firstFiveYearsHtml);
+            Assert.Contains("後五年地支為主；主作用", lastFiveYearsHtml);
+            Assert.Contains("次要背景", firstFiveYearsHtml);
+            Assert.Contains("次要背景", lastFiveYearsHtml);
+        }
+
+        [Fact]
+        public void LiuNianAnalysis_ThreeHarmony_UsesGridFavorabilityInsteadOfAlwaysShowingHelp() {
+            var info = new BaZiInfo(BirthDate, 2);
+            var service = new FortuneService();
+            var html = service.GetLiuNianYears(info)
+                .Select(year => service.LiuNianAnalysis(info, year).Value)
+                .FirstOrDefault(value => value?.Contains("三合", StringComparison.Ordinal) == true);
+
+            Assert.NotNull(html);
+            Assert.Contains("格局判讀", html!);
+            Assert.Contains("topic-ten-god ", html!);
+            Assert.Contains("title=\"", html!);
+            Assert.True(
+                html!.Contains("喜用方向", StringComparison.Ordinal)
+                || html.Contains("忌神方向", StringComparison.Ordinal)
+            );
         }
 
         [Fact]
@@ -494,6 +614,32 @@ namespace BaZi.Tests {
             var html = service.LiuNianTopicAnalysis(info, 1800).Value;
 
             Assert.Null(html);
+        }
+
+        private static int FindDaYunYear(BaZiInfo info, bool favorable) {
+            foreach (var daYun in info.DaYunList) {
+                for (var year = daYun.StartYear; year <= daYun.EndYear; year++) {
+                    var primaryElement = TenGodElementResolver.Resolve(
+                        info.RiZhu,
+                        daYun.GetPrimaryTenGod(info.DayZhu.Gan, year)
+                    );
+                    if (info.LikeWuXing.Contains(primaryElement) == favorable) {
+                        return year;
+                    }
+                }
+            }
+
+            throw new Xunit.Sdk.XunitException(
+                favorable ? "測試命盤找不到喜用大運年份。" : "測試命盤找不到忌神大運年份。"
+            );
+        }
+
+        private static bool IsDaYunPrimaryFavorable(BaZiInfo info, DaYun daYun, int year) {
+            var primaryElement = TenGodElementResolver.Resolve(
+                info.RiZhu,
+                daYun.GetPrimaryTenGod(info.DayZhu.Gan, year)
+            );
+            return info.LikeWuXing.Contains(primaryElement);
         }
     }
 }
