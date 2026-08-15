@@ -4,13 +4,13 @@
     if (segment.Kind == SemanticTextKind.Plain) {
         @segment.Text
     } else if (segment.Kind == SemanticTextKind.Element && segment.Element is WuXing element) {
-        <ElementText Element="element" Text="segment.Text" />
+        <ElementText Element="element" Text="@segment.Text" />
     } else if (segment.Kind == SemanticTextKind.TenGod && segment.TenGod is ShiShen tenGod) {
         <TenGodText Info="Info"
                     TenGod="tenGod"
                     Mode="EffectiveTenGodMode"
-                    Text="segment.Text"
-                    SubjectLabel="SubjectLabel" />
+                    Text="@segment.Text"
+                    SubjectLabel="@SubjectLabel" />
     }
 }
 
