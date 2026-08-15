@@ -1,0 +1,50 @@
+@switch (Info.StrengthStatus) {
+    case GeJu.ShenQiang:
+        <div>八字裡的 <ElementText Element="Info.RiZhu" /> 能量偏強，應耗洩 <ElementText Element="Info.RiZhu" /> 能量</div>
+        break;
+    case GeJu.ShenRuo:
+        <div>八字裡的 <ElementText Element="Info.RiZhu" /> 能量較薄弱，應加強 <ElementText Element="Info.RiZhu" /> 能量</div>
+        break;
+    case GeJu.CongQiang:
+        <div>
+            八字裡幫助 <ElementText Element="Info.RiZhu" /> 能量的五行過多、其他五行太少，目前屬疑似從強格。
+            先用多個大運與流年的實際事件確認旺勢是否專一；確認成格後，才順從大勢並補充幫助 <ElementText Element="Info.RiZhu" /> 的能量。
+        </div>
+        break;
+    case GeJu.CongRuo:
+        <div>
+            八字裡幫助 <ElementText Element="Info.RiZhu" /> 能量的五行過少，目前屬疑似從弱格。
+            先用多個大運與流年的實際事件確認主勢；確認成格後，才順從剋、洩、耗方向，不再強行補充幫助 <ElementText Element="Info.RiZhu" /> 的能量。
+        </div>
+        break;
+    default:
+        throw new System.ComponentModel.InvalidEnumArgumentException(
+            nameof(Info.StrengthStatus),
+            (int)Info.StrengthStatus,
+            typeof(GeJu)
+        );
+}
+
+<div class="mt-3">
+    <strong>喜&ensp;&ensp;歡：</strong>
+    @foreach (var item in Info.LikeWuXing.Select((element, index) => (element, index))) {
+        @if (item.index > 0) {
+            <text>、</text>
+        }
+        <ElementText Element="item.element" />
+    }
+</div>
+<div>
+    <strong>不喜歡：</strong>
+    @foreach (var item in Info.UnlikeWuXing.Select((element, index) => (element, index))) {
+        @if (item.index > 0) {
+            <text>、</text>
+        }
+        <ElementText Element="item.element" />
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public BaZiInfo Info { get; set; } = default!;
+}

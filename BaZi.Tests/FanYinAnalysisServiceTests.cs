@@ -37,7 +37,7 @@ namespace BaZi.Tests {
         }
 
         [Fact]
-        public void AnalyzePeriodPillars_FullyCombinesOneExistingFanYinPillar_ReturnsMitigation() {
+        public void AnalyzePeriodPillars_FullyCombinesOneExistingFanYinPillar_ReturnsCombination() {
             var first = CreatePillar("日柱", "甲", "子");
             var second = CreatePillar("大運", "庚", "午");
             IReadOnlyList<IGanZhi> sourcePillars = [first, second];
@@ -45,15 +45,15 @@ namespace BaZi.Tests {
 
             var result = _service.AnalyzePeriodPillars(sourcePillars, periodPillar, true);
 
-            var mitigation = Assert.Single(result.Mitigations);
-            Assert.Same(first, mitigation.FirstFanYinPillar);
-            Assert.Same(second, mitigation.SecondFanYinPillar);
-            Assert.Same(second, mitigation.CombinedPillar);
-            Assert.Same(periodPillar, mitigation.CombiningPillar);
+            var combination = Assert.Single(result.Combinations);
+            Assert.Same(first, combination.FirstFanYinPillar);
+            Assert.Same(second, combination.SecondFanYinPillar);
+            Assert.Same(second, combination.CombinedPillar);
+            Assert.Same(periodPillar, combination.CombiningPillar);
         }
 
         [Fact]
-        public void AnalyzePeriodPillars_OnlyGanOrZhiCombines_DoesNotReturnMitigation() {
+        public void AnalyzePeriodPillars_OnlyGanOrZhiCombines_DoesNotReturnCombination() {
             IReadOnlyList<IGanZhi> sourcePillars = [
                 CreatePillar("日柱", "甲", "子"),
                 CreatePillar("大運", "庚", "午")
@@ -62,7 +62,7 @@ namespace BaZi.Tests {
 
             var result = _service.AnalyzePeriodPillars(sourcePillars, periodPillar, true);
 
-            Assert.Empty(result.Mitigations);
+            Assert.Empty(result.Combinations);
         }
 
         private static Zhu CreatePillar(string id, string gan, string zhi) {

@@ -441,7 +441,7 @@ namespace BaZi.Tests {
         }
 
         [Fact]
-        public void DaYunAnalysis_SamePairIsXingAndPo_OnlyListsXing() {
+        public void DaYunAnalysis_SamePairIsXingAndPo_ListsBothRelations() {
             var info = new BaZiInfo(OverlappingXingPoBirthDate, 2);
             var service = new FortuneService();
             var daYun = Assert.Single(info.DaYunList.Where(item => item.Zhi == DiZhi.Si));
@@ -449,13 +449,13 @@ namespace BaZi.Tests {
             var html = service.DaYunAnalysis(info, daYun.StartYear).Value;
 
             Assert.Contains(GetInteractionHtml("年柱", "申", "大運", "巳", "相刑"), html);
-            Assert.DoesNotContain(GetInteractionHtml("年柱", "申", "大運", "巳", "破"), html);
+            Assert.Contains(GetInteractionHtml("年柱", "申", "大運", "巳", "破"), html);
             Assert.Contains(GetInteractionHtml("日柱", "亥", "大運", "巳", "相沖"), html);
             Assert.Contains(GetInteractionHtml("月柱", "寅", "大運", "巳", "害"), html);
         }
 
         [Fact]
-        public void LiuNianAnalysis_SamePairIsXingAndChong_OnlyListsXingForThatPair() {
+        public void LiuNianAnalysis_SamePairIsXingAndChong_ListsBothRelationsForThatPair() {
             var info = new BaZiInfo(OverlappingXingPoBirthDate, 2);
             var service = new FortuneService();
             var daYun = Assert.Single(info.DaYunList.Where(item => item.Zhi == DiZhi.Si));
@@ -464,12 +464,12 @@ namespace BaZi.Tests {
             var html = service.LiuNianAnalysis(info, liuNian.Year).Value;
 
             Assert.Contains(GetInteractionHtml("年柱", "申", "流年", "寅", "相刑"), html);
-            Assert.DoesNotContain(GetInteractionHtml("年柱", "申", "流年", "寅", "相沖"), html);
+            Assert.Contains(GetInteractionHtml("年柱", "申", "流年", "寅", "相沖"), html);
             Assert.Contains(GetInteractionHtml("大運", "巳", "流年", "寅", "害"), html);
         }
 
         [Fact]
-        public void LiuYueAnalysis_SamePairIsXingAndPo_DoesNotListPo() {
+        public void LiuYueAnalysis_OverlappingRelations_ListsEveryApplicableRelation() {
             var info = new BaZiInfo(OverlappingXingPoBirthDate, 2);
             var service = new FortuneService();
             var daYun = Assert.Single(info.DaYunList.Where(item => item.Zhi == DiZhi.Si));
@@ -479,8 +479,8 @@ namespace BaZi.Tests {
             var html = service.LiuYueAnalysis(info, liuNian.Year, liuYue.Index).Value;
 
             Assert.Contains("三刑", html);
-            Assert.DoesNotContain(GetInteractionHtml("月柱", "寅", "流月", "申", "相沖"), html);
-            Assert.DoesNotContain(GetInteractionHtml("大運", "巳", "流月", "申", "破"), html);
+            Assert.Contains(GetInteractionHtml("月柱", "寅", "流月", "申", "相沖"), html);
+            Assert.Contains(GetInteractionHtml("大運", "巳", "流月", "申", "破"), html);
             Assert.Contains(GetInteractionHtml("日柱", "亥", "流月", "申", "害"), html);
         }
 
@@ -496,8 +496,10 @@ namespace BaZi.Tests {
             Assert.Contains("topic-ten-god-favorable", html);
             Assert.Contains("topic-ten-god-unfavorable", html);
             Assert.Contains("title=\"", html);
-            Assert.Contains("喜用神（相對有利）", html);
-            Assert.Contains("忌神（相對不利）", html);
+            Assert.Contains("列為喜用神", html);
+            Assert.Contains("列為忌神", html);
+            Assert.Contains("十神本身的事件意象仍須另外判讀", html);
+            Assert.Contains("不代表事件必然發生", html);
             Assert.Equal(4, html.Split("class=\"topic-notice mb-0\"").Length - 1);
             Assert.Equal(4, html.Split("fa-solid fa-quote-left topic-notice-icon").Length - 1);
             Assert.Contains("analysis-card-divider", html);
@@ -541,7 +543,8 @@ namespace BaZi.Tests {
             var html = service.LiuNianTopicAnalysis(info, targetYear).Value;
 
             Assert.Equal(GeJu.ShenRuo, info.StrengthStatus);
-            Assert.Contains("依身弱且大運主作用已幫扶的當期規則列為喜用神，可幫扶命主為運勢加分", html);
+            Assert.Contains("依身弱且大運主作用已幫扶的當期規則列為喜用神", html);
+            Assert.Contains("喜用神表示目前方向有助平衡或順勢", html);
             Assert.Contains("大運主作用已用", html);
             Assert.Contains("可作為當期機會方向", html);
         }

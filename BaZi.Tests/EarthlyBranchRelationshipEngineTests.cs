@@ -71,6 +71,29 @@ namespace BaZi.Tests {
         }
 
         [Fact]
+        public void MatchPair_OverlappingPunishmentAndClash_PreservesBoth() {
+            IReadOnlyList<BranchRelationshipRuleMatch> matches = _engine.MatchPair(
+                DiZhi.Yin,
+                DiZhi.Shen
+            );
+
+            Assert.Contains(matches, match =>
+                match.RelationType == BranchRelationshipType.Punishment
+                && match.Completion == BranchRelationshipCompletion.Partial);
+            Assert.Contains(matches, match =>
+                match.RelationType == BranchRelationshipType.SixClash);
+        }
+
+        [Fact]
+        public void MatchPair_SelfPunishment_UsesHaiInsteadOfXu() {
+            Assert.Contains(_engine.MatchPair(DiZhi.Hai, DiZhi.Hai), match =>
+                match.RelationType == BranchRelationshipType.Punishment
+                && match.Completion == BranchRelationshipCompletion.Self);
+            Assert.DoesNotContain(_engine.MatchPair(DiZhi.Xu, DiZhi.Xu), match =>
+                match.RelationType == BranchRelationshipType.Punishment);
+        }
+
+        [Fact]
         public void MatchPair_UnrelatedBranches_ReturnsNoRule() {
             IReadOnlyList<BranchRelationshipRuleMatch> matches = _engine.MatchPair(DiZhi.Zi, DiZhi.Yin);
 

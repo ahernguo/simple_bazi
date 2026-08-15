@@ -35,13 +35,13 @@ namespace BaZi.Services {
         private readonly BaZiService _baZiService;
         private readonly TenGodAnalysisService _tenGodService;
         private readonly EarthlyBranchRelationshipEngine _branchRelationshipEngine;
-        private readonly PersonalOverviewTextService _textService;
+        private readonly BranchRelationshipTextService _textService;
 
         public CompatibilityService(
             BaZiService baZiService,
             TenGodAnalysisService tenGodService,
             EarthlyBranchRelationshipEngine branchRelationshipEngine,
-            PersonalOverviewTextService textService
+            BranchRelationshipTextService textService
         ) {
             _baZiService = baZiService;
             _tenGodService = tenGodService;
@@ -113,7 +113,7 @@ namespace BaZi.Services {
             ];
         }
 
-        private static CompatibilitySection CreateParentStarSection(BaZiInfo self) {
+        private CompatibilitySection CreateParentStarSection(BaZiInfo self) {
             var motherLocations = GetStarLocations(self, ShiShen.Yin);
             var fatherLocations = GetStarLocations(self, ShiShen.Cai);
             var affectedLocations = motherLocations.Concat(fatherLocations)
@@ -140,7 +140,7 @@ namespace BaZi.Services {
             );
         }
 
-        private static CompatibilitySection CreateChildAffinitySection(BaZiInfo self) {
+        private CompatibilitySection CreateChildAffinitySection(BaZiInfo self) {
             var childGroup = self.Gender == Sex.Male ? ShiShen.GuanSha : ShiShen.ShihShang;
             var childElement = self.Gender == Sex.Male
                 ? BaZiDefine.RestrictBy[self.RiZhu]
@@ -180,13 +180,12 @@ namespace BaZi.Services {
             );
         }
 
-        private static IReadOnlyList<CompatibilitySection> AnalyzeRomance(BaZiInfo self, BaZiInfo other) {
+        private IReadOnlyList<CompatibilitySection> AnalyzeRomance(BaZiInfo self, BaZiInfo other) {
             var selfZhi = self.YearZhu.Zhi;
             var otherZhi = other.YearZhu.Zhi;
             var sameTrineGroup = selfZhi != otherZhi
                 && BaZiDefine.ThreeHe.Values.Any(group => group.Contains(selfZhi) && group.Contains(otherZhi));
-            var isClash = selfZhi != otherZhi
-                && BaZiDefine.Chong.Any(group => group.Contains(selfZhi) && group.Contains(otherZhi));
+            var isClash = IsClash(selfZhi, otherZhi);
 
             var zodiacSummary = sameTrineGroup
                 ? $"{self.ShengXiao}與{other.ShengXiao}同屬一組生肖三合，氣場較易協調。"
@@ -426,7 +425,7 @@ namespace BaZi.Services {
             }));
         }
 
-        private static bool IsBranchUnderNatalPressure(BaZiInfo info, DiZhi branch) {
+        private bool IsBranchUnderNatalPressure(BaZiInfo info, DiZhi branch) {
             var branches = new List<DiZhi> {
                 info.YearZhu.Zhi,
                 info.MonthZhu.Zhi,
@@ -438,20 +437,23 @@ namespace BaZi.Services {
 
             return branches.Any(other => IsClash(branch, other)
                     || (other != branch && IsPunishment(branch, other)))
-                || (BaZiDefine.SelfXing.Contains(branch) && branches.Count(other => other == branch) >= 2);
+                || (branches.Count(other => other == branch) >= 2 && IsPunishment(branch, branch));
         }
 
-        private static bool IsClash(DiZhi first, DiZhi second) {
-            return first != second
-                && BaZiDefine.Chong.Any(group => group.Contains(first) && group.Contains(second));
+        private bool IsClash(DiZhi first, DiZhi second) {
+            return _branchRelationshipEngine.HasRelationship(
+                first,
+                second,
+                BranchRelationshipType.SixClash
+            );
         }
 
-        private static bool IsPunishment(DiZhi first, DiZhi second) {
-            if (first == second) {
-                return BaZiDefine.SelfXing.Contains(first);
-            }
-
-            return BaZiDefine.TwoXing.Any(group => group.Contains(first) && group.Contains(second));
+        private bool IsPunishment(DiZhi first, DiZhi second) {
+            return _branchRelationshipEngine.HasRelationship(
+                first,
+                second,
+                BranchRelationshipType.Punishment
+            );
         }
 
         private static IReadOnlyList<string> GetSiblingLocations(BaZiInfo info) {

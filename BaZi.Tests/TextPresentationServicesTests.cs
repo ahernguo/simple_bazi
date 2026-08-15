@@ -4,8 +4,9 @@ using Xunit;
 
 namespace BaZi.Tests {
 
-    public sealed class PersonalOverviewTextServiceTests {
-        private readonly PersonalOverviewTextService _service = new();
+    public sealed class TextPresentationServicesTests {
+        private readonly BranchRelationshipTextService _relationshipTextService = new();
+        private readonly SemanticTextService _semanticTextService = new();
         private readonly EarthlyBranchRelationshipEngine _relationshipEngine = new();
         private readonly BaZiService _baZiService = new();
 
@@ -13,65 +14,66 @@ namespace BaZi.Tests {
         public void Segment_FormatsGanZhiElementAndMarksTenGodNeutrally() {
             const string text = "流年為丙午；夫妻星為木（財星）。";
 
-            var segments = _service.Segment(text);
+            var segments = _semanticTextService.Segment(text);
 
             Assert.Equal(text, string.Concat(segments.Select(segment => segment.Text)));
             Assert.Contains(segments, segment =>
                 segment.Text == "丙"
-                && segment.Kind == PersonalOverviewTextKind.Element
+                && segment.Kind == SemanticTextKind.Element
                 && segment.Element == WuXing.Huo);
             Assert.Contains(segments, segment =>
                 segment.Text == "午"
-                && segment.Kind == PersonalOverviewTextKind.Element
+                && segment.Kind == SemanticTextKind.Element
                 && segment.Element == WuXing.Huo);
             Assert.Contains(segments, segment =>
                 segment.Text == "木"
-                && segment.Kind == PersonalOverviewTextKind.Element
+                && segment.Kind == SemanticTextKind.Element
                 && segment.Element == WuXing.Mu);
 
             var tenGod = Assert.Single(segments, segment => segment.Text == "財星");
-            Assert.Equal(PersonalOverviewTextKind.TenGod, tenGod.Kind);
+            Assert.Equal(SemanticTextKind.TenGod, tenGod.Kind);
             Assert.Null(tenGod.Element);
+            Assert.Equal(ShiShen.Cai, tenGod.TenGod);
         }
 
         [Fact]
         public void Segment_DoesNotFormatOrdinaryCharactersAsStemOrElement() {
             const string text = "自己管理金錢，飲水依個人健康狀況調整。";
 
-            var segments = _service.Segment(text);
+            var segments = _semanticTextService.Segment(text);
 
             Assert.Equal(text, string.Concat(segments.Select(segment => segment.Text)));
-            Assert.DoesNotContain(segments, segment => segment.Kind != PersonalOverviewTextKind.Plain);
+            Assert.DoesNotContain(segments, segment => segment.Kind != SemanticTextKind.Plain);
         }
 
         [Fact]
         public void Segment_DoesNotFormatWeiInWeiXingChengPhrase() {
             const string text = "日支丑與時支巳未形成相刑或相沖。";
 
-            var segments = _service.Segment(text);
+            var segments = _semanticTextService.Segment(text);
 
-            Assert.Equal(2, segments.Count(segment => segment.Kind == PersonalOverviewTextKind.Element));
+            Assert.Equal(2, segments.Count(segment => segment.Kind == SemanticTextKind.Element));
             Assert.Contains(segments, segment => segment.Text == "丑" && segment.Element == WuXing.Tu);
             Assert.Contains(segments, segment => segment.Text == "巳" && segment.Element == WuXing.Huo);
             Assert.DoesNotContain(segments, segment =>
                 segment.Text == "未"
-                && segment.Kind == PersonalOverviewTextKind.Element);
+                && segment.Kind == SemanticTextKind.Element);
         }
 
         [Fact]
         public void Segment_FormatsAllBranchesInThreeXingNames() {
             const string text = "寅巳申或丑戌未三刑";
 
-            var segments = _service.Segment(text);
+            var segments = _semanticTextService.Segment(text);
 
-            Assert.Equal(6, segments.Count(segment => segment.Kind == PersonalOverviewTextKind.Element));
+            Assert.Equal(6, segments.Count(segment => segment.Kind == SemanticTextKind.Element));
         }
 
         [Fact]
         public void BuildRelationshipSections_CombinationDoesNotPromiseRelationship() {
             BranchRelationshipAnalysis analysis = CreateRelationshipAnalysis();
 
-            IReadOnlyList<CompatibilitySection> sections = _service.BuildRelationshipSections(analysis);
+            IReadOnlyList<CompatibilitySection> sections = _relationshipTextService.BuildRelationshipSections(analysis);
             var text = Flatten(sections);
 
             Assert.Contains("不等於戀愛同意", text);
@@ -83,7 +85,7 @@ namespace BaZi.Tests {
         public void BuildRelationshipSections_ExplicitDecline_PrioritizesStatedBoundary() {
             BranchRelationshipAnalysis analysis = CreateRelationshipAnalysis();
 
-            IReadOnlyList<CompatibilitySection> sections = _service.BuildRelationshipSections(analysis, true);
+            IReadOnlyList<CompatibilitySection> sections = _relationshipTextService.BuildRelationshipSections(analysis, true);
             var text = Flatten(sections);
 
             Assert.Contains("應以此表態為準", text);
@@ -97,7 +99,7 @@ namespace BaZi.Tests {
             BaZiInfo chartB = _baZiService.GetBaZiInfo(new DateTime(1992, 2, 17, 0, 0, 0), 2, false);
             BranchRelationshipAnalysis analysis = _relationshipEngine.Analyze(chartA, chartB);
 
-            var text = Flatten(_service.BuildRelationshipSections(analysis));
+            var text = Flatten(_relationshipTextService.BuildRelationshipSections(analysis));
 
             Assert.DoesNotContain("丈夫", text);
             Assert.DoesNotContain("妻子", text);

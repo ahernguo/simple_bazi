@@ -10,16 +10,5 @@
     [Parameter]
     public bool Emphasized { get; set; } = true;
 
-    private string CssClass => $"{GetElementColorClass(Element)}{(Emphasized ? " fw-semibold" : string.Empty)}";
-
-    private static string GetElementColorClass(WuXing element) {
-        return element switch {
-            WuXing.Mu => "element-wood",
-            WuXing.Huo => "element-fire",
-            WuXing.Tu => "element-earth",
-            WuXing.Jin => "element-metal",
-            WuXing.Shui => "element-water",
-            _ => string.Empty
-        };
-    }
+    private string CssClass => $"{ElementPresentationService.GetCssClass(Element)}{(Emphasized ? " fw-semibold" : string.Empty)}";
 }

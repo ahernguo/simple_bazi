@@ -22,24 +22,24 @@ namespace BaZi.Models {
         string Situation
     );
 
-    /// <summary>指定運柱同時以天干五合、地支六合牽制既有反吟其中一柱的結果。</summary>
-    public sealed record FanYinMitigation(
+    /// <summary>指定運柱同時以天干五合、地支六合連結既有反吟其中一柱的結果。</summary>
+    public sealed record FanYinCombination(
         IGanZhi FirstFanYinPillar,
         IGanZhi SecondFanYinPillar,
         IGanZhi CombinedPillar,
         IGanZhi CombiningPillar
     );
 
-    /// <summary>指定大運、流年或流月的反吟與合走分析結果。</summary>
+    /// <summary>指定大運、流年或流月的反吟與合絆並存分析結果。</summary>
     public sealed record PeriodFanYinAnalysisResult(
         IReadOnlyList<PeriodFanYinMatch> Matches,
-        IReadOnlyList<FanYinMitigation> Mitigations,
+        IReadOnlyList<FanYinCombination> Combinations,
         bool IncludesHourPillar
     ) {
         /// <summary>取得指定期間是否形成反吟。</summary>
         public bool HasFanYin => Matches.Count > 0;
 
-        /// <summary>取得指定期間是否有反吟或合走既有反吟。</summary>
-        public bool HasContent => HasFanYin || Mitigations.Count > 0;
+        /// <summary>取得指定期間是否有反吟或與既有反吟並存的合絆。</summary>
+        public bool HasContent => HasFanYin || Combinations.Count > 0;
     }
 }

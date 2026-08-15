@@ -30,7 +30,7 @@
                             <tr @key="dy" class="@(FortuneService.IsCurrentDaYun(dy, info) ? "table-warning" : "")">
                                 <td>@dy.StartYear</td>
                                 <td>@dy.StartAge</td>
-                                <td class="fw-bold">@dy.Gan.ToGanString()@dy.Zhi.ToZhiString()</td>
+                                <td class="fw-bold"><GanZhiText Value="dy" /></td>
                             </tr>
                         }
                     </tbody>

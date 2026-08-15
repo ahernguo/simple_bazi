@@ -1,0 +1,39 @@
+@inject SemanticTextService TextService
+
+@foreach (SemanticTextSegment segment in _segments) {
+    if (segment.Kind == SemanticTextKind.Plain) {
+        @segment.Text
+    } else if (segment.Kind == SemanticTextKind.Element && segment.Element is WuXing element) {
+        <ElementText Element="element" Text="segment.Text" />
+    } else if (segment.Kind == SemanticTextKind.TenGod && segment.TenGod is ShiShen tenGod) {
+        <TenGodText Info="Info"
+                    TenGod="tenGod"
+                    Mode="EffectiveTenGodMode"
+                    Text="segment.Text"
+                    SubjectLabel="SubjectLabel" />
+    }
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public string Text { get; set; } = string.Empty;
+
+    [Parameter]
+    public BaZiInfo? Info { get; set; }
+
+    [Parameter]
+    public TenGodDisplayMode TenGodMode { get; set; } = TenGodDisplayMode.Reference;
+
+    [Parameter]
+    public string? SubjectLabel { get; set; }
+
+    private IReadOnlyList<SemanticTextSegment> _segments = [];
+
+    private TenGodDisplayMode EffectiveTenGodMode => Info is null
+        ? TenGodDisplayMode.Reference
+        : TenGodMode;
+
+    protected override void OnParametersSet() {
+        _segments = TextService.Segment(Text);
+    }
+}

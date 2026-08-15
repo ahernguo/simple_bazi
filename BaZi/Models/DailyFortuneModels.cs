@@ -40,7 +40,12 @@ namespace BaZi.Models {
     );
 
     /// <summary>實際觸發流日規則的十神來源。</summary>
-    public sealed record DailyFortuneTenGodFactor(string Source, ShiShen TenGod);
+    public sealed record DailyFortuneTenGodFactor(
+        string Source,
+        ShiShen TenGod,
+        bool IsFavorable,
+        string FavorabilityReason
+    );
 
     /// <summary>單一流日訊號。</summary>
     public sealed record DailyFortuneSignal(

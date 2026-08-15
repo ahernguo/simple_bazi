@@ -69,9 +69,13 @@ namespace BaZi {
 
             // 註冊服務，後續就可以從 Dispatcher 來呼叫、存取
             builder.Services.AddSingleton<BaZiService>();
+            builder.Services.AddSingleton<BaZiDescriptionService>();
+            builder.Services.AddSingleton<PeriodFavorabilityService>();
+            builder.Services.AddSingleton<TenGodPresentationService>();
             builder.Services.AddSingleton<TenGodAnalysisService>();
             builder.Services.AddSingleton<PersonalOverviewService>();
-            builder.Services.AddSingleton<PersonalOverviewTextService>();
+            builder.Services.AddSingleton<BranchRelationshipTextService>();
+            builder.Services.AddSingleton<SemanticTextService>();
             builder.Services.AddSingleton<FuYinAnalysisService>();
             builder.Services.AddSingleton<FanYinAnalysisService>();
             builder.Services.AddSingleton<EarthlyBranchRelationshipEngine>();

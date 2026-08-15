@@ -1,119 +1,9 @@
-using System.Text;
 using BaZi.Models;
 
 namespace BaZi.Services {
 
-    /// <summary>將個人概述文字拆成可安全套用五行與十神樣式的語意片段。</summary>
-    public sealed class PersonalOverviewTextService {
-        private static readonly IReadOnlyList<string> TenGodTokens = [
-            "比肩",
-        "劫財",
-        "食神",
-        "傷官",
-        "偏財",
-        "正財",
-        "七殺",
-        "正官",
-        "偏印",
-        "正印",
-        "比劫",
-        "食傷",
-        "財星",
-        "官殺",
-        "印星"
-        ];
-
-        private static readonly IReadOnlyDictionary<char, TianGan> Stems =
-            new Dictionary<char, TianGan> {
-                ['甲'] = TianGan.Jia,
-                ['乙'] = TianGan.Yi,
-                ['丙'] = TianGan.Bing,
-                ['丁'] = TianGan.Ding,
-                ['戊'] = TianGan.Wu,
-                ['己'] = TianGan.Ji,
-                ['庚'] = TianGan.Geng,
-                ['辛'] = TianGan.Xin,
-                ['壬'] = TianGan.Ren,
-                ['癸'] = TianGan.Gui
-            };
-
-        private static readonly IReadOnlyDictionary<char, DiZhi> Branches =
-            new Dictionary<char, DiZhi> {
-                ['子'] = DiZhi.Zi,
-                ['丑'] = DiZhi.Chou,
-                ['寅'] = DiZhi.Yin,
-                ['卯'] = DiZhi.Mao,
-                ['辰'] = DiZhi.Chen,
-                ['巳'] = DiZhi.Si,
-                ['午'] = DiZhi.Wu,
-                ['未'] = DiZhi.Wei,
-                ['申'] = DiZhi.Shen,
-                ['酉'] = DiZhi.You,
-                ['戌'] = DiZhi.Xu,
-                ['亥'] = DiZhi.Hai
-            };
-
-        private static readonly IReadOnlyDictionary<char, WuXing> Elements =
-            new Dictionary<char, WuXing> {
-                ['木'] = WuXing.Mu,
-                ['火'] = WuXing.Huo,
-                ['土'] = WuXing.Tu,
-                ['金'] = WuXing.Jin,
-                ['水'] = WuXing.Shui
-            };
-
-        /// <summary>將文字切成一般、五行與十神片段。</summary>
-        public IReadOnlyList<PersonalOverviewTextSegment> Segment(string text) {
-            ArgumentNullException.ThrowIfNull(text);
-
-            if (text.Length == 0) {
-                return [];
-            }
-
-            var segments = new List<PersonalOverviewTextSegment>();
-            var plainText = new StringBuilder();
-            var index = 0;
-            while (index < text.Length) {
-                if (TryGetTenGod(text, index, out var tenGodToken)) {
-                    FlushPlainText(segments, plainText);
-                    segments.Add(new PersonalOverviewTextSegment(
-                        tenGodToken,
-                        PersonalOverviewTextKind.TenGod
-                    ));
-                    index += tenGodToken.Length;
-                    continue;
-                }
-
-                if (TryGetGanZhi(text, index, out var stem, out var branch)) {
-                    FlushPlainText(segments, plainText);
-                    segments.Add(CreateElementSegment(text[index].ToString(), stem.ToWuXing()));
-                    segments.Add(CreateElementSegment(text[index + 1].ToString(), branch.ToWuXing()));
-                    index += 2;
-                    continue;
-                }
-
-                if (Elements.TryGetValue(text[index], out var element) && IsElementContext(text, index)) {
-                    FlushPlainText(segments, plainText);
-                    segments.Add(CreateElementSegment(text[index].ToString(), element));
-                    index++;
-                    continue;
-                }
-
-                if (Branches.TryGetValue(text[index], out branch) && IsBranchContext(text, index)) {
-                    FlushPlainText(segments, plainText);
-                    segments.Add(CreateElementSegment(text[index].ToString(), branch.ToWuXing()));
-                    index++;
-                    continue;
-                }
-
-                plainText.Append(text[index]);
-                index++;
-            }
-
-            FlushPlainText(segments, plainText);
-            return segments;
-        }
-
+    /// <summary>將結構化地支命中轉成中性、非決定論的合盤文案。</summary>
+    public sealed class BranchRelationshipTextService {
         /// <summary>將結構化地支命中轉成中性、非決定論的感情合盤 Cards。</summary>
         /// <param name="analysis">地支規則引擎的分析結果。</param>
         /// <param name="otherHasExplicitlyDeclinedRomance">對方是否已明確拒絕發展感情。</param>
@@ -194,7 +84,7 @@ namespace BaZi.Services {
                 "三會候選",
                 "三會可視為共同方向或互動節奏較集中；互有好感或默契，但不一定發展成戀人狀態，有可能是麻吉或閨密，仍需雙方互相認可",
                 CompatibilityTone.Notice,
-                ["'三支齊' 全仍不直接宣告成局或合化，亦不據此計算感情成功率。"]
+                ["三支齊全仍不直接宣告成局或合化，亦不據此計算感情成功率。"]
             );
 
             if (analysis.Hits.Count == 0) {
@@ -259,7 +149,7 @@ namespace BaZi.Services {
         }
 
         private static string DescribeHit(BranchRelationshipHit hit) {
-            var relationName = GetRelationName(hit.RelationType);
+            var relationName = hit.RelationType.ToDisplayName();
             var members = string.Concat(hit.Members.Select(member => member.ToZhiString()));
             var scope = hit.Scope switch {
                 BranchRelationshipScope.NatalA => "自己原局",
@@ -343,144 +233,5 @@ namespace BaZi.Services {
             );
         }
 
-        private static string GetRelationName(BranchRelationshipType relationType) {
-            return relationType switch {
-                BranchRelationshipType.SixCombination => "六合",
-                BranchRelationshipType.SixClash => "六沖",
-                BranchRelationshipType.SixHarm => "六害",
-                BranchRelationshipType.SixBreak => "六破",
-                BranchRelationshipType.Punishment => "相刑",
-                BranchRelationshipType.ThreeCombination => "三合",
-                BranchRelationshipType.ThreeMeeting => "三會",
-                _ => throw new ArgumentOutOfRangeException(nameof(relationType), relationType, null)
-            };
-        }
-
-        private static bool TryGetTenGod(string text, int index, out string token) {
-            foreach (var candidate in TenGodTokens) {
-                if (text.AsSpan(index).StartsWith(candidate, StringComparison.Ordinal)) {
-                    token = candidate;
-                    return true;
-                }
-            }
-
-            token = string.Empty;
-            return false;
-        }
-
-        private static bool TryGetGanZhi(
-            string text,
-            int index,
-            out TianGan stem,
-            out DiZhi branch
-        ) {
-            if (index + 1 < text.Length
-                && Stems.TryGetValue(text[index], out stem)
-                && Branches.TryGetValue(text[index + 1], out branch)) {
-                return true;
-            }
-
-            stem = default;
-            branch = default;
-            return false;
-        }
-
-        private static bool IsElementContext(string text, int index) {
-            var previous = index > 0 ? text[index - 1] : '\0';
-            var next = index + 1 < text.Length ? text[index + 1] : '\0';
-            if (next == '（' || next == ':' || next == '：' || next == '生' || next == '剋') {
-                return true;
-            }
-
-            if (previous == '生' || previous == '剋') {
-                return true;
-            }
-
-            if (next == '、' || next == '／' || previous == '、' || previous == '／') {
-                return true;
-            }
-
-            if (char.IsWhiteSpace(next) && index + 2 < text.Length && char.IsDigit(text[index + 2])) {
-                return true;
-            }
-
-            if (text.AsSpan(index + 1).StartsWith("弱項", StringComparison.Ordinal)
-                || text.AsSpan(index + 1).StartsWith("直接剋制", StringComparison.Ordinal)) {
-                return true;
-            }
-
-            return EndsWithAny(
-                text.AsSpan(0, index),
-                "為",
-                "以",
-                "於",
-                "皆有",
-                "最多的",
-                "夫妻星是",
-                "子息星是"
-            ) && IsElementBoundary(next);
-        }
-
-        private static bool IsElementBoundary(char next) {
-            return next == '\0'
-                || char.IsWhiteSpace(next)
-                || next is '，' or '。' or '；' or '、' or '／' or '（' or '）' or '為' or '或';
-        }
-
-        private static bool IsBranchContext(string text, int index) {
-            if (text[index] == '未' && text.AsSpan(index + 1).StartsWith("形成", StringComparison.Ordinal)) {
-                return false;
-            }
-
-            var previousIsBranch = index > 0 && Branches.ContainsKey(text[index - 1]);
-            var nextIsBranch = index + 1 < text.Length && Branches.ContainsKey(text[index + 1]);
-            if (previousIsBranch || nextIsBranch) {
-                return true;
-            }
-
-            return EndsWithAny(
-                text.AsSpan(0, index),
-                "年支",
-                "月支",
-                "日支",
-                "時支",
-                "年支為",
-                "月支為",
-                "日支為",
-                "時支為",
-                "夫妻宮",
-                "子息宮"
-            );
-        }
-
-        private static bool EndsWithAny(ReadOnlySpan<char> text, params string[] candidates) {
-            foreach (var candidate in candidates) {
-                if (text.EndsWith(candidate, StringComparison.Ordinal)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static PersonalOverviewTextSegment CreateElementSegment(string text, WuXing element) {
-            return new PersonalOverviewTextSegment(
-                text,
-                PersonalOverviewTextKind.Element,
-                element
-            );
-        }
-
-        private static void FlushPlainText(
-            ICollection<PersonalOverviewTextSegment> segments,
-            StringBuilder plainText
-        ) {
-            if (plainText.Length == 0) {
-                return;
-            }
-
-            segments.Add(new PersonalOverviewTextSegment(plainText.ToString()));
-            plainText.Clear();
-        }
     }
 }

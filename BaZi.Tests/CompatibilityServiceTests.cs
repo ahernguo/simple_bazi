@@ -191,7 +191,7 @@ namespace BaZi.Tests {
                 _baZiService,
                 _tenGodService,
                 new EarthlyBranchRelationshipEngine(),
-                new PersonalOverviewTextService()
+                new BranchRelationshipTextService()
             );
         }
     }

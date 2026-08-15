@@ -6,7 +6,7 @@
     @foreach (var statistic in _statistics) {
         <div class="mb-3" @key="statistic.Xing">
             <div class="d-flex justify-content-between mb-1">
-                <span><OverviewRichText Text="@statistic.Xing.ToShenString()" /></span>
+                <span><SemanticText Text="@statistic.Xing.ToShenString()" /></span>
                 <span>@($"{statistic.Percentage:P1}") (@statistic.Count 字)</span>
             </div>
             <progress class="ten-god-progress"
@@ -21,40 +21,40 @@
 @foreach (var profile in _profiles) {
     <div class="card analysis-card ten-god-card mt-4 p-4" @key="profile.Title">
         <h5 class="card-title analysis-card-title">
-            <OverviewRichText Text="@profile.Title" />
+            <SemanticText Text="@profile.Title" />
             <span class="text-success ms-2">@($"{profile.Percentage:P1}")</span>
         </h5>
         <p class="analysis-card-description text-secondary">
-            <OverviewRichText Text="@profile.Meaning" />
+            <SemanticText Text="@profile.Meaning" />
         </p>
         <hr class="analysis-card-divider" aria-hidden="true" />
         @if (profile.Comparison is not null) {
             <p class="mb-3">
-                <OverviewRichText Text="@profile.Comparison.Value.More.ToShenString()" />
+                <SemanticText Text="@profile.Comparison.Value.More.ToShenString()" />
                 較
-                <OverviewRichText Text="@profile.Comparison.Value.Less.ToShenString()" />
+                <SemanticText Text="@profile.Comparison.Value.Less.ToShenString()" />
                 多時：
             </p>
         }
         <dl class="row mb-0">
             <dd >
                 <div class="alert alert-dark analysis-item-explanation bg-transparent mb-0">
-                    <span class="text-primary"><strong>特性</strong></span>：<OverviewRichText Text="@profile.Detail.desc" />
+                    <span class="text-primary"><strong>特性</strong></span>：<SemanticText Text="@profile.Detail.desc" />
                 </div>
             </dd>
             <dd>
                 <div class="alert alert-success analysis-item-explanation mb-0">
-                    <span class="text-success"><strong>優點</strong></span>：<OverviewRichText Text="@profile.Detail.positive" />
+                    <span class="text-success"><strong>優點</strong></span>：<SemanticText Text="@profile.Detail.positive" />
                 </div>
             </dd>
             <dd>
                 <div class="alert alert-warning analysis-item-explanation mb-0">
-                    <span class="text-danger"><strong>缺點</strong></span>：<OverviewRichText Text="@profile.Detail.negative" />
+                    <span class="text-danger"><strong>缺點</strong></span>：<SemanticText Text="@profile.Detail.negative" />
                 </div>
             </dd>
             <dd>
                 <div class="alert alert-info analysis-item-explanation mb-0">
-                    <span class="text-info"><strong>建議</strong></span>：<OverviewRichText Text="@profile.Detail.advice" />
+                    <span class="text-info"><strong>建議</strong></span>：<SemanticText Text="@profile.Detail.advice" />
                 </div>
             </dd>
         </dl>

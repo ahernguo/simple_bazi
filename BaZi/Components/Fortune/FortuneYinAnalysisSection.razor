@@ -20,10 +20,10 @@
                             <AnalysisItem CssClass="mb-0" AlertClass="alert-info">
                                 <ChildContent>
                                     <strong>@match.SourcePillar.Id</strong>
-                                    <span class="@GetElementColorClass(match.SourcePillar.Gan.ToWuXing())">@match.SourcePillar.Gan.ToGanString()</span><span class="@GetElementColorClass(match.SourcePillar.Zhi.ToWuXing())">@match.SourcePillar.Zhi.ToZhiString()</span>
+                                    <GanZhiText Value="match.SourcePillar" />
                                     &nbsp;與&nbsp;
                                     <strong>@match.PeriodPillar.Id</strong>
-                                    <span class="@GetElementColorClass(match.PeriodPillar.Gan.ToWuXing())">@match.PeriodPillar.Gan.ToGanString()</span><span class="@GetElementColorClass(match.PeriodPillar.Zhi.ToWuXing())">@match.PeriodPillar.Zhi.ToZhiString()</span>
+                                    <GanZhiText Value="match.PeriodPillar" />
                                     &nbsp;形成伏吟。
                                 </ChildContent>
                                 <ExplanationContent>@match.Situation</ExplanationContent>
@@ -57,10 +57,10 @@
                                 <AnalysisItem CssClass="mb-0" AlertClass="alert-warning">
                                     <ChildContent>
                                         <strong>@match.SourcePillar.Id</strong>
-                                        <span class="@GetElementColorClass(match.SourcePillar.Gan.ToWuXing())">@match.SourcePillar.Gan.ToGanString()</span><span class="@GetElementColorClass(match.SourcePillar.Zhi.ToWuXing())">@match.SourcePillar.Zhi.ToZhiString()</span>
+                                        <GanZhiText Value="match.SourcePillar" />
                                         &nbsp;與&nbsp;
                                         <strong>@match.PeriodPillar.Id</strong>
-                                        <span class="@GetElementColorClass(match.PeriodPillar.Gan.ToWuXing())">@match.PeriodPillar.Gan.ToGanString()</span><span class="@GetElementColorClass(match.PeriodPillar.Zhi.ToWuXing())">@match.PeriodPillar.Zhi.ToZhiString()</span>
+                                        <GanZhiText Value="match.PeriodPillar" />
                                         &nbsp;形成反吟。
                                     </ChildContent>
                                     <ExplanationContent>@match.Situation</ExplanationContent>
@@ -72,20 +72,20 @@
                     <hr class="analysis-card-divider" aria-hidden="true" />
                 }
 
-                @foreach (var mitigation in analysis.FanYin.Mitigations) {
-                    <div class="alert alert-success analysis-item-explanation mt-3 mb-0" @key="mitigation">
+                @foreach (var combination in analysis.FanYin.Combinations) {
+                    <div class="alert alert-info analysis-item-explanation mt-3 mb-0" @key="combination">
                         <strong>
-                            @mitigation.FirstFanYinPillar.Id
-                            @mitigation.FirstFanYinPillar.Gan.ToGanString()@mitigation.FirstFanYinPillar.Zhi.ToZhiString()
+                            @combination.FirstFanYinPillar.Id
+                            <GanZhiText Value="combination.FirstFanYinPillar" />
                             與
-                            @mitigation.SecondFanYinPillar.Id
-                            @mitigation.SecondFanYinPillar.Gan.ToGanString()@mitigation.SecondFanYinPillar.Zhi.ToZhiString()
+                            @combination.SecondFanYinPillar.Id
+                            <GanZhiText Value="combination.SecondFanYinPillar" />
                         </strong>
                         原有反吟；其中
-                        <strong>@mitigation.CombinedPillar.Id @mitigation.CombinedPillar.Gan.ToGanString()@mitigation.CombinedPillar.Zhi.ToZhiString()</strong>
-                        被
-                        <strong>@mitigation.CombiningPillar.Id @mitigation.CombiningPillar.Gan.ToGanString()@mitigation.CombiningPillar.Zhi.ToZhiString()</strong>
-                        以天干五合、地支六合合住。可視為被<strong>@analysis.PeriodName 合走（合絆）</strong>，@GetMitigationDuration(analysis.PeriodName)反吟狀況會較為減輕；原有沖剋仍保留，不視為完全消失。
+                        <strong>@combination.CombinedPillar.Id <GanZhiText Value="combination.CombinedPillar" /></strong>
+                        又與
+                        <strong>@combination.CombiningPillar.Id <GanZhiText Value="combination.CombiningPillar" /></strong>
+                        以天干五合、地支六合形成<strong>@analysis.PeriodName 合絆</strong>；合絆與原有反吟同時保留，是否減輕及作用優先級仍須依完整命局核對。
                     </div>
                 }
 
@@ -93,7 +93,7 @@
                     <ul class="compatibility-note-list mb-0">
                         <li class="mb-1"><span class="text-warning">傳統意涵</span>&ensp;反吟偏向對立、拉扯與變動，可能表現在移動、角色調整或既有安排重整</li>
                         <li class="mb-1"><span class="text-success">判讀原則</span>&ensp;變動不必然是壞事；若沖動忌神或有其他有利組合，也可能成為調整與突破的契機</li>
-                        <li class="mb-1"><span class="text-success">合走原則</span>&ensp;此處須同時形成天干五合與地支六合才標示合走，僅代表合絆後作用減弱，不會刪除原有反吟</li>
+                        <li class="mb-1"><span class="text-success">合絆原則</span>&ensp;此處須同時形成天干五合與地支六合才標示合絆；合與原有沖剋並存，不先假定已減弱或消失</li>
                     </ul>
                 </TopicNotice>
             </div>
@@ -102,7 +102,7 @@
 
     @if (visibleAnalyses.Any(analysis => !analysis.FuYin.IncludesHourPillar)) {
         <div class="alert alert-info analysis-item-explanation">
-            因出生時辰不確定，本次未將時柱納入伏吟、反吟與合走判斷；補齊準確時辰後，結果可能改變。
+            因出生時辰不確定，本次未將時柱納入伏吟、反吟與合絆判斷；補齊準確時辰後，結果可能改變。
         </div>
     }
 }
@@ -111,23 +111,4 @@
     [Parameter, EditorRequired]
     public IReadOnlyList<FortuneYinAnalysisResult> Analyses { get; set; } = [];
 
-    private static string GetMitigationDuration(string periodName) {
-        return periodName switch {
-            "大運" => "在這段大運期間，",
-            "流年" => "在這個流年內，",
-            "流月" => "在這個流月內，",
-            _ => "在這段期間，"
-        };
-    }
-
-    private static string GetElementColorClass(WuXing element) {
-        return element switch {
-            WuXing.Mu => "element-wood",
-            WuXing.Huo => "element-fire",
-            WuXing.Tu => "element-earth",
-            WuXing.Jin => "element-metal",
-            WuXing.Shui => "element-water",
-            _ => string.Empty
-        };
-    }
 }

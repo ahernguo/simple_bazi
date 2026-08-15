@@ -1,0 +1,13 @@
+@inject BaZiDescriptionService DescriptionService
+
+@{
+    DayMasterProfile profile = DescriptionService.GetDayMasterProfile(Info.DayZhu.Gan);
+}
+
+<div><strong>代表物：</strong> @profile.Representative</div>
+<div><strong>描&ensp;&ensp;述：</strong> @profile.Description</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public BaZiInfo Info { get; set; } = default!;
+}

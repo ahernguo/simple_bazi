@@ -8,17 +8,18 @@ namespace BaZi.Models {
     }
 
     /// <summary>個人概述文字片段的語意種類。</summary>
-    public enum PersonalOverviewTextKind {
+    public enum SemanticTextKind {
         Plain,
         Element,
         TenGod
     }
 
-    /// <summary>供個人概述以安全 Razor 標記呈現的文字片段。</summary>
-    public sealed record PersonalOverviewTextSegment(
+    /// <summary>供共用 Razor 元件安全呈現的語意文字片段。</summary>
+    public sealed record SemanticTextSegment(
         string Text,
-        PersonalOverviewTextKind Kind = PersonalOverviewTextKind.Plain,
-        WuXing? Element = null
+        SemanticTextKind Kind = SemanticTextKind.Plain,
+        WuXing? Element = null,
+        ShiShen? TenGod = null
     );
 
     /// <summary>個人概述 Card 內的一個分析區塊。</summary>

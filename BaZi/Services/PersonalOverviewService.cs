@@ -4,14 +4,6 @@ namespace BaZi.Services {
 
     /// <summary>依指定課程筆記產生本命四大主題的個人概述。</summary>
     public sealed class PersonalOverviewService {
-        private static readonly WuXing[] ElementOrder = [
-            WuXing.Mu,
-        WuXing.Huo,
-        WuXing.Tu,
-        WuXing.Jin,
-        WuXing.Shui
-        ];
-
         private static readonly ShiShen[] GroupOrder = [
             ShiShen.Cai,
         ShiShen.GuanSha,
@@ -21,9 +13,18 @@ namespace BaZi.Services {
         ];
 
         private readonly TenGodAnalysisService _tenGodService;
+        private readonly EarthlyBranchRelationshipEngine _relationshipEngine;
 
-        public PersonalOverviewService(TenGodAnalysisService tenGodService) {
+        public PersonalOverviewService(TenGodAnalysisService tenGodService)
+            : this(tenGodService, new EarthlyBranchRelationshipEngine()) {
+        }
+
+        public PersonalOverviewService(
+            TenGodAnalysisService tenGodService,
+            EarthlyBranchRelationshipEngine relationshipEngine
+        ) {
             _tenGodService = tenGodService;
+            _relationshipEngine = relationshipEngine;
         }
 
         public PersonalOverviewResult Analyze(BaZiInfo info) {
@@ -159,8 +160,8 @@ namespace BaZi.Services {
             var counts = CountChartElements(info);
             var minimumCount = counts.Values.Min();
             var maximumCount = counts.Values.Max();
-            var strongestElements = ElementOrder.Where(element => counts[element] == maximumCount).ToArray();
-            var weakElements = ElementOrder
+            var strongestElements = CourseRuleCatalog.ElementOrder.Where(element => counts[element] == maximumCount).ToArray();
+            var weakElements = CourseRuleCatalog.ElementOrder
                 .Where(element => counts[element] == minimumCount)
                 .OrderByDescending(element => strongestElements.Any(strong => BaZiDefine.Restricting[strong] == element))
                 .ToArray();
@@ -173,7 +174,7 @@ namespace BaZi.Services {
                     : string.Empty;
                 return $"{element.ToWuXingString()}：{countText}{controlledText}。對應{rule.BodyAreas}。日常可{rule.Advice}。";
             }).ToArray();
-            var countSummary = string.Join("、", ElementOrder.Select(element => $"{element.ToWuXingString()} {counts[element]}"));
+            var countSummary = string.Join("、", CourseRuleCatalog.ElementOrder.Select(element => $"{element.ToWuXingString()} {counts[element]}"));
             var weakNames = string.Join("、", weakElements.Select(element => element.ToWuXingString()));
             var threeXing = GetNatalThreeXing(info);
             var riskDetails = threeXing.Count == 0
@@ -228,14 +229,21 @@ namespace BaZi.Services {
                 palaceDetails = ["因不確定準確時辰，此部分不進行推論"];
             } else {
                 var hourSignal = signals.Single(signal => signal.PillarName == "時柱");
-                var palaceRelation = GetPrimaryRelation(info.DayZhu.Zhi, info.HourZhu.Zhi);
+                IReadOnlyList<BranchRelationshipType> palaceRelations = GetPairRelations(
+                    info.DayZhu.Zhi,
+                    info.HourZhu.Zhi
+                );
+                bool hasClash = palaceRelations.Contains(BranchRelationshipType.SixClash);
+                bool hasPunishment = palaceRelations.Contains(BranchRelationshipType.Punishment);
+                string childPalaceRelationship = (hasClash, hasPunishment) switch {
+                    (true, true) => $"日支{info.DayZhu.Zhi.ToZhiString()}與時支{info.HourZhu.Zhi.ToZhiString()}同時形成相刑、相沖；親子互動較易出現距離、作息與溝通摩擦，兩種關係都須保留，不能互相抵銷。",
+                    (true, false) => $"日支{info.DayZhu.Zhi.ToZhiString()}與時支{info.HourZhu.Zhi.ToZhiString()}相沖；孩子長大後較可能外地求學、工作或聚少離多，關係是否疏離仍視相處狀況而定。",
+                    (false, true) => $"日支{info.DayZhu.Zhi.ToZhiString()}與時支{info.HourZhu.Zhi.ToZhiString()}相刑；親子互動需多花心力、較互不理解或有衝突，關係是否失敗仍視相處狀況而定。",
+                    _ => $"日支{info.DayZhu.Zhi.ToZhiString()}與時支{info.HourZhu.Zhi.ToZhiString()}未形成相刑或相沖，親子互動無太大問題，但要互相理解、尊重。"
+                };
                 palaceDetails = [
                     $"時柱{info.HourZhu.Gan.ToGanString()}{info.HourZhu.Zhi.ToZhiString()}是子息宮；{(hourSignal.TotalCount > 0 ? $"其中見到子息星來源：{DescribeSignalSources(hourSignal)}，生命中有孩子的緣分；非必定有孩子，但有緣分與機率。" : "未見子息星，生命中較無孩子的緣分；非絕對無子，僅表示緣分少、機率低。")}",
-                    palaceRelation switch {
-                        "相沖" => $"日支{info.DayZhu.Zhi.ToZhiString()}與時支{info.HourZhu.Zhi.ToZhiString()}相沖；孩子長大後較可能外地求學、工作或聚少離多，關係是否疏離仍視相處狀況而定。",
-                        "相刑" => $"日支{info.DayZhu.Zhi.ToZhiString()}與時支{info.HourZhu.Zhi.ToZhiString()}相刑；親子互動需多花心力、較互不理解或有衝突，關係是否失敗仍視相處狀況而定。",
-                        _ => $"日支{info.DayZhu.Zhi.ToZhiString()}與時支{info.HourZhu.Zhi.ToZhiString()}未形成相刑或相沖，親子互動無太大問題，但要互相理解、尊重。"
-                    }
+                    childPalaceRelationship
                 ];
             }
             var signalSummary = directCount > 0
@@ -384,7 +392,7 @@ namespace BaZi.Services {
             return $"完整日柱{pillarName}的輔助描述：{profile.Personality}；生活／工作傾向為{profile.Lifestyle}；外貌傾向為{profile.Appearance}。這不代表伴侶必須擁有相同日柱。";
         }
 
-        private static IReadOnlyList<string> GetPalaceRelations(BaZiInfo info) {
+        private IReadOnlyList<string> GetPalaceRelations(BaZiInfo info) {
             var relations = new List<string>();
             AppendPalaceRelation(relations, "月支", info.MonthZhu.Zhi, info.DayZhu.Zhi);
             if (info.IsBirthTimeAccurate) {
@@ -398,24 +406,31 @@ namespace BaZi.Services {
             return relations;
         }
 
-        private static void AppendPalaceRelation(
+        private void AppendPalaceRelation(
             ICollection<string> relations,
             string otherName,
             DiZhi other,
             DiZhi palace
         ) {
-            var relation = GetPrimaryRelation(palace, other);
-            if (relation is null)
+            IReadOnlyList<BranchRelationshipType> relationships = GetPairRelations(palace, other)
+                .Where(type => type is BranchRelationshipType.Punishment
+                    or BranchRelationshipType.SixClash
+                    or BranchRelationshipType.SixHarm
+                    or BranchRelationshipType.SixBreak)
+                .ToArray();
+            if (relationships.Count == 0)
                 return;
 
-            var advice = relation switch {
-                "相刑" => "較多口角、壓力與內耗，宜提早建立降溫與修復方式。",
-                "相沖" => "變動、距離或聚少離多傾向，適度空間有時比勉強黏在一起更省摩擦。",
-                "害" => "相處壓力與心情不悅，宜增加具體溝通。",
-                "破" => "影響通常較輕，列為一般磨合提醒即可。",
-                _ => string.Empty
-            };
-            relations.Add($"夫妻宮{palace.ToZhiString()}與{otherName}{other.ToZhiString()}形成{relation}：{advice}");
+            foreach (BranchRelationshipType relationship in relationships) {
+                var advice = relationship switch {
+                    BranchRelationshipType.Punishment => "較多口角、壓力與內耗，宜提早建立降溫與修復方式。",
+                    BranchRelationshipType.SixClash => "變動、距離或聚少離多傾向，適度空間有時比勉強黏在一起更省摩擦。",
+                    BranchRelationshipType.SixHarm => "相處壓力與心情不悅，宜增加具體溝通。",
+                    BranchRelationshipType.SixBreak => "影響通常較輕，列為一般磨合提醒即可。",
+                    _ => string.Empty
+                };
+                relations.Add($"夫妻宮{palace.ToZhiString()}與{otherName}{other.ToZhiString()}形成{relationship.ToDisplayName()}：{advice}");
+            }
         }
 
         private static PalaceProfile GetPalaceProfile(DiZhi branch) {
@@ -438,7 +453,7 @@ namespace BaZi.Services {
         private static IReadOnlyDictionary<WuXing, int> CountChartElements(BaZiInfo info) {
             var elements = GetPillars(info)
                 .SelectMany(item => new[] { item.Pillar.GanWuXing, item.Pillar.ZhiWuXing });
-            return ElementOrder.ToDictionary(element => element, element => elements.Count(item => item == element));
+            return CourseRuleCatalog.ElementOrder.ToDictionary(element => element, element => elements.Count(item => item == element));
         }
 
         private static IReadOnlyList<string> GetNatalThreeXing(BaZiInfo info) {
@@ -491,18 +506,11 @@ namespace BaZi.Services {
             };
         }
 
-        private static string? GetPrimaryRelation(DiZhi first, DiZhi second) {
-            if (first == second && BaZiDefine.SelfXing.Contains(first))
-                return "相刑";
-            if (first != second && BaZiDefine.TwoXing.Any(group => group.Contains(first) && group.Contains(second)))
-                return "相刑";
-            if (first != second && BaZiDefine.Chong.Any(group => group.Contains(first) && group.Contains(second)))
-                return "相沖";
-            if (first != second && BaZiDefine.Hai.Any(group => group.Contains(first) && group.Contains(second)))
-                return "害";
-            if (first != second && BaZiDefine.Po.Any(group => group.Contains(first) && group.Contains(second)))
-                return "破";
-            return null;
+        private IReadOnlyList<BranchRelationshipType> GetPairRelations(DiZhi first, DiZhi second) {
+            return _relationshipEngine.MatchPair(first, second)
+                .Select(match => match.RelationType)
+                .Distinct()
+                .ToArray();
         }
 
         private static IReadOnlyList<(string Name, Zhu Pillar)> GetPillars(BaZiInfo info) {

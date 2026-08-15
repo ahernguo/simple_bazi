@@ -1,3 +1,5 @@
+@inject PeriodFavorabilityService FavorabilityService
+
 <div class="card analysis-card p-3 mt-3">
     <h5 class="card-title analysis-card-title">
         <i class="fa-solid fa-shield-halved me-2" aria-hidden="true"></i>犯太歲與生肖相沖
@@ -30,8 +32,16 @@
         <div class="border rounded p-3 mb-3">
             <div>
                 <strong>流年十神功能：</strong>
-                天干 <TenGodText Info="Info" TenGod="annualStemTenGod" Mode="TenGodDisplayMode.Favorability" />、
-                地支 <TenGodText Info="Info" TenGod="annualBranchTenGod" Mode="TenGodDisplayMode.Favorability" />
+                天干 <TenGodText Info="Info"
+                                    TenGod="annualStemTenGod"
+                                    Mode="TenGodDisplayMode.Favorability"
+                                    FavorableOverride="GetFavorability(annualStemTenGod)"
+                                    FavorabilityReason="@GetFavorabilityReason()" />、
+                地支 <TenGodText Info="Info"
+                                    TenGod="annualBranchTenGod"
+                                    Mode="TenGodDisplayMode.Favorability"
+                                    FavorableOverride="GetFavorability(annualBranchTenGod)"
+                                    FavorabilityReason="@GetFavorabilityReason()" />
             </div>
         </div>
     }
@@ -125,6 +135,33 @@
     /// <summary>取得本命資料，用於呈現流年十神與喜忌。</summary>
     [Parameter]
     public BaZiInfo? Info { get; set; }
+
+    private bool? GetFavorability(ShiShen tenGod) {
+        DaYunFavorabilityContext? context = GetDaYunContext();
+        return Info is null || context is null
+            ? null
+            : FavorabilityService.IsPeriodFavorable(Info, context, tenGod);
+    }
+
+    private string? GetFavorabilityReason() {
+        DaYunFavorabilityContext? context = GetDaYunContext();
+        return Info is null || context is null
+            ? null
+            : FavorabilityService.GetPeriodReason(Info, context);
+    }
+
+    private DaYunFavorabilityContext? GetDaYunContext() {
+        if (Info is null) {
+            return null;
+        }
+
+        DaYun? daYun = Info.DaYunList.FirstOrDefault(item =>
+            Analysis.Year >= item.StartYear && Analysis.Year <= item.EndYear
+        );
+        return daYun is null
+            ? null
+            : FavorabilityService.EvaluateDaYun(Info, daYun, Analysis.Year);
+    }
 
     private static string GetDirectLabel(TaiSuiInteractionType interaction) {
         return interaction switch {

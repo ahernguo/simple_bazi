@@ -7,6 +7,9 @@ namespace BaZi.Services {
     public class FortuneService {
         private readonly FuYinAnalysisService _fuYinAnalysisService;
         private readonly FanYinAnalysisService _fanYinAnalysisService;
+        private readonly PeriodFavorabilityService _periodFavorabilityService;
+        private readonly TenGodPresentationService _tenGodPresentationService;
+        private readonly EarthlyBranchRelationshipEngine _relationshipEngine;
 
         private enum PeriodScope {
             LiuNian,
@@ -28,36 +31,10 @@ namespace BaZi.Services {
         ("小寒", "小寒", 1, 1)
         ];
 
-        private static readonly WuXing[] ElementOrder = [
-            WuXing.Mu,
-        WuXing.Huo,
-        WuXing.Tu,
-        WuXing.Jin,
-        WuXing.Shui
-        ];
-
         // 以下地支表依筆記 3-2「講義列出的財星組合」照錄，不用通用藏干表自行補齊。
         // 待核對：木日主的丑藏己土卻未列入，外部「八字日元法」資料也未提供本課程的取捨門檻。
-        private static readonly IReadOnlyDictionary<WuXing, DiZhi[]> WealthBranches =
-            new Dictionary<WuXing, DiZhi[]> {
-                [WuXing.Jin] = [DiZhi.Yin, DiZhi.Mao, DiZhi.Chen, DiZhi.Wei, DiZhi.Hai],
-                [WuXing.Mu] = [DiZhi.Yin, DiZhi.Chen, DiZhi.Si, DiZhi.Wu, DiZhi.Wei, DiZhi.Shen, DiZhi.Xu],
-                [WuXing.Shui] = [DiZhi.Yin, DiZhi.Si, DiZhi.Wu, DiZhi.Wei, DiZhi.Xu],
-                [WuXing.Huo] = [DiZhi.Chou, DiZhi.Si, DiZhi.Shen, DiZhi.You, DiZhi.Xu],
-                [WuXing.Tu] = [DiZhi.Zi, DiZhi.Chou, DiZhi.Chen, DiZhi.Shen, DiZhi.Hai]
-            };
-
         // 以下地支表依筆記 3-4「五日主官殺流日速查」照錄。
         // 待核對：木日主的辰是課程「濕土生金」例外，不代表辰的主氣或藏干已改為金。
-        private static readonly IReadOnlyDictionary<WuXing, DiZhi[]> CareerBranches =
-            new Dictionary<WuXing, DiZhi[]> {
-                [WuXing.Jin] = [DiZhi.Yin, DiZhi.Si, DiZhi.Wu, DiZhi.Wei, DiZhi.Xu],
-                [WuXing.Mu] = [DiZhi.Chou, DiZhi.Si, DiZhi.Shen, DiZhi.You, DiZhi.Xu, DiZhi.Chen],
-                [WuXing.Shui] = [DiZhi.Chou, DiZhi.Yin, DiZhi.Chen, DiZhi.Si, DiZhi.Wu, DiZhi.Wei, DiZhi.Shen, DiZhi.Xu],
-                [WuXing.Huo] = [DiZhi.Zi, DiZhi.Chou, DiZhi.Chen, DiZhi.Shen, DiZhi.Hai],
-                [WuXing.Tu] = [DiZhi.Yin, DiZhi.Mao, DiZhi.Chen, DiZhi.Wei, DiZhi.Hai]
-            };
-
         // 以下夫妻星地支依筆記 4-4 的男女十組講義表照錄，不以對稱推理擴寫。
         // 待核對：火日主女命未列辰、金日主男命未列未等差異，在筆記與外部資料中仍沒有一致門檻。
         private static readonly IReadOnlyDictionary<(WuXing DayMaster, Sex Gender), DiZhi[]> SpouseBranches =
@@ -74,25 +51,40 @@ namespace BaZi.Services {
                 [(WuXing.Shui, Sex.Male)] = [DiZhi.Si, DiZhi.Wu, DiZhi.Wei, DiZhi.Xu]
             };
 
-        private static readonly IReadOnlyDictionary<WuXing, string> HealthParts =
-            new Dictionary<WuXing, string> {
-                [WuXing.Mu] = "肝、膽、四肢與筋骨",
-                [WuXing.Huo] = "心臟、心血管與眼睛",
-                [WuXing.Tu] = "脾胃、腸胃與消化吸收",
-                [WuXing.Jin] = "呼吸道、肺、支氣管、大腸與皮膚",
-                [WuXing.Shui] = "腎臟、膀胱、泌尿與循環系統"
-            };
-
         public FortuneService()
-            : this(new FuYinAnalysisService(), new FanYinAnalysisService()) {
+            : this(
+                new FuYinAnalysisService(),
+                new FanYinAnalysisService(),
+                new PeriodFavorabilityService(),
+                new TenGodPresentationService(),
+                new EarthlyBranchRelationshipEngine()
+            ) {
         }
 
         public FortuneService(
             FuYinAnalysisService fuYinAnalysisService,
             FanYinAnalysisService fanYinAnalysisService
+        ) : this(
+            fuYinAnalysisService,
+            fanYinAnalysisService,
+            new PeriodFavorabilityService(),
+            new TenGodPresentationService(),
+            new EarthlyBranchRelationshipEngine()
+        ) {
+        }
+
+        public FortuneService(
+            FuYinAnalysisService fuYinAnalysisService,
+            FanYinAnalysisService fanYinAnalysisService,
+            PeriodFavorabilityService periodFavorabilityService,
+            TenGodPresentationService tenGodPresentationService,
+            EarthlyBranchRelationshipEngine relationshipEngine
         ) {
             _fuYinAnalysisService = fuYinAnalysisService;
             _fanYinAnalysisService = fanYinAnalysisService;
+            _periodFavorabilityService = periodFavorabilityService;
+            _tenGodPresentationService = tenGodPresentationService;
+            _relationshipEngine = relationshipEngine;
         }
 
         public IReadOnlyList<int> GetLiuNianYears(BaZiInfo info) {
@@ -307,14 +299,9 @@ namespace BaZi.Services {
             int requiredCount,
             bool mustIncludeLast,
             out IList<IGanZhi> participants,
-            out int sourceIndex,
-            ISet<int>? excludedSourceIndices = null
+            out int sourceIndex
         ) where T : notnull {
             for (var index = 0; index < sources.Count; index++) {
-                if (excludedSourceIndices?.Contains(index) == true) {
-                    continue;
-                }
-
                 foreach (var target in targets) {
                     if (TrySelectParticipants(sources[index], target, valueSelector, requiredCount, mustIncludeLast, out participants)) {
                         sourceIndex = index;
@@ -326,21 +313,6 @@ namespace BaZi.Services {
             participants = [];
             sourceIndex = -1;
             return false;
-        }
-
-        private static void AddMatchingPairSourceIndices(
-            IList<IList<IGanZhi>> sources,
-            IList<IGanZhi> participants,
-            ISet<int> sourceIndices
-        ) {
-            for (var index = 0; index < sources.Count; index++) {
-                bool isMatchingPair = sources[index].All(item =>
-                    participants.Any(participant => ReferenceEquals(participant, item))
-                );
-                if (isMatchingPair) {
-                    sourceIndices.Add(index);
-                }
-            }
         }
 
         private static bool TrySelectParticipants<T>(
@@ -541,19 +513,15 @@ namespace BaZi.Services {
             }
             // 地支三會、六合
             if (threePair != null) {
-                /* 由於六合裡有兩個是包含在三會裡，優先檢查三會，如果用走了，從清單移除，不要再被六合 */
-                var copiedThreePair = threePair.Select(p => p).ToList();
                 foreach (var wx in BaZiDefine.WuXingList) {
                     if (BaZiDefine.ThreeHui.ContainsKey(wx)
-                        && TryFindInteraction(copiedThreePair, BaZiDefine.ThreeHui[wx], item => item.Zhi, 3, true, out _, out var huiIdx)) {
+                        && TryFindInteraction(threePair, BaZiDefine.ThreeHui[wx], item => item.Zhi, 3, true, out _, out _)) {
                         // 三會沒有要特別什麼狀況，理論上只跟判讀大運、流年時，看五行會不會很不平衡之類，所以這邊就不做 CreateThreeHuiDesc 了!
                         if (!heHui.ContainsKey(HeHui.ThreeHui))
                             heHui.Add(HeHui.ThreeHui, wx);
-                        // 從 copiedThreePair 移除，避免再被六合比對到
-                        copiedThreePair.RemoveAt(huiIdx);
                     }
                     if (BaZiDefine.SixHe.ContainsKey(wx)
-                        && TryFindInteraction(copiedThreePair, BaZiDefine.SixHe[wx], item => item.Zhi, 2, true, out var heInteraction, out _)) {
+                        && TryFindInteraction(threePair, BaZiDefine.SixHe[wx], item => item.Zhi, 2, true, out var heInteraction, out _)) {
                         // 判斷這個被用走的地支是好的還壞的
                         var type = 0;
                         var firstElement = heInteraction[0].Zhi.ToWuXing();
@@ -571,39 +539,23 @@ namespace BaZi.Services {
                     }
                 }
             }
-            // 檢查是否合會可以減輕刑度
-            var help = (heHui.ContainsKey(HeHui.ThreeHui) && isFavorable(heHui[HeHui.ThreeHui]))
-                || (heHui.ContainsKey(HeHui.ThreeHe) && isFavorable(heHui[HeHui.ThreeHe]))
-                || (heHui.ContainsKey(HeHui.SixHe) && isFavorable(heHui[HeHui.SixHe]));
-            var worse = (heHui.ContainsKey(HeHui.ThreeHui) && !isFavorable(heHui[HeHui.ThreeHui]))
-                || (heHui.ContainsKey(HeHui.ThreeHe) && !isFavorable(heHui[HeHui.ThreeHe]))
-                || (heHui.ContainsKey(HeHui.SixHe) && !isFavorable(heHui[HeHui.SixHe]));
-            var helpStr = "，但因有合相補分，會讓不順感降低一些";
-            var worseStr = "，且因合相能量過強，會讓不順感更加嚴重";
+            var combinationNote = heHui.Count > 0
+                ? "；合會與刑沖破害同時保留，是否減輕或加重須依完整命局另行核對"
+                : string.Empty;
             IList<IGanZhi> threeXingInteraction;
             IList<IGanZhi> twoXingInteraction;
             int idx;
-            // 同一對地支若同時符合多種關係，以相刑優先，避免後續重複列為沖、破或害。
-            var xingSourceIndices = new HashSet<int>();
             // 無恩之刑 = 寅巳申 (外在, 力度強)
             if ((threePair != null)
                 && TryFindInteraction(threePair, BaZiDefine.ThreeXing[0], item => item.Zhi, 3, true, out threeXingInteraction, out idx)) {
                 var msg = "談判破局、反覆失誤、衝動行事";
-                if (help)
-                    msg += helpStr;
-                if (worse)
-                    msg += worseStr;
+                msg += combinationNote;
                 CreateThreeXingDesc(threeXingInteraction, msg, "三思後行、注意車關", html);
-                AddMatchingPairSourceIndices(twoPair, threeXingInteraction, xingSourceIndices);
                 bad = true;
             } else if (TryFindInteraction(twoPair, BaZiDefine.ThreeXing[0], item => item.Zhi, 2, true, out twoXingInteraction, out idx)) {
                 var msg = "談判受挫、容易失誤、容易衝動";
-                if (help)
-                    msg += helpStr;
-                if (worse)
-                    msg += worseStr;
+                msg += combinationNote;
                 CreateTwoXingDesc(twoXingInteraction, msg, "三思後行", "強", html);
-                xingSourceIndices.Add(idx);
                 bad = true;
             }
             // 恃勢之刑 = 丑戌未 (外在, 力度強)
@@ -612,12 +564,8 @@ namespace BaZi.Services {
                 var msg = (idx == 0)
                     ? "與父母緣薄、協助調停家庭內鬥或房產糾紛、捲入官司 (心中糾結累積、不開心)"
                     : "與子女緣薄、子女紛爭、房產糾紛 (心中糾結累積、不開心)";
-                if (help)
-                    msg += helpStr;
-                if (worse)
-                    msg += worseStr;
+                msg += combinationNote;
                 CreateThreeXingDesc(threeXingInteraction, msg, "注意車關、不動產問題", html);
-                AddMatchingPairSourceIndices(twoPair, threeXingInteraction, xingSourceIndices);
                 bad = true;
             } else if (TryFindInteraction(twoPair, BaZiDefine.TwoXing[1], item => item.Zhi, 2, true, out twoXingInteraction, out idx)) {
                 var msg = idx switch {
@@ -627,12 +575,8 @@ namespace BaZi.Services {
                     3 => "與子女關係較差、容易有口角糾紛 (心中糾結累積、不開心)",
                     _ => "與家人緣薄、家庭內鬥、房產糾紛 (心中糾結累積、不開心)"
                 };
-                if (help)
-                    msg += helpStr;
-                if (worse)
-                    msg += worseStr;
+                msg += combinationNote;
                 CreateTwoXingDesc(twoXingInteraction, msg, "注意情緒性用詞", "強", html);
-                xingSourceIndices.Add(idx);
                 bad = true;
             }
             // 恩愛之刑 = 子卯 (外在, 力度小)
@@ -644,27 +588,19 @@ namespace BaZi.Services {
                     3 => "與子女較容易想法不同",
                     _ => "感情糾紛、口角"
                 };
-                if (help)
-                    msg += helpStr;
-                if (worse)
-                    msg += worseStr;
+                msg += combinationNote;
                 CreateTwoXingDesc(twoXingInteraction, msg, "注意溝通", "小", html);
-                xingSourceIndices.Add(idx);
                 bad = true;
             }
-            // 自刑 = 辰辰, 午午, 酉酉, 戌戌 (內在)
+            // 自刑 = 辰辰、午午、酉酉、亥亥 (內在)
             if (TryFindSelfInteraction(twoPair, BaZiDefine.SelfXing, out var selfXingInteraction, out idx)) {
                 var msg = "內耗、情緒糾結、鑽牛角尖";
-                if (help)
-                    msg += helpStr;
-                if (worse)
-                    msg += worseStr;
+                msg += combinationNote;
                 CreateSelfXingDesc(selfXingInteraction, msg, html);
-                xingSourceIndices.Add(idx);
                 bad = true;
             }
             // 沖 = 子午、丑未、寅申、卯酉、辰戌、巳亥
-            if (TryFindAnyInteraction(twoPair, BaZiDefine.Chong, item => item.Zhi, 2, true, out var pairInteraction, out idx, xingSourceIndices)) {
+            if (TryFindAnyInteraction(twoPair, BaZiDefine.Chong, item => item.Zhi, 2, true, out var pairInteraction, out idx)) {
                 var msg = idx switch {
                     0 => "跟長輩聚少離多、易口角衝突",
                     1 => "跟父母聚少離多、晚婚、易口角衝突、住所不穩定",
@@ -672,25 +608,19 @@ namespace BaZi.Services {
                     3 => "跟子女聚少離多、易口角衝突",
                     _ => "衝突、車關、變動、突發、搬遷"
                 };
-                if (help)
-                    msg += helpStr;
-                if (worse)
-                    msg += worseStr;
+                msg += combinationNote;
                 CreateChongDesc(pairInteraction, msg, html);
                 bad = true;
             }
             // 破 = 寅亥、巳申、子酉、午卯、戌未、丑辰
-            if (TryFindAnyInteraction(twoPair, BaZiDefine.Po, item => item.Zhi, 2, true, out pairInteraction, out idx, xingSourceIndices)) {
+            if (TryFindAnyInteraction(twoPair, BaZiDefine.Po, item => item.Zhi, 2, true, out pairInteraction, out idx)) {
                 var msg = "做事有阻力、破局、容易受傷";
-                if (help)
-                    msg += helpStr;
-                if (worse)
-                    msg += worseStr;
+                msg += combinationNote;
                 CreatePoDesc(pairInteraction, msg, html);
                 bad = true;
             }
             // 害 = 卯辰、寅巳、午丑、子未、酉戌、申亥
-            if (TryFindAnyInteraction(twoPair, BaZiDefine.Hai, item => item.Zhi, 2, true, out pairInteraction, out idx, xingSourceIndices)) {
+            if (TryFindAnyInteraction(twoPair, BaZiDefine.Hai, item => item.Zhi, 2, true, out pairInteraction, out idx)) {
                 var msg = idx switch {
                     0 => "人際壓力、與長輩相處易有摩擦、情緒不悅",
                     1 => "人際壓力、與父母相處易有摩擦、情緒不悅",
@@ -698,10 +628,7 @@ namespace BaZi.Services {
                     3 => "人際壓力、與子女相處易有摩擦、情緒不悅",
                     _ => "傷害、人際壓力、影響父母/夫妻/子女關係、情緒不悅、易摩擦"
                 };
-                if (help)
-                    msg += helpStr;
-                if (worse)
-                    msg += worseStr;
+                msg += combinationNote;
                 CreateHaiDesc(pairInteraction, msg, html);
                 bad = true;
             }
@@ -1209,14 +1136,6 @@ namespace BaZi.Services {
             }
         }
 
-        private sealed record DaYunContextAssessment(
-            DaYunPhase Phase,
-            ShiShen PrimaryTenGod,
-            ShiShen SecondaryTenGod,
-            bool PrimaryIsFavorable,
-            bool SecondaryIsFavorable
-        );
-
         private sealed record PeriodDirectionAssessment(
             ShiShen GanTenGod,
             ShiShen ZhiTenGod,
@@ -1228,24 +1147,13 @@ namespace BaZi.Services {
             public bool HasUnfavorable => UnfavorableTenGods.Count > 0;
         }
 
-        private static DaYunContextAssessment EvaluateDaYunContext(BaZiInfo info, DaYun daYun, int targetYear) {
-            var phase = daYun.GetPhase(targetYear);
-            var ganTenGod = daYun.Gan.ToShiShen(info.DayZhu.Gan).ToCombined();
-            var zhiTenGod = daYun.Zhi.ToShiShen(info.DayZhu.Gan).ToCombined();
-            var primaryTenGod = phase == DaYunPhase.FirstFiveYears ? ganTenGod : zhiTenGod;
-            var secondaryTenGod = phase == DaYunPhase.FirstFiveYears ? zhiTenGod : ganTenGod;
-            return new DaYunContextAssessment(
-                phase,
-                primaryTenGod,
-                secondaryTenGod,
-                IsOriginalFavorable(info, primaryTenGod),
-                IsOriginalFavorable(info, secondaryTenGod)
-            );
+        private DaYunFavorabilityContext EvaluateDaYunContext(BaZiInfo info, DaYun daYun, int targetYear) {
+            return _periodFavorabilityService.EvaluateDaYun(info, daYun, targetYear);
         }
 
-        private static PeriodDirectionAssessment EvaluatePeriodDirection(
+        private PeriodDirectionAssessment EvaluatePeriodDirection(
             BaZiInfo info,
-            DaYunContextAssessment daYunContext,
+            DaYunFavorabilityContext daYunContext,
             ShiShen ganTenGod,
             ShiShen zhiTenGod
         ) {
@@ -1260,9 +1168,9 @@ namespace BaZi.Services {
             );
         }
 
-        private static PeriodDirectionAssessment EvaluatePeriodDirection(
+        private PeriodDirectionAssessment EvaluatePeriodDirection(
             BaZiInfo info,
-            DaYunContextAssessment daYunContext,
+            DaYunFavorabilityContext daYunContext,
             IGanZhi period
         ) {
             return EvaluatePeriodDirection(
@@ -1273,38 +1181,25 @@ namespace BaZi.Services {
             );
         }
 
-        private static bool IsOriginalFavorable(BaZiInfo info, ShiShen tenGod) {
-            return info.LikeWuXing.Contains(GetTenGodElement(info, tenGod));
+        private bool IsOriginalFavorable(BaZiInfo info, ShiShen tenGod) {
+            return _periodFavorabilityService.IsNatalFavorable(info, tenGod);
         }
 
-        private static bool IsEffectivePeriodFavorable(
+        private bool IsEffectivePeriodFavorable(
             BaZiInfo info,
-            DaYunContextAssessment daYunContext,
+            DaYunFavorabilityContext daYunContext,
             ShiShen tenGod
         ) {
-            var group = tenGod.ToCombined();
-            var isExhaustingDirection = group is ShiShen.Cai or ShiShen.GuanSha or ShiShen.ShihShang;
-            return UsesExhaustingPeriodDirection(info, daYunContext)
-                ? isExhaustingDirection
-                : !isExhaustingDirection;
+            return _periodFavorabilityService.IsPeriodFavorable(info, daYunContext, tenGod);
         }
 
-        private static bool UsesExhaustingPeriodDirection(BaZiInfo info, DaYunContextAssessment daYunContext) {
-            return info.StrengthStatus switch {
-                GeJu.ShenQiang or GeJu.CongRuo => true,
-                GeJu.CongQiang => false,
-                GeJu.ShenRuo => daYunContext.PrimaryIsFavorable,
-                _ => throw new System.ComponentModel.InvalidEnumArgumentException(
-                    nameof(info.StrengthStatus),
-                    (int)info.StrengthStatus,
-                    typeof(GeJu)
-                )
-            };
+        private bool UsesExhaustingPeriodDirection(BaZiInfo info, DaYunFavorabilityContext daYunContext) {
+            return _periodFavorabilityService.IsPeriodFavorable(info, daYunContext, ShiShen.Cai);
         }
 
-        private static string DescribeDaYunContext(
+        private string DescribeDaYunContext(
             BaZiInfo info,
-            DaYunContextAssessment context
+            DaYunFavorabilityContext context
         ) {
             var phase = context.Phase == DaYunPhase.FirstFiveYears ? "前五年天干" : "後五年地支";
             var primary = FormatTenGod(info, context.PrimaryTenGod);
@@ -1315,9 +1210,9 @@ namespace BaZi.Services {
             return $"大運{phase}主作用為{primary}，次要背景為{secondary}；{interaction}。";
         }
 
-        private static string DescribePeriodDirection(
+        private string DescribePeriodDirection(
             BaZiInfo info,
-            DaYunContextAssessment daYunContext,
+            DaYunFavorabilityContext daYunContext,
             PeriodDirectionAssessment assessment,
             string periodLabel
         ) {
@@ -1331,9 +1226,9 @@ namespace BaZi.Services {
             return $"{periodLabel}天干為{gan}、地支主氣為{zhi}，{result}。";
         }
 
-        private static string DescribeLayeredPeriodResult(
+        private string DescribeLayeredPeriodResult(
             BaZiInfo info,
-            DaYunContextAssessment daYunContext,
+            DaYunFavorabilityContext daYunContext,
             PeriodDirectionAssessment yearAssessment,
             PeriodDirectionAssessment currentAssessment,
             PeriodScope period
@@ -1543,7 +1438,7 @@ namespace BaZi.Services {
             ));
         }
 
-        private static string GetTopicAnalysisHtml(
+        private string GetTopicAnalysisHtml(
             BaZiInfo info,
             DaYun daYun,
             LiuNian liuNian,
@@ -1558,7 +1453,7 @@ namespace BaZi.Services {
             return html.ToString();
         }
 
-        private static void AppendWealthCareerCard(
+        private void AppendWealthCareerCard(
             BaZiInfo info,
             DaYun daYun,
             LiuNian liuNian,
@@ -1572,11 +1467,11 @@ namespace BaZi.Services {
             var outputElement = BaZiDefine.Generation[info.RiZhu];
             var careerElement = BaZiDefine.RestrictBy[info.RiZhu];
             var ganHasWealth = ganElement == wealthElement;
-            var zhiHasWealth = WealthBranches[info.RiZhu].Contains(periodGanZhi.Zhi);
+            var zhiHasWealth = CourseRuleCatalog.PeriodWealthBranches[info.RiZhu].Contains(periodGanZhi.Zhi);
             var ganHasOutput = ganElement == outputElement;
             var zhiHasOutput = zhiElement == outputElement;
             var ganHasCareer = ganElement == careerElement;
-            var zhiHasCareer = CareerBranches[info.RiZhu].Contains(periodGanZhi.Zhi);
+            var zhiHasCareer = CourseRuleCatalog.CareerBranches[info.RiZhu].Contains(periodGanZhi.Zhi);
             var periodLabel = period == PeriodScope.LiuNian ? "本年" : "本月";
             var daYunContext = EvaluateDaYunContext(info, daYun, liuNian.Year);
             var currentAssessment = EvaluatePeriodDirection(info, daYunContext, periodGanZhi);
@@ -1661,7 +1556,7 @@ namespace BaZi.Services {
             html.AppendLine("</div>");
         }
 
-        private static void AppendRelationshipCard(
+        private void AppendRelationshipCard(
             BaZiInfo info,
             DaYun daYun,
             LiuNian liuNian,
@@ -1764,7 +1659,7 @@ namespace BaZi.Services {
             html.AppendLine("</div>");
         }
 
-        private static void AppendChildTimingCard(
+        private void AppendChildTimingCard(
             BaZiInfo info,
             DaYun daYun,
             LiuNian liuNian,
@@ -1821,7 +1716,7 @@ namespace BaZi.Services {
             html.AppendLine("</div>");
         }
 
-        private static void AppendHealthCard(
+        private void AppendHealthCard(
             BaZiInfo info,
             DaYun daYun,
             LiuNian liuNian,
@@ -1831,9 +1726,9 @@ namespace BaZi.Services {
         ) {
             var counts = CountChartElements(info);
             var minimumCount = counts.Values.Min();
-            var weakElements = ElementOrder.Where(element => counts[element] == minimumCount).ToArray();
-            var countDescription = string.Join("、", ElementOrder.Select(element => $"{FormatElement(element)} {counts[element]}"));
-            var weakDescription = string.Join("；", weakElements.Select(element => $"{FormatElement(element)}：{HealthParts[element]}"));
+            var weakElements = CourseRuleCatalog.ElementOrder.Where(element => counts[element] == minimumCount).ToArray();
+            var countDescription = string.Join("、", CourseRuleCatalog.ElementOrder.Select(element => $"{FormatElement(element)} {counts[element]}"));
+            var weakDescription = string.Join("；", weakElements.Select(element => $"{FormatElement(element)}：{CourseRuleCatalog.HealthParts[element]}"));
             var periodLabel = period == PeriodScope.LiuNian ? "本年" : "本月";
             var threePunishment = GetHealthThreePunishment(info, daYun, liuNian, periodGanZhi, period);
             var ganDisplay = FormatElement(periodGanZhi.Gan.ToWuXing(), periodGanZhi.Gan.ToGanString());
@@ -1865,7 +1760,7 @@ namespace BaZi.Services {
             html.AppendLine("</div>");
         }
 
-        private static string GetCapacityAdvice(
+        private string GetCapacityAdvice(
             BaZiInfo info,
             DaYun daYun,
             LiuNian liuNian,
@@ -1898,7 +1793,7 @@ namespace BaZi.Services {
             return $"{layers} {action}";
         }
 
-        private static (string Desc, bool Accept) GetRelationshipAdvice(
+        private (string Desc, bool Accept) GetRelationshipAdvice(
             BaZiInfo info,
             DaYun daYun,
             LiuNian liuNian,
@@ -1961,7 +1856,7 @@ namespace BaZi.Services {
                 || (!Primary.HasSupport && Secondary.HasChallenge);
         }
 
-        private static string GetHealthPeriodAdvice(
+        private string GetHealthPeriodAdvice(
             BaZiInfo info,
             DaYun daYun,
             LiuNian liuNian,
@@ -2076,7 +1971,7 @@ namespace BaZi.Services {
             return "各時間層沒有明顯補強；維持保守作息，並以病史、症狀與檢查結果為準。";
         }
 
-        private static string DescribeCongHealthLayer(
+        private string DescribeCongHealthLayer(
             BaZiInfo info,
             IReadOnlyCollection<WuXing> elements,
             string periodLabel
@@ -2092,7 +1987,7 @@ namespace BaZi.Services {
             };
         }
 
-        private static string DescribeCongDaYunHealthLayer(
+        private string DescribeCongDaYunHealthLayer(
             BaZiInfo info,
             WuXing primaryElement,
             WuXing secondaryElement,
@@ -2112,7 +2007,7 @@ namespace BaZi.Services {
         }
 
         private static IReadOnlyDictionary<WuXing, int> CountChartElements(BaZiInfo info) {
-            var counts = ElementOrder.ToDictionary(element => element, _ => 0);
+            var counts = CourseRuleCatalog.ElementOrder.ToDictionary(element => element, _ => 0);
             Zhu[] pillars = [info.YearZhu, info.MonthZhu, info.DayZhu, info.HourZhu];
             foreach (var pillar in pillars) {
                 counts[pillar.GanWuXing]++;
@@ -2163,7 +2058,7 @@ namespace BaZi.Services {
             return (null, null);
         }
 
-        private static IReadOnlyList<TaiSuiInteractionType> GetTaiSuiInteractions(
+        private IReadOnlyList<TaiSuiInteractionType> GetTaiSuiInteractions(
             DiZhi natalBranch,
             DiZhi annualBranch
         ) {
@@ -2172,40 +2067,20 @@ namespace BaZi.Services {
                 interactions.Add(TaiSuiInteractionType.SameBranch);
             }
 
-            if (ContainsBranchPair(BaZiDefine.Chong, natalBranch, annualBranch)) {
-                interactions.Add(TaiSuiInteractionType.SixClash);
-            }
-
-            if (IsPunishment(natalBranch, annualBranch)) {
-                interactions.Add(TaiSuiInteractionType.Punishment);
-            }
-
-            if (ContainsBranchPair(BaZiDefine.Hai, natalBranch, annualBranch)) {
-                interactions.Add(TaiSuiInteractionType.SixHarm);
-            }
-
-            if (ContainsBranchPair(BaZiDefine.Po, natalBranch, annualBranch)) {
-                interactions.Add(TaiSuiInteractionType.SixBreak);
+            foreach (BranchRelationshipRuleMatch match in _relationshipEngine.MatchPair(natalBranch, annualBranch)) {
+                TaiSuiInteractionType? interaction = match.RelationType switch {
+                    BranchRelationshipType.SixClash => TaiSuiInteractionType.SixClash,
+                    BranchRelationshipType.Punishment => TaiSuiInteractionType.Punishment,
+                    BranchRelationshipType.SixHarm => TaiSuiInteractionType.SixHarm,
+                    BranchRelationshipType.SixBreak => TaiSuiInteractionType.SixBreak,
+                    _ => null
+                };
+                if (interaction is not null && !interactions.Contains(interaction.Value)) {
+                    interactions.Add(interaction.Value);
+                }
             }
 
             return interactions;
-        }
-
-        private static bool ContainsBranchPair(
-            IEnumerable<IList<DiZhi>> groups,
-            DiZhi first,
-            DiZhi second
-        ) {
-            return first != second
-                && groups.Any(group => group.Contains(first) && group.Contains(second));
-        }
-
-        private static bool IsPunishment(DiZhi first, DiZhi second) {
-            if (first == second) {
-                return BaZiDefine.SelfXing.Contains(first);
-            }
-
-            return BaZiDefine.TwoXing.Any(group => group.Contains(first) && group.Contains(second));
         }
 
         private static string GetZodiac(DiZhi branch) {
@@ -2272,8 +2147,8 @@ namespace BaZi.Services {
                 zhiYun = periodGanZhi.Zhi.ToWuXing().ToShiShen(info.RiZhu);
             }
             html.AppendLine(@"    <div class=""analysis-item mb-0"">");
-            var ganColor = GetElementColorClass(periodGanZhi.Gan.ToWuXing());
-            var zhiColor = GetElementColorClass(periodGanZhi.Zhi.ToWuXing());
+            var ganColor = ElementPresentationService.GetCssClass(periodGanZhi.Gan.ToWuXing());
+            var zhiColor = ElementPresentationService.GetCssClass(periodGanZhi.Zhi.ToWuXing());
             var daYunContext = EvaluateDaYunContext(info, daYun, liuNian.Year);
             var ganYunDisplay = FormatEffectiveTenGod(info, daYunContext, ganYun, ganYun.ToYunString());
             var zhiYunDisplay = FormatEffectiveTenGod(info, daYunContext, zhiYun, zhiYun.ToYunString());
@@ -2299,59 +2174,39 @@ namespace BaZi.Services {
 
         private static string FormatElement(WuXing element, string? displayText = null) {
             var text = displayText ?? element.ToWuXingString();
-            return $"<span class=\"{GetElementColorClass(element)} fw-semibold\">{text}</span>";
+            return $"<span class=\"{ElementPresentationService.GetCssClass(element)} fw-semibold\">{text}</span>";
         }
 
-        private static string FormatTenGod(BaZiInfo info, ShiShen tenGod, string? displayText = null) {
-            var element = GetTenGodElement(info, tenGod);
-            return FormatTenGod(
+        private string FormatTenGod(BaZiInfo info, ShiShen tenGod, string? displayText = null) {
+            TenGodPresentation presentation = _tenGodPresentationService.CreateFavorability(
+                info,
                 tenGod,
-                element,
                 IsOriginalFavorable(info, tenGod),
                 "依本命格局",
                 displayText
             );
+            return _tenGodPresentationService.ToHtml(presentation);
         }
 
-        private static string FormatEffectiveTenGod(
+        private string FormatEffectiveTenGod(
             BaZiInfo info,
-            DaYunContextAssessment daYunContext,
+            DaYunFavorabilityContext daYunContext,
             ShiShen tenGod,
             string? displayText = null
         ) {
-            var element = GetTenGodElement(info, tenGod);
-            var basis = info.StrengthStatus switch {
-                GeJu.ShenRuo when daYunContext.PrimaryIsFavorable => "依身弱且大運主作用已幫扶的當期規則",
-                GeJu.CongQiang or GeJu.CongRuo => "依從格順勢／破格規則",
-                _ => "依本命格局與目前大運主作用"
-            };
-            return FormatTenGod(
+            TenGodPresentation presentation = _tenGodPresentationService.CreateFavorability(
+                info,
                 tenGod,
-                element,
                 IsEffectivePeriodFavorable(info, daYunContext, tenGod),
-                basis,
+                _periodFavorabilityService.GetPeriodReason(info, daYunContext),
                 displayText
             );
+            return _tenGodPresentationService.ToHtml(presentation);
         }
 
-        private static string FormatTenGod(
-            ShiShen tenGod,
-            WuXing element,
-            bool isFavorable,
-            string basis,
-            string? displayText
-        ) {
-            var stateClass = isFavorable ? "topic-ten-god-favorable" : "topic-ten-god-unfavorable";
-            var stateText = isFavorable ? "喜用神。喜用神可幫扶命主，為運勢加分" : "忌神。忌神會耗洩命主，相對不利";
-            var tenGodText = tenGod.ToShenString();
-            var tooltip = $"{tenGodText}屬{element.ToWuXingString()}，{basis}列為{stateText}";
-            return $"<span class=\"topic-ten-god {stateClass}\" title=\"{tooltip}\">{displayText ?? tenGodText}</span>";
-        }
-
-        private static string FormatFavorabilityLabel(bool isFavorable, string tooltip) {
-            var stateClass = isFavorable ? "topic-ten-god-favorable" : "topic-ten-god-unfavorable";
-            var text = isFavorable ? "喜用方向" : "忌神方向";
-            return $"<span class=\"topic-ten-god {stateClass}\" title=\"{tooltip}\">{text}</span>";
+        private string FormatFavorabilityLabel(bool isFavorable, string tooltip) {
+            TenGodPresentation presentation = _tenGodPresentationService.CreateDirection(isFavorable, tooltip);
+            return _tenGodPresentationService.ToHtml(presentation);
         }
 
         private static WuXing GetTenGodElement(BaZiInfo info, ShiShen tenGod) {
@@ -2365,15 +2220,5 @@ namespace BaZi.Services {
             };
         }
 
-        private static string GetElementColorClass(WuXing element) {
-            return element switch {
-                WuXing.Mu => "element-wood",
-                WuXing.Huo => "element-fire",
-                WuXing.Tu => "element-earth",
-                WuXing.Jin => "element-metal",
-                WuXing.Shui => "element-water",
-                _ => ""
-            };
-        }
     }
 }

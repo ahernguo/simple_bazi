@@ -9,3 +9,7 @@
 .compatibility-note-list li:last-child {
     margin-bottom: 0 !important;
 }
+
+.compatibility-transparent-alert {
+    background: transparent !important;
+}

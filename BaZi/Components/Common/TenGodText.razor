@@ -1,12 +1,11 @@
-@if (Mode == TenGodDisplayMode.Favorability) {
-    <span class="@FavorabilityCssClass" title="@Tooltip">@DisplayValue</span>
-} else {
-    <span class="topic-ten-god-reference">@DisplayValue</span>
-}
+@inject PeriodFavorabilityService FavorabilityService
+@inject TenGodPresentationService PresentationService
+
+<span class="@_presentation.CssClass" title="@_presentation.Tooltip">@_presentation.Text</span>
 
 @code {
-    [Parameter, EditorRequired]
-    public BaZiInfo Info { get; set; } = default!;
+    [Parameter]
+    public BaZiInfo? Info { get; set; }
 
     [Parameter, EditorRequired]
     public ShiShen TenGod { get; set; }
@@ -20,20 +19,41 @@
     [Parameter]
     public bool ShowFavorabilityLabel { get; set; }
 
-    private WuXing Element => TenGodElementResolver.Resolve(Info.RiZhu, TenGod);
+    [Parameter]
+    public bool? FavorableOverride { get; set; }
 
-    private bool IsFavorable => Info.LikeWuXing.Contains(Element);
+    [Parameter]
+    public string? FavorabilityReason { get; set; }
 
-    private string DisplayValue => Text
-        ?? (Mode == TenGodDisplayMode.Favorability && ShowFavorabilityLabel
-            ? $"{TenGod.ToShenString()}（{(IsFavorable ? "喜用神" : "忌神")}）"
-            : TenGod.ToShenString());
+    [Parameter]
+    public string? SubjectLabel { get; set; }
 
-    private string FavorabilityCssClass => IsFavorable
-        ? "topic-ten-god topic-ten-god-favorable"
-        : "topic-ten-god topic-ten-god-unfavorable";
+    private TenGodPresentation _presentation = new(
+        string.Empty,
+        "topic-ten-god-reference",
+        null,
+        null,
+        null
+    );
 
-    private string Tooltip => IsFavorable
-        ? $"{TenGod.ToShenString()}屬{Element.ToWuXingString()}，依本命格局列為喜用神\r\n喜用神可幫扶命主，對運勢加分"
-        : $"{TenGod.ToShenString()}屬{Element.ToWuXingString()}，依本命格局列為忌神\r\n忌神會耗洩命主，對運勢無法加分(相對不利)";
+    protected override void OnParametersSet() {
+        if (Mode == TenGodDisplayMode.Reference || Info is null) {
+            _presentation = PresentationService.CreateReference(TenGod, Text);
+            return;
+        }
+
+        bool isFavorable = FavorableOverride ?? FavorabilityService.IsNatalFavorable(Info, TenGod);
+        string reason = FavorabilityReason
+            ?? (string.IsNullOrWhiteSpace(SubjectLabel)
+                ? "依本命格局"
+                : $"依{SubjectLabel}本命格局");
+        _presentation = PresentationService.CreateFavorability(
+            Info,
+            TenGod,
+            isFavorable,
+            reason,
+            Text,
+            ShowFavorabilityLabel
+        );
+    }
 }

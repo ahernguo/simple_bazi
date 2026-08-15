@@ -27,6 +27,9 @@ namespace BaZi.Tests {
             services.AddSingleton<BaZiService>();
             services.AddSingleton<FortuneService>();
             services.AddSingleton<DailyFortuneService>();
+            services.AddSingleton<PeriodFavorabilityService>();
+            services.AddSingleton<TenGodPresentationService>();
+            services.AddSingleton<EarthlyBranchRelationshipEngine>();
             services.AddSingleton<NavigationManager, TestNavigationManager>();
 
             await using var serviceProvider = services.BuildServiceProvider();

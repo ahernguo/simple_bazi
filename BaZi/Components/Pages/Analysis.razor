@@ -33,7 +33,7 @@
                     <hr class="analysis-card-divider" aria-hidden="true" />
                     <div class="d-flex align-items-center justify-content-center h-100">
                         <div class="day-master-box text-center">
-                            <h1 class="display-1 @GetElementColorClass(info.RiZhu)">@info.DayZhu.Gan.ToGanString()</h1>
+                            <h1 class="display-1"><ElementText Element="info.RiZhu" Text="@(info.DayZhu.Gan.ToGanString())" /></h1>
                             <div class="fs-4">@info.RiZhuJiXing.ToJiXingString()@info.RiZhu.ToWuXingString()</div>
                         </div>
                     </div>
@@ -49,49 +49,49 @@
                 <div class="col">年柱</div>
             </div>
             <div class="row text-center mb-3">
-                <div class="col shishen zhuxing">@info.HourZhu.ZhuXing.ToShenString()</div>
+                <div class="col shishen zhuxing"><TenGodText TenGod="info.HourZhu.ZhuXing" /></div>
                 <div class="col shishen zhuxing">日主</div>
-                <div class="col shishen zhuxing">@info.MonthZhu.ZhuXing.ToShenString()</div>
-                <div class="col shishen zhuxing">@info.YearZhu.ZhuXing.ToShenString()</div>
+                <div class="col shishen zhuxing"><TenGodText TenGod="info.MonthZhu.ZhuXing" /></div>
+                <div class="col shishen zhuxing"><TenGodText TenGod="info.YearZhu.ZhuXing" /></div>
             </div>
             <div class="row text-center mb-3 fs-1">
-                <div class="col gan @GetElementColorClass(info.HourZhu.GanWuXing)">@info.HourZhu.Gan.ToGanString()</div>
-                <div class="col gan @GetElementColorClass(info.DayZhu.GanWuXing)">@info.DayZhu.Gan.ToGanString()</div>
-                <div class="col gan @GetElementColorClass(info.MonthZhu.GanWuXing)">@info.MonthZhu.Gan.ToGanString()</div>
-                <div class="col gan @GetElementColorClass(info.YearZhu.GanWuXing)">@info.YearZhu.Gan.ToGanString()</div>
+                <div class="col gan"><ElementText Element="info.HourZhu.GanWuXing" Text="@(info.HourZhu.Gan.ToGanString())" /></div>
+                <div class="col gan"><ElementText Element="info.DayZhu.GanWuXing" Text="@(info.DayZhu.Gan.ToGanString())" /></div>
+                <div class="col gan"><ElementText Element="info.MonthZhu.GanWuXing" Text="@(info.MonthZhu.Gan.ToGanString())" /></div>
+                <div class="col gan"><ElementText Element="info.YearZhu.GanWuXing" Text="@(info.YearZhu.Gan.ToGanString())" /></div>
             </div>
             <div class="row text-center mb-3 fs-1">
-                <div class="col zhi @GetElementColorClass(info.HourZhu.ZhiWuXing)">@info.HourZhu.Zhi.ToZhiString()</div>
-                <div class="col zhi @GetElementColorClass(info.DayZhu.ZhiWuXing)">@info.DayZhu.Zhi.ToZhiString()</div>
-                <div class="col zhi @GetElementColorClass(info.MonthZhu.ZhiWuXing)">@info.MonthZhu.Zhi.ToZhiString()</div>
-                <div class="col zhi @GetElementColorClass(info.YearZhu.ZhiWuXing)">@info.YearZhu.Zhi.ToZhiString()</div>
+                <div class="col zhi"><ElementText Element="info.HourZhu.ZhiWuXing" Text="@(info.HourZhu.Zhi.ToZhiString())" /></div>
+                <div class="col zhi"><ElementText Element="info.DayZhu.ZhiWuXing" Text="@(info.DayZhu.Zhi.ToZhiString())" /></div>
+                <div class="col zhi"><ElementText Element="info.MonthZhu.ZhiWuXing" Text="@(info.MonthZhu.Zhi.ToZhiString())" /></div>
+                <div class="col zhi"><ElementText Element="info.YearZhu.ZhiWuXing" Text="@(info.YearZhu.Zhi.ToZhiString())" /></div>
             </div>
             <div class="row text-center">
                 <div class="col fuxing">
                     <div class="row text-center">
                         @foreach (var ts in info.HourZhu.FuXing) {
-                            <div @key="ts" class="col shishen">@ts.ToShenString()</div>
+                            <div @key="ts" class="col shishen"><TenGodText TenGod="ts" /></div>
                         }
                     </div>
                 </div>
                 <div class="col fuxing">
                     <div class="row text-center">
                         @foreach (var ts in info.DayZhu.FuXing) {
-                            <div @key="ts" class="col shishen">@ts.ToShenString()</div>
+                            <div @key="ts" class="col shishen"><TenGodText TenGod="ts" /></div>
                         }
                     </div>
                 </div>
                 <div class="col fuxing">
                     <div class="row text-center">
                         @foreach (var ts in info.MonthZhu.FuXing) {
-                            <div @key="ts" class="col shishen">@ts.ToShenString()</div>
+                            <div @key="ts" class="col shishen"><TenGodText TenGod="ts" /></div>
                         }
                     </div>
                 </div>
                 <div class="col fuxing">
                     <div class="row text-center">
                         @foreach (var ts in info.YearZhu.FuXing) {
-                            <div @key="ts" class="col shishen">@ts.ToShenString()</div>
+                            <div @key="ts" class="col shishen"><TenGodText TenGod="ts" /></div>
                         }
                     </div>
                 </div>
@@ -99,15 +99,15 @@
         </div>
 
         <div class="card analysis-card mt-4 p-4">
-            <h5 class="card-title analysis-card-title"><span class="@GetElementColorClass(info.RiZhu)">@info.DayZhu.Gan.ToGanString()@info.RiZhu.ToWuXingString()</span> 日主</h5>
+            <h5 class="card-title analysis-card-title"><ElementText Element="info.RiZhu" Text="@(info.DayZhu.Gan.ToGanString() + info.RiZhu.ToWuXingString())" /> 日主</h5>
             <hr class="analysis-card-divider" aria-hidden="true" />
-            @GetRiZhuDesc(info)
+            <DayMasterDescription Info="info" />
         </div>
 
         <div class="card analysis-card mt-4 p-4">
             <h5 class="card-title analysis-card-title">@GetStrengthStatusText(info)</h5>
             <hr class="analysis-card-divider" aria-hidden="true" />
-            @GetGeJuDesc(info)
+            <StrengthDescription Info="info" />
         </div>
 
         <AnalysisCard Title="格局計算明細" Icon="fa-scale-balanced" CssClass="mt-4">
@@ -179,7 +179,7 @@
             <h5 class="card-title analysis-card-title">五行對應</h5>
             <hr class="analysis-card-divider" aria-hidden="true" />
             <div class="row ms-1 me-1 border-bottom-dash">
-                <div class="col-1 col-vc-hc @GetElementColorClass(BaZiDefine.Restricting[info.RiZhu])">@BaZiDefine.Restricting[info.RiZhu].ToWuXingString()</div>
+                <div class="col-1 col-vc-hc"><ElementText Element="BaZiDefine.Restricting[info.RiZhu]" /></div>
                 <div class="col-3 col-vc-hc">正財/偏財</div>
                 <div class="col-6 col-vc-hl">
                     錢財<br />
@@ -191,7 +191,7 @@
                 </div>
             </div>
             <div class="row ms-1 me-1 border-bottom-dash">
-                <div class="col-1 col-vc-hc @GetElementColorClass(BaZiDefine.RestrictBy[info.RiZhu])">@BaZiDefine.RestrictBy[info.RiZhu].ToWuXingString()</div>
+                <div class="col-1 col-vc-hc"><ElementText Element="BaZiDefine.RestrictBy[info.RiZhu]" /></div>
                 <div class="col-3 col-vc-hc">正官/七殺</div>
                 <div class="col-6 col-vc-hl">
                     工作、老闆<br />
@@ -203,7 +203,7 @@
                 </div>
             </div>
             <div class="row ms-1 me-1 border-bottom-dash">
-                <div class="col-1 col-vc-hc @GetElementColorClass(BaZiDefine.Generation[info.RiZhu])">@BaZiDefine.Generation[info.RiZhu].ToWuXingString()</div>
+                <div class="col-1 col-vc-hc"><ElementText Element="BaZiDefine.Generation[info.RiZhu]" /></div>
                 <div class="col-3 col-vc-hc">食神/傷官</div>
                 <div class="col-6">
                     文昌、考試運<br />
@@ -217,14 +217,14 @@
                 </div>
             </div>
             <div class="row ms-1 me-1 border-bottom-dash">
-                <div class="col-1 col-vc-hc @GetElementColorClass(BaZiDefine.GenerateBy[info.RiZhu])">@BaZiDefine.GenerateBy[info.RiZhu].ToWuXingString()</div>
+                <div class="col-1 col-vc-hc"><ElementText Element="BaZiDefine.GenerateBy[info.RiZhu]" /></div>
                 <div class="col-3 col-vc-hc">正印/偏印</div>
                 <div class="col-6 col-vc-hl">
                     女性長輩、母親
                 </div>
             </div>
             <div class="row ms-1 me-1">
-                <div class="col-1 col-vc-hc @GetElementColorClass(info.RiZhu)">@info.RiZhu.ToWuXingString()</div>
+                <div class="col-1 col-vc-hc"><ElementText Element="info.RiZhu" /></div>
                 <div class="col-3 col-vc-hc">比肩/劫財</div>
                 <div class="col-6 col-vc-hl">
                     平輩、朋友<br />
@@ -256,7 +256,8 @@
                                     <strong>@string.Join("、", match.PillarNames)</strong>
                                     同為
                                     <strong>
-                                        <span class="@GetElementColorClass(match.Gan.ToWuXing())">@match.Gan.ToGanString()</span><span class="@GetElementColorClass(match.Zhi.ToWuXing())">@match.Zhi.ToZhiString()</span>
+                                        <ElementText Element="match.Gan.ToWuXing()" Text="@(match.Gan.ToGanString())" />
+                                        <ElementText Element="match.Zhi.ToWuXing()" Text="@(match.Zhi.ToZhiString())" />
                                     </strong>
                                     。
                                 </ChildContent>
@@ -297,10 +298,10 @@
                             <AnalysisItem CssClass="mb-0" AlertClass="alert-warning">
                                 <ChildContent>
                                     <strong>@match.Pillars[0].Id</strong>
-                                    <span class="@GetElementColorClass(match.Pillars[0].Gan.ToWuXing())">@match.Pillars[0].Gan.ToGanString()</span><span class="@GetElementColorClass(match.Pillars[0].Zhi.ToWuXing())">@match.Pillars[0].Zhi.ToZhiString()</span>
+                                    <GanZhiText Value="match.Pillars[0]" />
                                     &nbsp;與&nbsp;
                                     <strong>@match.Pillars[1].Id</strong>
-                                    <span class="@GetElementColorClass(match.Pillars[1].Gan.ToWuXing())">@match.Pillars[1].Gan.ToGanString()</span><span class="@GetElementColorClass(match.Pillars[1].Zhi.ToWuXing())">@match.Pillars[1].Zhi.ToZhiString()</span>
+                                    <GanZhiText Value="match.Pillars[1]" />
                                     &nbsp;相剋相沖
                                 </ChildContent>
                                 <ExplanationContent>@match.Situation</ExplanationContent>
@@ -320,7 +321,7 @@
                         <li class="mb-1"><span class="text-warning">心態反覆</span>&ensp;命局反吟的人，想法容易反覆、缺乏安全感</li>
                         <li class="mb-1"><span class="text-warning">生活變動</span>&ensp;一生中常面臨工作轉換、搬家或人際關係的劇烈洗牌</li>
                         <li class="mb-1"><span class="text-success">化解原則</span>&ensp;行事宜求「穩」、保持定力，多修身養性以減少內心衝突</li>
-                        <li class="mb-1"><span class="text-success">大運流年</span>&ensp;當遇到適合的大運或流年，或可將相沖的柱給合走，在大運或流年的時間內會讓反吟的狀況減輕</li>
+                        <li class="mb-1"><span class="text-success">大運流年</span>&ensp;若另形成合絆，合與原有沖剋須同時保留；是否減輕及作用優先級仍需依完整條件核對，不先視為已化解</li>
                     </ul>
                 </TopicNotice>
             </div>
@@ -345,151 +346,4 @@
             : info.StrengthStatus.ToGeJuString();
     }
 
-    private string GetElementColorClass(WuXing element) {
-        return element switch {
-            WuXing.Mu => "element-wood",
-            WuXing.Huo => "element-fire",
-            WuXing.Tu => "element-earth",
-            WuXing.Jin => "element-metal",
-            WuXing.Shui => "element-water",
-            _ => ""
-        };
-    }
-
-    private MarkupString GetGeJuDesc(BaZiInfo info) {
-        string desc;
-        switch (info.StrengthStatus) {
-            case GeJu.ShenQiang:
-                desc = string.Format(
-                    @"<div>八字裡的 <span class=""{0}"">{1}</span> 能量較強，應削弱、耗洩 <span class=""{0}"">{1}</span> 能量</div>
-<br/>
-<div><strong>喜&ensp;&ensp;歡：</strong> <span class=""{2}"">{3}</span>、<span class=""{4}"">{5}</span>、<span class=""{6}"">{7}</span></div>
-<div><strong>不喜歡：</strong> <span class=""{8}"">{9}</span>、<span class=""{0}"">{1}</span></div>",
-                    GetElementColorClass(info.RiZhu),
-                    info.RiZhu.ToWuXingString(),
-                    GetElementColorClass(BaZiDefine.RestrictBy[info.RiZhu]),
-                    BaZiDefine.RestrictBy[info.RiZhu].ToWuXingString(),
-                    GetElementColorClass(BaZiDefine.Restricting[info.RiZhu]),
-                    BaZiDefine.Restricting[info.RiZhu].ToWuXingString(),
-                    GetElementColorClass(BaZiDefine.Generation[info.RiZhu]),
-                    BaZiDefine.Generation[info.RiZhu].ToWuXingString(),
-                    GetElementColorClass(BaZiDefine.GenerateBy[info.RiZhu]),
-                    BaZiDefine.GenerateBy[info.RiZhu].ToWuXingString()
-                );
-                break;
-            case GeJu.ShenRuo:
-                desc = string.Format(
-                    @"<div>八字裡的 <span class=""{0}"">{1}</span> 能量較薄弱，應加強 <span class=""{0}"">{1}</span> 能量</div>
-<br/>
-<div><strong>喜&ensp;&ensp;歡：</strong> <span class=""{8}"">{9}</span>、<span class=""{0}"">{1}</span></div>
-<div><strong>不喜歡：</strong> <span class=""{2}"">{3}</span>、<span class=""{4}"">{5}</span>、<span class=""{6}"">{7}</span></div>",
-                    GetElementColorClass(info.RiZhu),
-                    info.RiZhu.ToWuXingString(),
-                    GetElementColorClass(BaZiDefine.RestrictBy[info.RiZhu]),
-                    BaZiDefine.RestrictBy[info.RiZhu].ToWuXingString(),
-                    GetElementColorClass(BaZiDefine.Restricting[info.RiZhu]),
-                    BaZiDefine.Restricting[info.RiZhu].ToWuXingString(),
-                    GetElementColorClass(BaZiDefine.Generation[info.RiZhu]),
-                    BaZiDefine.Generation[info.RiZhu].ToWuXingString(),
-                    GetElementColorClass(BaZiDefine.GenerateBy[info.RiZhu]),
-                    BaZiDefine.GenerateBy[info.RiZhu].ToWuXingString()
-                );
-                break;
-            case GeJu.CongQiang:
-                desc = string.Format(
-                    @"<div>八字裡幫助 <span class=""{0}"">{1}</span> 能量的五行過多、其他五行太少，目前屬疑似從強格。先用多個大運與流年的實際事件確認旺勢是否專一；確認成格後，才順從大勢並補充幫助 <span class=""{0}"">{1}</span> 的能量</div>
-<br/>
-<div><strong>喜&ensp;&ensp;歡：</strong> <span class=""{8}"">{9}</span>、<span class=""{0}"">{1}</span></div>
-<div><strong>不喜歡：</strong> <span class=""{2}"">{3}</span>、<span class=""{4}"">{5}</span>、<span class=""{6}"">{7}</span></div>",
-                    GetElementColorClass(info.RiZhu),
-                    info.RiZhu.ToWuXingString(),
-                    GetElementColorClass(BaZiDefine.RestrictBy[info.RiZhu]),
-                    BaZiDefine.RestrictBy[info.RiZhu].ToWuXingString(),
-                    GetElementColorClass(BaZiDefine.Restricting[info.RiZhu]),
-                    BaZiDefine.Restricting[info.RiZhu].ToWuXingString(),
-                    GetElementColorClass(BaZiDefine.Generation[info.RiZhu]),
-                    BaZiDefine.Generation[info.RiZhu].ToWuXingString(),
-                    GetElementColorClass(BaZiDefine.GenerateBy[info.RiZhu]),
-                    BaZiDefine.GenerateBy[info.RiZhu].ToWuXingString()
-                );
-                break;
-            case GeJu.CongRuo:
-                desc = string.Format(
-                    @"<div>八字裡幫助 <span class=""{0}"">{1}</span> 能量的五行過少，目前屬疑似從弱格。先用多個大運與流年的實際事件確認主勢；確認成格後，才順從剋、洩、耗方向，不再強行補充幫助 <span class=""{0}"">{1}</span> 的能量</div>
-<br/>
-<div><strong>喜&ensp;&ensp;歡：</strong> <span class=""{2}"">{3}</span>、<span class=""{4}"">{5}</span>、<span class=""{6}"">{7}</span>
-<div><strong>不喜歡：</strong> <span class=""{8}"">{9}</span>、<span class=""{0}"">{1}</span>",
-                    GetElementColorClass(info.RiZhu),
-                    info.RiZhu.ToWuXingString(),
-                    GetElementColorClass(BaZiDefine.RestrictBy[info.RiZhu]),
-                    BaZiDefine.RestrictBy[info.RiZhu].ToWuXingString(),
-                    GetElementColorClass(BaZiDefine.Restricting[info.RiZhu]),
-                    BaZiDefine.Restricting[info.RiZhu].ToWuXingString(),
-                    GetElementColorClass(BaZiDefine.Generation[info.RiZhu]),
-                    BaZiDefine.Generation[info.RiZhu].ToWuXingString(),
-                    GetElementColorClass(BaZiDefine.GenerateBy[info.RiZhu]),
-                    BaZiDefine.GenerateBy[info.RiZhu].ToWuXingString()
-                );
-                break;
-            default:
-                throw new System.ComponentModel.InvalidEnumArgumentException("StrengthStatus", (int)info.StrengthStatus, typeof(GeJu));
-        }
-        return (MarkupString)desc;
-    }
-
-    private MarkupString GetRiZhuDesc(BaZiInfo info) {
-        string desc;
-        string obj;
-        string comment;
-        switch (info.DayZhu.Gan) {
-            case TianGan.Jia:
-                obj = "大樹";
-                comment = "堅強、有原則、領導開創者、格局大";
-                break;
-            case TianGan.Yi:
-                obj = "藤蔓";
-                comment = "柔軟靈活、協調者、適應力強";
-                break;
-            case TianGan.Bing:
-                obj = "太陽";
-                comment = "開朗、熱情、照顧他人、情緒鮮明、好勝、被注目、不服輸";
-                break;
-            case TianGan.Ding:
-                obj = "燭火";
-                comment = "溫暖細膩、專注、內斂持久、觀察力佳、照顧者";
-                break;
-            case TianGan.Wu:
-                obj = "高山";
-                comment = "可靠、包容、固執、壓迫感";
-                break;
-            case TianGan.Ji:
-                obj = "田土";
-                comment = "細膩、培育滋養、適應力強、溫厚務實";
-                break;
-            case TianGan.Geng:
-                obj = "鋼鐵";
-                comment = "果決、果斷、敢衝敢拚、正義感強、情緒直接";
-                break;
-            case TianGan.Xin:
-                obj = "珠寶";
-                comment = "品味高雅、細節、追求完美、處事彈性、有自知之明、借力使力";
-                break;
-            case TianGan.Ren:
-                obj = "大海";
-                comment = "心胸開闊、智慧包容、善於溝通、大鳴大放、冒險家、做啥大家都知道";
-                break;
-            case TianGan.Gui:
-                obj = "雨露";
-                comment = "默默堅持、長跑、敏感體貼、觀察入微、見解精闢、默默來、支持者/顧問/知心朋友";
-                break;
-            default:
-                throw new System.ComponentModel.InvalidEnumArgumentException(nameof(info.DayZhu.Gan), (int)info.DayZhu.Gan, typeof(TianGan));
-        }
-        desc = string.Format(
-            @"<div><strong>代表物：</strong> {0}</div><div><strong>描&ensp;&ensp;述：</strong> {1}</div>",
-            obj,
-            comment
-        );
-        return (MarkupString)desc;
-    }
 }

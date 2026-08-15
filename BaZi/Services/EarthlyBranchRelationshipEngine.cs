@@ -2,7 +2,7 @@ using BaZi.Models;
 
 namespace BaZi.Services {
 
-    /// <summary>以既有四柱與地支資料判定六合、六沖、六害、相刑及三會候選。</summary>
+    /// <summary>以既有四柱與地支資料統一判定六合、六沖、六害、六破、相刑、三合及三會候選。</summary>
     public sealed class EarthlyBranchRelationshipEngine {
         private static readonly IReadOnlyList<DiZhi> BranchOrder = [
             DiZhi.Zi,
@@ -80,19 +80,26 @@ namespace BaZi.Services {
                 ));
             }
 
-            if (BaZiDefine.TwoXing
-                .Where(rule => rule.Count == 2)
-                .Any(rule => ContainsPair(rule, first, second))) {
+            IList<DiZhi>? punishmentGroup = BaZiDefine.TwoXing
+                .FirstOrDefault(rule => ContainsPair(rule, first, second));
+            if (punishmentGroup is not null) {
                 matches.Add(new BranchRelationshipRuleMatch(
                     BranchRelationshipType.Punishment,
                     members,
-                    BranchRelationshipCompletion.Pair,
+                    punishmentGroup.Count == 2
+                        ? BranchRelationshipCompletion.Pair
+                        : BranchRelationshipCompletion.Partial,
                     null,
                     GetInterpretationKeys(BranchRelationshipType.Punishment)
                 ));
             }
 
             return matches;
+        }
+
+        /// <summary>判定兩個地支是否形成指定的固定規則；同時保留可能重疊的其他規則。</summary>
+        public bool HasRelationship(DiZhi first, DiZhi second, BranchRelationshipType relationType) {
+            return MatchPair(first, second).Any(match => match.RelationType == relationType);
         }
 
         /// <summary>分析兩張命盤；出生時辰不準確者只使用年、月、日三柱。</summary>
@@ -212,19 +219,16 @@ namespace BaZi.Services {
         ) {
             foreach (IList<DiZhi> group in BaZiDefine.ThreeXing) {
                 var availableMembers = group.Where(member => sources.Any(source => source.Branch == member)).ToArray();
-                if (availableMembers.Length < 2) {
+                if (availableMembers.Length != group.Count) {
                     continue;
                 }
 
-                var completion = availableMembers.Length == group.Count
-                    ? BranchRelationshipCompletion.Complete
-                    : BranchRelationshipCompletion.Partial;
                 AddSelections(
                     BranchRelationshipType.Punishment,
                     availableMembers,
                     sources,
                     scope,
-                    completion,
+                    BranchRelationshipCompletion.Complete,
                     null,
                     GetInterpretationKeys(BranchRelationshipType.Punishment),
                     candidates

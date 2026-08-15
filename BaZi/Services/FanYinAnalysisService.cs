@@ -46,11 +46,11 @@ namespace BaZi.Services {
             return new FanYinAnalysisResult(matches, includesHourPillar);
         }
 
-        /// <summary>分析大運、流年或流月與原命及較早運柱形成的反吟，並檢查是否合走既有反吟。</summary>
+        /// <summary>分析大運、流年或流月與原命及較早運柱形成的反吟，並檢查是否與既有反吟形成合絆。</summary>
         /// <param name="info">八字命盤。</param>
         /// <param name="periodPillar">要分析的大運、流年或流月。</param>
         /// <param name="earlierFortunePillars">發生於指定期間之前、要一併比較的運柱。</param>
-        /// <returns>指定期間的反吟與合走分析結果。</returns>
+        /// <returns>指定期間的反吟與合絆並存分析結果。</returns>
         public PeriodFanYinAnalysisResult AnalyzePeriod(
             BaZiInfo info,
             IGanZhi periodPillar,
@@ -74,11 +74,11 @@ namespace BaZi.Services {
             return AnalyzePeriodPillars(sourcePillars, periodPillar, info.IsBirthTimeAccurate);
         }
 
-        /// <summary>分析指定期間與較早命運柱形成的反吟及合走，供測試與組合運柱使用。</summary>
+        /// <summary>分析指定期間與較早命運柱形成的反吟及合絆，供測試與組合運柱使用。</summary>
         /// <param name="sourcePillars">原命柱與發生於指定期間之前的運柱。</param>
         /// <param name="periodPillar">要分析的大運、流年或流月。</param>
         /// <param name="includesHourPillar">是否已納入準確時柱。</param>
-        /// <returns>指定期間的反吟與合走分析結果。</returns>
+        /// <returns>指定期間的反吟與合絆並存分析結果。</returns>
         public PeriodFanYinAnalysisResult AnalyzePeriodPillars(
             IReadOnlyList<IGanZhi> sourcePillars,
             IGanZhi periodPillar,
@@ -95,9 +95,9 @@ namespace BaZi.Services {
                     GetFanYinPeriodSituation(source.Id, periodPillar.Id)
                 ))
                 .ToList();
-            var mitigations = FindMitigations(sourcePillars, periodPillar);
+            var combinations = FindCombinations(sourcePillars, periodPillar);
 
-            return new PeriodFanYinAnalysisResult(matches, mitigations, includesHourPillar);
+            return new PeriodFanYinAnalysisResult(matches, combinations, includesHourPillar);
         }
 
         /// <summary>取得反吟對應的狀況說明</summary>
@@ -148,11 +148,11 @@ namespace BaZi.Services {
             };
         }
 
-        private static IReadOnlyList<FanYinMitigation> FindMitigations(
+        private static IReadOnlyList<FanYinCombination> FindCombinations(
             IReadOnlyList<IGanZhi> sourcePillars,
             IGanZhi periodPillar
         ) {
-            var mitigations = new List<FanYinMitigation>();
+            var combinations = new List<FanYinCombination>();
             for (var firstIndex = 0; firstIndex < sourcePillars.Count; firstIndex++) {
                 for (var secondIndex = firstIndex + 1; secondIndex < sourcePillars.Count; secondIndex++) {
                     var first = sourcePillars[firstIndex];
@@ -162,14 +162,14 @@ namespace BaZi.Services {
                     }
 
                     if (IsFullyCombined(first, periodPillar)) {
-                        mitigations.Add(new FanYinMitigation(first, second, first, periodPillar));
+                        combinations.Add(new FanYinCombination(first, second, first, periodPillar));
                     } else if (IsFullyCombined(second, periodPillar)) {
-                        mitigations.Add(new FanYinMitigation(first, second, second, periodPillar));
+                        combinations.Add(new FanYinCombination(first, second, second, periodPillar));
                     }
                 }
             }
 
-            return mitigations;
+            return combinations;
         }
 
         private static bool IsFanYinPair(IGanZhi first, IGanZhi second) {

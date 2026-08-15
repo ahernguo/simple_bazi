@@ -71,6 +71,7 @@ namespace BaZi.Tests {
             Assert.Contains("身弱", wealth.Summary);
             Assert.Contains("大運", wealth.Summary);
             Assert.Contains("支出", wealth.Advice);
+            Assert.All(wealth.TenGodFactors!, factor => Assert.False(factor.IsFavorable));
         }
 
         [Fact]
@@ -88,8 +89,9 @@ namespace BaZi.Tests {
 
             Assert.Equal(GeJu.ShenRuo, info.StrengthStatus);
             Assert.Equal(DailySignalLevel.Opportunity, wealth.Level);
-            Assert.Contains("大運在喜用方向", wealth.Summary);
+            Assert.Contains("大運主作用在喜用方向", wealth.Summary);
             Assert.DoesNotContain("支出", wealth.Advice);
+            Assert.All(wealth.TenGodFactors!, factor => Assert.True(factor.IsFavorable));
         }
 
         [Fact]

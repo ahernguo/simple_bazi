@@ -9,10 +9,10 @@
                     <div>@FormatBirth(Result.Self)</div>
                     <div>生肖：@Result.Self.ShengXiao</div>
                     <div>
-                        日柱：<span class="@GetElementColorClass(Result.Self.DayZhu.GanWuXing) fw-semibold">@Result.Self.DayZhu.Gan.ToGanString()</span><span class="@GetElementColorClass(Result.Self.DayZhu.ZhiWuXing) fw-semibold">@Result.Self.DayZhu.Zhi.ToZhiString()</span>
+                        日柱：<GanZhiText Value="Result.Self.DayZhu" />
                     </div>
                     <div>
-                        日主／格局：<span class="@GetElementColorClass(Result.Self.RiZhu) fw-semibold">@Result.Self.RiZhu.ToWuXingString()</span>／@Result.Self.StrengthStatus.ToGeJuString()
+                        日主／格局：<ElementText Element="Result.Self.RiZhu" />／@Result.Self.StrengthStatus.ToGeJuString()
                     </div>
                 </div>
             </div>
@@ -22,10 +22,10 @@
                     <div>@FormatBirth(Result.Other)</div>
                     <div>生肖：@Result.Other.ShengXiao</div>
                     <div>
-                        日柱：<span class="@GetElementColorClass(Result.Other.DayZhu.GanWuXing) fw-semibold">@Result.Other.DayZhu.Gan.ToGanString()</span><span class="@GetElementColorClass(Result.Other.DayZhu.ZhiWuXing) fw-semibold">@Result.Other.DayZhu.Zhi.ToZhiString()</span>
+                        日柱：<GanZhiText Value="Result.Other.DayZhu" />
                     </div>
                     <div>
-                        日主／格局：<span class="@GetElementColorClass(Result.Other.RiZhu) fw-semibold">@Result.Other.RiZhu.ToWuXingString()</span>／@Result.Other.StrengthStatus.ToGeJuString()
+                        日主／格局：<ElementText Element="Result.Other.RiZhu" />／@Result.Other.StrengthStatus.ToGeJuString()
                     </div>
                 </div>
             </div>
@@ -39,13 +39,21 @@
             </h5>
             <hr class="analysis-card-divider" aria-hidden="true" />
             <p class="mb-2">
-                @FormatText(section.Summary, section.TenGodSubject, section.TenGodShowsFavorability)
+                <SemanticText Text="section.Summary"
+                              Info="GetSubjectInfo(section.TenGodSubject).Info"
+                              SubjectLabel="GetSubjectInfo(section.TenGodSubject).Label"
+                              TenGodMode="GetTenGodMode(section)" />
             </p>
             @if (section.Details.Count > 0) {
-                <div class="alert alert-info analysis-item-explanation mb-2" style="background: transparent !important;">
+                <div class="alert alert-info analysis-item-explanation compatibility-transparent-alert mb-2">
                     <ul class="mb-0">
                         @foreach (var detail in section.Details) {
-                            <li class="mb-1">@FormatText(detail, section.TenGodSubject, section.TenGodShowsFavorability)</li>
+                            <li class="mb-1">
+                                <SemanticText Text="detail"
+                                              Info="GetSubjectInfo(section.TenGodSubject).Info"
+                                              SubjectLabel="GetSubjectInfo(section.TenGodSubject).Label"
+                                              TenGodMode="GetTenGodMode(section)" />
+                            </li>
                         }
                     </ul>
                 </div>
@@ -54,7 +62,12 @@
                 <TopicNotice CssClass="mb-0">
                     <ul class="compatibility-note-list mb-0">
                         @foreach (var note in section.Notes) {
-                            <li class="mb-1">@FormatText(note, section.TenGodSubject, section.TenGodShowsFavorability)</li>
+                            <li class="mb-1">
+                                <SemanticText Text="note"
+                                              Info="GetSubjectInfo(section.TenGodSubject).Info"
+                                              SubjectLabel="GetSubjectInfo(section.TenGodSubject).Label"
+                                              TenGodMode="GetTenGodMode(section)" />
+                            </li>
                         }
                     </ul>
                 </TopicNotice>

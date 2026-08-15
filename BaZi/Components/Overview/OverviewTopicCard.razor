@@ -4,20 +4,20 @@
             <i class="fa-solid @Card.Icon me-2"></i>@Card.Title
         </h4>
         <p class="analysis-card-description overview-topic-summary text-secondary">
-            <OverviewRichText Text="@Card.Summary" />
+            <SemanticText Text="@Card.Summary" />
         </p>
         <hr class="analysis-card-divider" aria-hidden="true" />
 
         @foreach (var section in Card.Sections) {
             <section class="overview-topic-section analysis-item" @key="section.Title">
-                <h5 class="analysis-item-main"><OverviewRichText Text="@section.Title" /></h5>
+                <h5 class="analysis-item-main"><SemanticText Text="@section.Title" /></h5>
                 <div class="alert analysis-item-explanation @GetToneClass(section.Tone) mb-0">
-                    <p><OverviewRichText Text="@section.Summary" /></p>
+                    <p><SemanticText Text="@section.Summary" /></p>
                     @if (section.Details.Count > 0) {
                         <ul class="mb-0">
                             @foreach (var item in section.Details.Select((detail, index) => (detail, index))) {
                                 <li class="mb-2" @key="item.index">
-                                    <OverviewRichText Text="@item.detail" />
+                                    <SemanticText Text="@item.detail" />
                                 </li>
                             }
                         </ul>
@@ -27,7 +27,7 @@
         }
 
         <TopicNotice CssClass="mt-auto mb-0">
-            <OverviewRichText Text="@Card.Notice" />
+            <SemanticText Text="@Card.Notice" />
         </TopicNotice>
     </div>
 </article>

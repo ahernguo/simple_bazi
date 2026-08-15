@@ -36,13 +36,13 @@
                         <h5 class="card-title analysis-card-title">
                             <i class="fa-solid @GetToneIcon(section.Tone) me-2"></i>@section.Title
                         </h5>
-                        <p class="analysis-card-description text-secondary"><OverviewRichText Text="@section.Summary" /></p>
+                        <p class="analysis-card-description text-secondary"><SemanticText Text="@section.Summary" /></p>
                         @if (section.Details.Count > 0) {
                             <hr class="analysis-card-divider" aria-hidden="true" />
                             <ul class="mb-0">
                                 @foreach (var detail in section.Details) {
                                     <li class="mb-2" @key="detail">
-                                        <OverviewRichText Text="@detail" />
+                                        <SemanticText Text="@detail" />
                                     </li>
                                 }
                             </ul>
@@ -52,7 +52,7 @@
                                 <ul class="compatibility-note-list mb-0">
                                     @foreach (var note in section.Notes) {
                                         <li class="mb-1" @key="note">
-                                            <OverviewRichText Text="@note" />
+                                            <SemanticText Text="@note" />
                                         </li>
                                     }
                                 </ul>

@@ -1,3 +1,5 @@
+@inject PeriodFavorabilityService FavorabilityService
+
 <AnalysisCard Title="交通期間背景" Icon="fa-route" CssClass="mt-3 mb-3 travel-background-card">
     <DescriptionContent>
         本命、大運、流年與流月屬於整段期間的背景；下方流日只列出當天新增的相沖或補齊三刑。
@@ -24,6 +26,8 @@
                                 <TenGodText Info="Info"
                                             TenGod="tenGod"
                                             Mode="TenGodDisplayMode.Favorability"
+                                            FavorableOverride="GetFavorability(background, tenGod)"
+                                            FavorabilityReason="@GetFavorabilityReason(background)"
                                             ShowFavorabilityLabel="false" />
                                 @if (source.IsTravelBranch) {
                                     <span class="badge text-bg-secondary">驛馬</span>
@@ -91,7 +95,7 @@
         }
     </ChildContent>
     <NoticeContent>
-        期間背景不會重複灌入每一天；只有流日新增相沖或補齊三刑時才列出日期。喜用神與忌神顯示的是本命格局方向，不代表交通事件必然發生或不發生。
+        期間背景不會重複灌入每一天；只有流日新增相沖或補齊三刑時才列出日期。喜用神與忌神會依當期大運調整，不代表交通事件必然發生或不發生。
     </NoticeContent>
 </AnalysisCard>
 
@@ -103,6 +107,38 @@
     /// <summary>取得國曆月份內的連續交通期間背景。</summary>
     [Parameter, EditorRequired]
     public IReadOnlyList<DailyTravelSafetyPeriodBackground> Backgrounds { get; set; } = [];
+
+    private bool? GetFavorability(DailyTravelSafetyPeriodBackground background, ShiShen tenGod) {
+        DaYun? daYun = FindDaYun(background.StartDate.Year);
+        if (daYun is null) {
+            return null;
+        }
+
+        DaYunFavorabilityContext context = FavorabilityService.EvaluateDaYun(
+            Info,
+            daYun,
+            background.StartDate.Year
+        );
+        return FavorabilityService.IsPeriodFavorable(Info, context, tenGod);
+    }
+
+    private string? GetFavorabilityReason(DailyTravelSafetyPeriodBackground background) {
+        DaYun? daYun = FindDaYun(background.StartDate.Year);
+        if (daYun is null) {
+            return null;
+        }
+
+        DaYunFavorabilityContext context = FavorabilityService.EvaluateDaYun(
+            Info,
+            daYun,
+            background.StartDate.Year
+        );
+        return FavorabilityService.GetPeriodReason(Info, context);
+    }
+
+    private DaYun? FindDaYun(int year) {
+        return Info.DaYunList.FirstOrDefault(daYun => year >= daYun.StartYear && year <= daYun.EndYear);
+    }
 
     private static string GetPeriodLabel(DailyTravelSafetyPeriodBackground background) {
         return background.StartDate == background.EndDate

@@ -654,30 +654,19 @@ namespace BaZi.Models {
         /// <summary>檢查 (日+月) 或 (日+時) 是否有三刑/相刑</summary>
         /// <returns>(true)有刑 (false)</returns>
         private bool CheckXing() {
-            /* 先列出所有的刑，輪詢判斷是否有成立 */
-            var xing = new List<DiZhi[]> {
-            new DiZhi[] { DiZhi.Yin, DiZhi.Si, DiZhi.Shen },    //寅巳申 = 無恩之刑
-            new DiZhi[] { DiZhi.Chou, DiZhi.Xu, DiZhi.Wei },    //丑戌未 = 恃勢之刑
-            new DiZhi[] { DiZhi.Zi, DiZhi.Mao },                //子卯 = 恩愛之刑
-            new DiZhi[] { DiZhi.Chen, DiZhi.Chen },             //辰辰 = 自刑
-            new DiZhi[] { DiZhi.Wu, DiZhi.Wu },                 //午午 = 自刑
-            new DiZhi[] { DiZhi.You, DiZhi.You },               //酉酉 = 自刑
-            new DiZhi[] { DiZhi.Xu, DiZhi.Xu },                 //戌戌 = 自刑
-        };
             /* 通常以 (日+月) 或 (日+時) 為主，根本身有關
                 * 若是 (年+日) 或 (月+時) 則力量較小，可忽略
                 * 若是 (年+月) 表示是長輩那邊有狀況，根本身較無關係，可忽略 */
-            // 判斷 日柱+月柱
-            var dmZhi = new DiZhi[] { DayZhu.Zhi, MonthZhu.Zhi };
-            if (xing.Any(c => dmZhi.All(z => c.Contains(z)))) {
-                return true;
+            return IsPunishmentPair(DayZhu.Zhi, MonthZhu.Zhi)
+                || IsPunishmentPair(DayZhu.Zhi, HourZhu.Zhi);
+        }
+
+        private static bool IsPunishmentPair(DiZhi first, DiZhi second) {
+            if (first == second) {
+                return BaZiDefine.SelfXing.Contains(first);
             }
-            // 判斷 日柱+時柱
-            var dhZhi = new DiZhi[] { DayZhu.Zhi, HourZhu.Zhi };
-            if (xing.Any(c => dhZhi.All(z => c.Contains(z)))) {
-                return true;
-            }
-            return false;
+
+            return BaZiDefine.TwoXing.Any(group => group.Contains(first) && group.Contains(second));
         }
 
         /// <summary>檢查是否相鄰的兩干為六合之一</summary>
