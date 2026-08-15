@@ -9,7 +9,6 @@
     <div class="alert alert-info">請先回首頁輸入生日。</div>
     <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/")'>回首頁</button>
 } else {
-    EnsureHouseholdDefault(info);
     var years = FortuneService.GetLiuNianYears(info);
     <div class="container mt-4 daily-fortune-page">
         <h2 class="mb-4 text-center"><i class="fa-solid fa-calendar-day me-2"></i>流日</h2>
@@ -35,7 +34,10 @@
                 </div>
                 <div class="col-sm-6 col-lg-3">
                     <label class="form-label" for="daily-topic">主題</label>
-                    <select id="daily-topic" class="form-select" @bind="_page.SelectedTopic">
+                    <select id="daily-topic"
+                            class="form-select"
+                            value="@_page.SelectedTopic"
+                            @onchange="HandleTopicChanged">
                         <option value="">全部生活訊號</option>
                         @foreach (var topic in Topics) {
                             <option value="@topic">@GetTopicName(topic)</option>
@@ -43,7 +45,8 @@
                     </select>
                 </div>
                 <div class="col-sm-6 col-lg-3">
-                    <button type="button"
+                    <button id="daily-query"
+                            type="button"
                             class="btn btn-primary w-100"
                             disabled="@(_page.SelectedYear is null)"
                             @onclick="Query">
@@ -58,12 +61,12 @@
                     <div class="d-flex flex-wrap gap-2">
                         @foreach (var branch in Branches) {
                             var inputId = $"household-{branch}";
-                            <label class="household-option" for="@inputId">
+                            <label class="household-option" for="@inputId" @key="branch">
                                 <input id="@inputId"
                                        class="form-check-input me-1"
                                        type="checkbox"
                                        checked="@_page.HouseholdYearBranches.Contains(branch)"
-                                       @onchange="() => ToggleHouseholdBranch(branch)" />
+                                       @onchange="args => SetHouseholdBranch(branch, args.Value is true)" />
                                 <ElementText Element="branch.ToWuXing()" Text="@GetZodiacLabel(branch)" />
                             </label>
                         }
@@ -165,6 +168,17 @@
     private IReadOnlyList<DailyTravelSafetyPeriodBackground> _travelSafetyBackgrounds = [];
     private DiZhi? _initializedYearBranch;
 
+    private void HandleTopicChanged(ChangeEventArgs args) {
+        _page.SelectedTopic = Enum.TryParse<DailyFortuneTopic>(args.Value?.ToString(), out var topic)
+            && Enum.IsDefined(topic)
+                ? topic
+                : null;
+
+        if (_page.SelectedTopic == DailyFortuneTopic.Moving && BaZiState.Value.Info is BaZiInfo info) {
+            EnsureHouseholdDefault(info);
+        }
+    }
+
     private void EnsureHouseholdDefault(BaZiInfo info) {
         if (_initializedYearBranch == info.YearZhu.Zhi) {
             return;
@@ -175,9 +189,11 @@
         _initializedYearBranch = info.YearZhu.Zhi;
     }
 
-    private void ToggleHouseholdBranch(DiZhi branch) {
-        if (!_page.HouseholdYearBranches.Remove(branch)) {
+    private void SetHouseholdBranch(DiZhi branch, bool isSelected) {
+        if (isSelected) {
             _page.HouseholdYearBranches.Add(branch);
+        } else {
+            _page.HouseholdYearBranches.Remove(branch);
         }
     }
 
