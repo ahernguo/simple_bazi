@@ -80,6 +80,10 @@
                 <span class="badge text-bg-secondary">共 @visibleDays.Count 日</span>
             </div>
 
+            @if (ShowsTravelSafetyBackground()) {
+                <DailyTravelSafetyBackgroundCard Info="info" Backgrounds="_travelSafetyBackgrounds" />
+            }
+
             @if (visibleDays.Count == 0) {
                 <AnalysisCard Title="查詢結果" Icon="fa-calendar-xmark">
                     <div class="alert alert-info analysis-item-explanation mb-0">這個月份沒有符合目前條件的流日。</div>
@@ -113,10 +117,13 @@
                                                 <p class="mb-2">@signal.Summary</p>
                                                 @if (signal.TenGodFactors is { Count: > 0 } tenGodFactors) {
                                                     <div class="small d-flex flex-wrap align-items-center gap-2">
-                                                        <span>本命作用：</span>
+                                                        <span>十神喜忌：</span>
                                                         @foreach (var factor in tenGodFactors) {
                                                             <span @key="factor">
-                                                                @factor.Source <TenGodText Info="info" TenGod="factor.TenGod" Mode="TenGodDisplayMode.Favorability" />
+                                                                @factor.Source <TenGodText Info="info"
+                                                                                       TenGod="factor.TenGod"
+                                                                                       Mode="TenGodDisplayMode.Favorability"
+                                                                                       ShowFavorabilityLabel="false" />
                                                             </span>
                                                         }
                                                     </div>
@@ -155,6 +162,7 @@
     private static readonly DiZhi[] Branches = Enum.GetValues<DiZhi>();
     private readonly DailyFortunePageModel _page = new();
     private IReadOnlyList<DailyFortuneResult> _results = [];
+    private IReadOnlyList<DailyTravelSafetyPeriodBackground> _travelSafetyBackgrounds = [];
     private DiZhi? _initializedYearBranch;
 
     private void EnsureHouseholdDefault(BaZiInfo info) {
@@ -182,15 +190,30 @@
         _page.QueriedMonth = _page.SelectedMonth;
         _page.QueriedTopic = _page.SelectedTopic;
         var info = BaZiState.Value.Info!;
-        _results = DailyFortuneService.AnalyzeMonth(info, year, _page.SelectedMonth, _page.HouseholdYearBranches);
+        SetMonthAnalysis(DailyFortuneService.AnalyzeMonthDetails(
+            info,
+            year,
+            _page.SelectedMonth,
+            _page.HouseholdYearBranches
+        ));
     }
 
     private IReadOnlyList<DailyFortuneResult> GetVisibleDays(BaZiInfo info, int year, int month) {
         if (_results.Count == 0 || _results[0].Day.Date.Year != year || _results[0].Day.Date.Month != month) {
-            _results = DailyFortuneService.AnalyzeMonth(info, year, month, _page.HouseholdYearBranches);
+            SetMonthAnalysis(DailyFortuneService.AnalyzeMonthDetails(
+                info,
+                year,
+                month,
+                _page.HouseholdYearBranches
+            ));
         }
 
         return _results.Where(result => GetVisibleSignals(result).Count > 0).ToArray();
+    }
+
+    private void SetMonthAnalysis(DailyFortuneMonthAnalysis analysis) {
+        _results = analysis.Results;
+        _travelSafetyBackgrounds = analysis.TravelSafetyBackgrounds;
     }
 
     private IReadOnlyList<DailyFortuneSignal> GetVisibleSignals(DailyFortuneResult result) {
@@ -205,6 +228,10 @@
         return _page.QueriedTopic is DailyFortuneTopic topic
             ? GetTopicName(topic)
             : "全部生活訊號";
+    }
+
+    private bool ShowsTravelSafetyBackground() {
+        return _page.QueriedTopic is null or DailyFortuneTopic.TravelSafety;
     }
 
     private static string GetTopicName(DailyFortuneTopic topic) {

@@ -541,7 +541,7 @@ namespace BaZi.Tests {
             var html = service.LiuNianTopicAnalysis(info, targetYear).Value;
 
             Assert.Equal(GeJu.ShenRuo, info.StrengthStatus);
-            Assert.Contains("依身弱且大運主作用已幫扶的當期規則列為喜用神", html);
+            Assert.Contains("依身弱且大運主作用已幫扶的當期規則列為喜用神，可幫扶命主為運勢加分", html);
             Assert.Contains("大運主作用已用", html);
             Assert.Contains("可作為當期機會方向", html);
         }

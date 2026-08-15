@@ -76,6 +76,16 @@ namespace BaZi.Services {
             int month,
             IReadOnlyCollection<DiZhi>? householdYearBranches = null
         ) {
+            return AnalyzeMonthDetails(info, year, month, householdYearBranches).Results;
+        }
+
+        /// <summary>分析指定國曆月份，並整理交通期間背景。</summary>
+        public DailyFortuneMonthAnalysis AnalyzeMonthDetails(
+            BaZiInfo info,
+            int year,
+            int month,
+            IReadOnlyCollection<DiZhi>? householdYearBranches = null
+        ) {
             ArgumentNullException.ThrowIfNull(info);
             if (year is < 1900 or > 2100) {
                 throw new ArgumentOutOfRangeException(nameof(year), year, "年份必須介於 1900 與 2100。 ");
@@ -88,7 +98,7 @@ namespace BaZi.Services {
             for (var day = 1; day <= DateTime.DaysInMonth(year, month); day++) {
                 results.Add(AnalyzeDate(info, new DateTime(year, month, day), householdYearBranches));
             }
-            return results;
+            return new DailyFortuneMonthAnalysis(results, CreateTravelSafetyBackgrounds(info, results));
         }
 
         /// <summary>分析單一國曆日期。</summary>
@@ -346,38 +356,33 @@ namespace BaZi.Services {
             DailyPeriodContext context,
             ICollection<DailyFortuneSignal> signals
         ) {
-            var branches = new List<DiZhi> {
-                info.YearZhu.Zhi,
-                info.MonthZhu.Zhi,
-                info.DayZhu.Zhi
-            };
-            if (info.IsBirthTimeAccurate) {
-                branches.Add(info.HourZhu.Zhi);
-            }
-            if (context.DaYun is not null) {
-                branches.Add(context.DaYun.Zhi);
-            }
-            branches.Add(context.YearZhi);
-            branches.Add(context.MonthZhi);
-            branches.Add(day.Zhi);
-
-            var punishment = BaZiDefine.ThreeXing.FirstOrDefault(group => group.All(branches.Contains));
-            var dayClashes = branches.Take(branches.Count - 1).Count(branch => IsClash(day.Zhi, branch));
-            var travelCount = branches.Count(TravelBranches.Contains);
-            if (punishment is null && dayClashes == 0 && travelCount < 3) {
+            var background = CreateTravelSafetyBackground(info, context, day.Date, day.Date);
+            var backgroundBranches = background.Sources.Select(source => source.Branch).ToArray();
+            DiZhi[] combinedBranches = [.. backgroundBranches, day.Zhi];
+            IList<DiZhi>? completedPunishment = BaZiDefine.ThreeXing.FirstOrDefault(group =>
+                !group.All(backgroundBranches.Contains)
+                && group.All(combinedBranches.Contains));
+            var clashedSources = background.Sources
+                .Where(source => IsClash(day.Zhi, source.Branch))
+                .ToArray();
+            if (completedPunishment is null && clashedSources.Length == 0) {
                 return;
             }
 
-            var isHighAttention = punishment is not null || dayClashes >= 2;
+            var isHighAttention = completedPunishment is not null || clashedSources.Length >= 2;
             var details = new List<string>();
-            if (punishment is not null) {
-                details.Add($"跨本命與運勢層湊成{string.Join(string.Empty, punishment.Select(branch => branch.ToZhiString()))}三刑");
+            if (completedPunishment is not null) {
+                details.Add(
+                    $"流日地支{day.Zhi.ToZhiString()}補齊{string.Join(string.Empty, completedPunishment.Select(branch => branch.ToZhiString()))}三刑"
+                );
             }
-            if (dayClashes > 0) {
-                details.Add($"流日地支形成 {dayClashes} 組相沖");
+            if (clashedSources.Length > 0) {
+                details.Add(
+                    $"流日地支{day.Zhi.ToZhiString()}與{string.Join("、", clashedSources.Select(source => $"{source.Label}{source.Branch.ToZhiString()}"))}形成 {clashedSources.Length} 組相沖"
+                );
             }
-            if (travelCount >= 3) {
-                details.Add($"各層共有 {travelCount} 個驛馬地支");
+            if (TravelBranches.Contains(day.Zhi)) {
+                details.Add($"流日本身為驛馬，期間驛馬由 {background.TravelBranchCount} 個增為 {background.TravelBranchCount + 1} 個");
             }
 
             signals.Add(new DailyFortuneSignal(
@@ -385,7 +390,8 @@ namespace BaZi.Services {
                 isHighAttention ? DailySignalLevel.HighAttention : DailySignalLevel.Attention,
                 isHighAttention ? "交通與移動高注意日" : "交通與移動注意日",
                 string.Join("；", details) + "。",
-                "不要疲勞駕駛、酒駕或趕路；檢查輪胎、煞車、燈具並替長途、雨夜與陌生路線預留緩衝。"
+                "不要疲勞駕駛、酒駕或趕路；檢查輪胎、煞車、燈具並替長途、雨夜與陌生路線預留緩衝。",
+                [new DailyFortuneTenGodFactor("流日地支", day.Zhi.ToShiShen(info.DayZhu.Gan).ToCombined())]
             ));
         }
 
@@ -417,6 +423,107 @@ namespace BaZi.Services {
                 "流日地支未沖到已選取的同住者年支。",
                 "這只是命盤初篩；仍須確認通書標示宜入宅或宜遷移，再核對交屋、搬運、天候與安全條件。"
             ));
+        }
+
+        private static IReadOnlyList<DailyTravelSafetyPeriodBackground> CreateTravelSafetyBackgrounds(
+            BaZiInfo info,
+            IReadOnlyList<DailyFortuneResult> results
+        ) {
+            if (results.Count == 0) {
+                return [];
+            }
+
+            var backgrounds = new List<DailyTravelSafetyPeriodBackground>();
+            var startIndex = 0;
+            while (startIndex < results.Count) {
+                var endIndex = startIndex;
+                while (endIndex + 1 < results.Count
+                    && HasSameTravelSafetyContext(results[startIndex].Context, results[endIndex + 1].Context)) {
+                    endIndex++;
+                }
+
+                backgrounds.Add(CreateTravelSafetyBackground(
+                    info,
+                    results[startIndex].Context,
+                    results[startIndex].Day.Date,
+                    results[endIndex].Day.Date
+                ));
+                startIndex = endIndex + 1;
+            }
+
+            return backgrounds;
+        }
+
+        private static DailyTravelSafetyPeriodBackground CreateTravelSafetyBackground(
+            BaZiInfo info,
+            DailyPeriodContext context,
+            DateTime startDate,
+            DateTime endDate
+        ) {
+            var sources = new List<DailyTravelSafetyBranchSource> {
+                CreateTravelSafetySource("本命年支", info.YearZhu.Zhi),
+                CreateTravelSafetySource("本命月支", info.MonthZhu.Zhi),
+                CreateTravelSafetySource("本命日支", info.DayZhu.Zhi)
+            };
+            if (info.IsBirthTimeAccurate) {
+                sources.Add(CreateTravelSafetySource("本命時支", info.HourZhu.Zhi));
+            }
+            if (context.DaYun is not null) {
+                sources.Add(CreateTravelSafetySource("大運支", context.DaYun.Zhi));
+            }
+            sources.Add(CreateTravelSafetySource("流年支", context.YearZhi));
+            sources.Add(CreateTravelSafetySource("流月支", context.MonthZhi));
+
+            var clashes = new List<DailyTravelSafetyClash>();
+            for (var firstIndex = 0; firstIndex < sources.Count; firstIndex++) {
+                for (var secondIndex = firstIndex + 1; secondIndex < sources.Count; secondIndex++) {
+                    if (IsClash(sources[firstIndex].Branch, sources[secondIndex].Branch)) {
+                        clashes.Add(new DailyTravelSafetyClash(sources[firstIndex], sources[secondIndex]));
+                    }
+                }
+            }
+
+            var branches = sources.Select(source => source.Branch).ToArray();
+            var punishments = BaZiDefine.ThreeXing
+                .Where(group => group.All(branches.Contains))
+                .Select(group => new DailyTravelSafetyPunishment([.. group]))
+                .ToArray();
+            var hasRepeatedClash = clashes
+                .GroupBy(clash => GetClashKey(clash.First.Branch, clash.Second.Branch))
+                .Any(group => group.Count() >= 2);
+            var travelBranchCount = sources.Count(source => source.IsTravelBranch);
+            DailySignalLevel? level = punishments.Length > 0 || hasRepeatedClash
+                ? DailySignalLevel.HighAttention
+                : (clashes.Count > 0 || travelBranchCount >= 2 ? DailySignalLevel.Attention : null);
+
+            return new DailyTravelSafetyPeriodBackground(
+                startDate,
+                endDate,
+                level,
+                sources,
+                clashes,
+                punishments,
+                hasRepeatedClash,
+                info.IsBirthTimeAccurate
+            );
+        }
+
+        private static DailyTravelSafetyBranchSource CreateTravelSafetySource(string label, DiZhi branch) {
+            return new DailyTravelSafetyBranchSource(label, branch, TravelBranches.Contains(branch));
+        }
+
+        private static bool HasSameTravelSafetyContext(DailyPeriodContext first, DailyPeriodContext second) {
+            return first.YearZhi == second.YearZhi
+                && first.MonthZhi == second.MonthZhi
+                && first.DaYun?.Zhi == second.DaYun?.Zhi;
+        }
+
+        private static (int First, int Second) GetClashKey(DiZhi first, DiZhi second) {
+            var firstValue = (int)first;
+            var secondValue = (int)second;
+            return firstValue <= secondValue
+                ? (firstValue, secondValue)
+                : (secondValue, firstValue);
         }
 
         private static CapacityAssessment EvaluateOpportunityCapacity(

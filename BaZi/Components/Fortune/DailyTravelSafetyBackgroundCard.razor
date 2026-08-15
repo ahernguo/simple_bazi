@@ -1,0 +1,144 @@
+<AnalysisCard Title="交通期間背景" Icon="fa-route" CssClass="mt-3 mb-3 travel-background-card">
+    <DescriptionContent>
+        本命、大運、流年與流月屬於整段期間的背景；下方流日只列出當天新增的相沖或補齊三刑。
+    </DescriptionContent>
+    <ChildContent>
+        @foreach (DailyTravelSafetyPeriodBackground background in Backgrounds) {
+            <AnalysisItem CssClass="mb-3"
+                          AlertClass="@GetAlertCss(background.Level)"
+                          @key="(background.StartDate, background.EndDate)">
+                <ChildContent>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <span class="badge @GetLevelCss(background.Level)">@GetLevelText(background.Level)</span>
+                        <strong>@GetPeriodLabel(background)</strong>
+                        <span class="text-body-secondary">@GetPeriodTitle(background.Level)</span>
+                    </div>
+                </ChildContent>
+                <ExplanationContent>
+                    <div class="travel-background-source-grid mb-3">
+                        @foreach (DailyTravelSafetyBranchSource source in background.Sources) {
+                            var tenGod = source.Branch.ToShiShen(Info.DayZhu.Gan).ToCombined();
+                            <div class="travel-background-source" @key="source.Label">
+                                <span class="travel-background-source-label">@source.Label</span>
+                                <ElementText Element="source.Branch.ToWuXing()" Text="@(source.Branch.ToZhiString())" />
+                                <TenGodText Info="Info"
+                                            TenGod="tenGod"
+                                            Mode="TenGodDisplayMode.Favorability"
+                                            ShowFavorabilityLabel="false" />
+                                @if (source.IsTravelBranch) {
+                                    <span class="badge text-bg-secondary">驛馬</span>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge text-bg-secondary">驛馬 @background.TravelBranchCount</span>
+                        <span class="badge text-bg-secondary">相沖 @background.Clashes.Count</span>
+                        <span class="badge text-bg-secondary">三刑 @background.Punishments.Count</span>
+                    </div>
+
+                    @if (background.TravelBranchCount >= 2) {
+                        <div class="mb-2">
+                            <strong>驛馬背景：</strong>各層共有 @background.TravelBranchCount 個驛馬，移動與奔波意象較集中；此項只調整期間背景，不單獨產生每日警示。
+                        </div>
+                    } else if (background.TravelBranchCount == 1) {
+                        <div class="mb-2"><strong>驛馬背景：</strong>單一驛馬只保留為移動背景，不直接列成每日警示。</div>
+                    }
+
+                    @if (background.Clashes.Count > 0) {
+                        <div class="mb-2">
+                            <strong>期間相沖：</strong>
+                            <ul class="mb-0 mt-1">
+                                @foreach (DailyTravelSafetyClash clash in background.Clashes) {
+                                    <li @key="(clash.First.Label, clash.Second.Label)">
+                                        @clash.First.Label
+                                        <ElementText Element="clash.First.Branch.ToWuXing()" Text="@(clash.First.Branch.ToZhiString())" />
+                                        與 @clash.Second.Label
+                                        <ElementText Element="clash.Second.Branch.ToWuXing()" Text="@(clash.Second.Branch.ToZhiString())" />
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
+
+                    @if (background.Punishments.Count > 0) {
+                        <div class="mb-2">
+                            <strong>期間三刑：</strong>
+                            @foreach (DailyTravelSafetyPunishment punishment in background.Punishments) {
+                                <span class="me-2" @key="string.Join('-', punishment.Members)">
+                                    @foreach (DiZhi member in punishment.Members) {
+                                        <ElementText Element="member.ToWuXing()" Text="@(member.ToZhiString())" />
+                                    }
+                                </span>
+                            }
+                        </div>
+                    }
+
+                    @if (background.HasRepeatedClash) {
+                        <div><strong>加強原因：</strong>同一組相沖跨兩個以上來源重複出現。</div>
+                    } else if (background.Level is null) {
+                        <div>期間背景未形成三刑或相沖。</div>
+                    }
+                </ExplanationContent>
+            </AnalysisItem>
+        }
+
+        @if (Backgrounds.Any(background => !background.IncludesHourPillar)) {
+            <div class="alert alert-info analysis-item-explanation mb-0">
+                因出生時辰不確定，本次未將時柱納入交通期間背景；補齊準確時辰後，結果可能改變。
+            </div>
+        }
+    </ChildContent>
+    <NoticeContent>
+        期間背景不會重複灌入每一天；只有流日新增相沖或補齊三刑時才列出日期。喜用神與忌神顯示的是本命格局方向，不代表交通事件必然發生或不發生。
+    </NoticeContent>
+</AnalysisCard>
+
+@code {
+    /// <summary>取得本命資料，用於顯示地支主氣十神與喜忌。</summary>
+    [Parameter, EditorRequired]
+    public BaZiInfo Info { get; set; } = default!;
+
+    /// <summary>取得國曆月份內的連續交通期間背景。</summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyList<DailyTravelSafetyPeriodBackground> Backgrounds { get; set; } = [];
+
+    private static string GetPeriodLabel(DailyTravelSafetyPeriodBackground background) {
+        return background.StartDate == background.EndDate
+            ? background.StartDate.ToString("MM/dd")
+            : $"{background.StartDate:MM/dd}–{background.EndDate:MM/dd}";
+    }
+
+    private static string GetPeriodTitle(DailySignalLevel? level) {
+        return level switch {
+            DailySignalLevel.HighAttention => "背景作用集中",
+            DailySignalLevel.Attention => "背景需留意",
+            _ => "一般背景"
+        };
+    }
+
+    private static string GetLevelText(DailySignalLevel? level) {
+        return level switch {
+            DailySignalLevel.HighAttention => "高注意",
+            DailySignalLevel.Attention => "注意",
+            _ => "背景"
+        };
+    }
+
+    private static string GetLevelCss(DailySignalLevel? level) {
+        return level switch {
+            DailySignalLevel.HighAttention => "text-bg-danger",
+            DailySignalLevel.Attention => "text-bg-warning",
+            _ => "text-bg-info"
+        };
+    }
+
+    private static string GetAlertCss(DailySignalLevel? level) {
+        return level switch {
+            DailySignalLevel.HighAttention => "alert-danger",
+            DailySignalLevel.Attention => "alert-warning",
+            _ => "alert-info"
+        };
+    }
+}

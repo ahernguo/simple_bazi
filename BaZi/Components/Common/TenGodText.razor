@@ -17,17 +17,23 @@
     [Parameter]
     public string? Text { get; set; }
 
+    [Parameter]
+    public bool ShowFavorabilityLabel { get; set; }
+
     private WuXing Element => TenGodElementResolver.Resolve(Info.RiZhu, TenGod);
 
     private bool IsFavorable => Info.LikeWuXing.Contains(Element);
 
-    private string DisplayValue => Text ?? TenGod.ToShenString();
+    private string DisplayValue => Text
+        ?? (Mode == TenGodDisplayMode.Favorability && ShowFavorabilityLabel
+            ? $"{TenGod.ToShenString()}（{(IsFavorable ? "喜用神" : "忌神")}）"
+            : TenGod.ToShenString());
 
     private string FavorabilityCssClass => IsFavorable
         ? "topic-ten-god topic-ten-god-favorable"
         : "topic-ten-god topic-ten-god-unfavorable";
 
     private string Tooltip => IsFavorable
-        ? $"{TenGod.ToShenString()}屬{Element.ToWuXingString()}，依本命格局列為喜用神（相對有利）"
-        : $"{TenGod.ToShenString()}屬{Element.ToWuXingString()}，依本命格局列為忌神（相對不利）";
+        ? $"{TenGod.ToShenString()}屬{Element.ToWuXingString()}，依本命格局列為喜用神\r\n喜用神可幫扶命主，對運勢加分"
+        : $"{TenGod.ToShenString()}屬{Element.ToWuXingString()}，依本命格局列為忌神\r\n忌神會耗洩命主，對運勢無法加分(相對不利)";
 }

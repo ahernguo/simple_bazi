@@ -61,6 +61,43 @@ namespace BaZi.Models {
         public bool HasSignals => Signals.Count > 0;
     }
 
+    /// <summary>交通期間背景中的單一地支來源。</summary>
+    public sealed record DailyTravelSafetyBranchSource(
+        string Label,
+        DiZhi Branch,
+        bool IsTravelBranch
+    );
+
+    /// <summary>交通期間背景中的一組相沖。</summary>
+    public sealed record DailyTravelSafetyClash(
+        DailyTravelSafetyBranchSource First,
+        DailyTravelSafetyBranchSource Second
+    );
+
+    /// <summary>交通期間背景中已湊齊的三刑。</summary>
+    public sealed record DailyTravelSafetyPunishment(IReadOnlyList<DiZhi> Members);
+
+    /// <summary>國曆月份內一段連續且相同的交通背景。</summary>
+    public sealed record DailyTravelSafetyPeriodBackground(
+        DateTime StartDate,
+        DateTime EndDate,
+        DailySignalLevel? Level,
+        IReadOnlyList<DailyTravelSafetyBranchSource> Sources,
+        IReadOnlyList<DailyTravelSafetyClash> Clashes,
+        IReadOnlyList<DailyTravelSafetyPunishment> Punishments,
+        bool HasRepeatedClash,
+        bool IncludesHourPillar
+    ) {
+        /// <summary>取得期間背景中的驛馬地支總數。</summary>
+        public int TravelBranchCount => Sources.Count(source => source.IsTravelBranch);
+    }
+
+    /// <summary>包含每日結果及交通期間背景的月份分析。</summary>
+    public sealed record DailyFortuneMonthAnalysis(
+        IReadOnlyList<DailyFortuneResult> Results,
+        IReadOnlyList<DailyTravelSafetyPeriodBackground> TravelSafetyBackgrounds
+    );
+
     /// <summary>流日頁面的查詢狀態。</summary>
     public sealed class DailyFortunePageModel {
         public int? SelectedYear { get; set; } = DateTime.Now.Year;

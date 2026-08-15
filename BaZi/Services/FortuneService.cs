@@ -415,7 +415,7 @@ namespace BaZi.Services {
             var alertClass = isFavorable ? "alert-success" : "alert-warning";
             var stateLabel = FormatFavorabilityLabel(
                 isFavorable,
-                $"三合形成{wuXing.ToWuXingString()}，依本命格局與目前大運背景列為{(isFavorable ? "喜用" : "忌神")}方向"
+                $"三合形成{wuXing.ToWuXingString()}，依本命格局與目前大運背景列為{(isFavorable ? "喜用" : "忌神")}方向。喜用神會幫扶命主，為運勢加分；忌神會耗洩命主，相對不利"
             );
             var description = isFavorable
                 ? $"合成五行落在{stateLabel}，可視為整體平衡的加分訊號；仍須搭配其他刑沖與現實狀況。"
@@ -432,9 +432,9 @@ namespace BaZi.Services {
             if (type == 0) {
                 html.AppendLine(@"    <div class=""alert alert-success analysis-item-explanation mb-0""><strong>幫助：</strong>補充所需的能量，提升整體運勢、壞事化小、趨吉避凶</div>");
             } else if (type == 1) {
-                html.AppendLine($@"    <div class=""alert alert-warning analysis-item-explanation mb-0""><strong>狀況：</strong>原本的{FormatFavorabilityLabel(true, "被合走的五行依本命格局與目前大運背景列為喜用方向")}被用走，較容易感到受限或不順。</div>");
+                html.AppendLine($@"    <div class=""alert alert-warning analysis-item-explanation mb-0""><strong>狀況：</strong>原本的{FormatFavorabilityLabel(true, "被合走的五行依本命格局與目前大運背景列為喜用方向\r\n喜用神可以幫扶命主，讓運勢加分")}被用走，較容易感到受限或不順。</div>");
             } else {
-                html.AppendLine($@"    <div class=""alert alert-success analysis-item-explanation mb-0""><strong>幫助：</strong>原本的{FormatFavorabilityLabel(false, "被合走的五行依本命格局與目前大運背景列為忌神方向")}受牽制，可視為減輕失衡的訊號。</div>");
+                html.AppendLine($@"    <div class=""alert alert-success analysis-item-explanation mb-0""><strong>幫助：</strong>原本的{FormatFavorabilityLabel(false, "被合走的五行依本命格局與目前大運背景列為忌神方向\r\n忌神會耗洩命主，對運勢沒有加分(相對不利)")}受牽制，可視為減輕失衡的訊號。</div>");
             }
             html.AppendLine(@"</div>");
         }
@@ -445,9 +445,9 @@ namespace BaZi.Services {
             if (type == 0) {
                 html.AppendLine(@"    <div class=""alert alert-success analysis-item-explanation mb-0""><strong>幫助：</strong>補充所需的能量，提升整體運勢、壞事化小、趨吉避凶</div>");
             } else if (type == 1) {
-                html.AppendLine($@"    <div class=""alert alert-warning analysis-item-explanation mb-0""><strong>狀況：</strong>原本的{FormatFavorabilityLabel(true, "被合走的五行依本命格局與目前大運背景列為喜用方向")}被用走，較容易感到受限或不順。</div>");
+                html.AppendLine($@"    <div class=""alert alert-warning analysis-item-explanation mb-0""><strong>狀況：</strong>原本的{FormatFavorabilityLabel(true, "被合走的五行依本命格局與目前大運背景列為喜用方向\r\n喜用神可以幫扶命主，讓運勢加分")}被用走，較容易感到受限或不順。</div>");
             } else {
-                html.AppendLine($@"    <div class=""alert alert-success analysis-item-explanation mb-0""><strong>幫助：</strong>原本的{FormatFavorabilityLabel(false, "被合走的五行依本命格局與目前大運背景列為忌神方向")}受牽制，可視為減輕失衡的訊號。</div>");
+                html.AppendLine($@"    <div class=""alert alert-success analysis-item-explanation mb-0""><strong>幫助：</strong>原本的{FormatFavorabilityLabel(false, "被合走的五行依本命格局與目前大運背景列為忌神方向\r\n忌神會耗洩命主，對運勢沒有加分(相對不利)")}受牽制，可視為減輕失衡的訊號。</div>");
             }
             html.AppendLine(@"</div>");
         }
@@ -1625,7 +1625,7 @@ namespace BaZi.Services {
             } else if (ganHasWealth || zhiHasWealth) {
                 html.AppendLine(exhaustingSignalsAreFavorable
                     ? $"            <li>{periodLabel}見{wealthStar}，且為當期喜用方向，資源與金錢機會較容易被引動；這是機會，不等於必然獲利。</li>"
-                    : $"            <li>{periodLabel}見{wealthStar}，但為當期忌神方向，金錢議題虽會被引動，也可能先表現為支出、負擔或財多身弱；不宜擴大風險。</li>");
+                    : $"            <li>{periodLabel}見{wealthStar}，但為當期忌神方向，金錢議題雖會被引動，也可能先表現為支出、負擔或財多身弱；不宜擴大風險。</li>");
             } else if (ganHasOutput || zhiHasOutput) {
                 html.AppendLine(exhaustingSignalsAreFavorable
                     ? $"            <li>{periodLabel}以{outputStar}訊號為主，且為當期喜用方向；可透過技術、表達、內容或成果輸出間接帶動財。</li>"
@@ -1643,7 +1643,7 @@ namespace BaZi.Services {
             } else if ((ganHasWealth || zhiHasWealth) && exhaustingSignalsAreFavorable) {
                 html.AppendLine($"            <li>{wealthStar}可生{careerStar}，若有轉職或升遷計畫，可把{periodLabel}列為候選窗口，再以職缺、能力與契約條件篩選。</li>");
             } else if (ganHasWealth || zhiHasWealth) {
-                html.AppendLine($"            <li>{wealthStar}虽可生{careerStar}，但目前財星為當期忌神方向；金錢壓力可能連動工作負擔，不宜只因見財就推論升遷或轉職有利。</li>");
+                html.AppendLine($"            <li>{wealthStar}雖可生{careerStar}，但目前財星為當期忌神方向；金錢壓力可能連動工作負擔，不宜只因見財就推論升遷或轉職有利。</li>");
             } else {
                 html.AppendLine($"            <li>{periodLabel}未見明顯{careerStar}工作訊號，表示近期工作上較無特殊狀況，宜穩定累積履歷、技能與可量化成果。</li>");
             }
@@ -2086,8 +2086,8 @@ namespace BaZi.Services {
             var favorableText = string.Join("、", favorable.Select(element => FormatElement(element)));
             var unfavorableText = string.Join("、", unfavorable.Select(element => FormatElement(element)));
             return (favorable.Length, unfavorable.Length) switch {
-                ( > 0, 0) => $"{periodLabel}見 {favorableText}，皆在{FormatFavorabilityLabel(true, "從格依順勢原則列為喜用方向")}",
-                (0, > 0) => $"{periodLabel}見 {unfavorableText}，皆偏{FormatFavorabilityLabel(false, "從格依破格原則列為忌神方向")}",
+                ( > 0, 0) => $"{periodLabel}見 {favorableText}，皆在{FormatFavorabilityLabel(true, "從格依順勢原則列為喜用方向\r\n喜用神可以幫扶命主，對運勢加分")}",
+                (0, > 0) => $"{periodLabel}見 {unfavorableText}，皆偏{FormatFavorabilityLabel(false, "從格依破格原則列為忌神方向\r\n忌神會耗洩命主，對運勢沒有加分(相對不利)")}",
                 _ => $"{periodLabel}同見喜用的 {favorableText} 與忌神的 {unfavorableText}，順勢與逆勢並存"
             };
         }
@@ -2342,7 +2342,7 @@ namespace BaZi.Services {
             string? displayText
         ) {
             var stateClass = isFavorable ? "topic-ten-god-favorable" : "topic-ten-god-unfavorable";
-            var stateText = isFavorable ? "喜用神（相對有利）" : "忌神（相對不利）";
+            var stateText = isFavorable ? "喜用神。喜用神可幫扶命主，為運勢加分" : "忌神。忌神會耗洩命主，相對不利";
             var tenGodText = tenGod.ToShenString();
             var tooltip = $"{tenGodText}屬{element.ToWuXingString()}，{basis}列為{stateText}";
             return $"<span class=\"topic-ten-god {stateClass}\" title=\"{tooltip}\">{displayText ?? tenGodText}</span>";

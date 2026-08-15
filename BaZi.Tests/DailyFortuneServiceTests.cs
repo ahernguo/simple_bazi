@@ -142,6 +142,76 @@ namespace BaZi.Tests {
         }
 
         [Fact]
+        public void AnalyzeMonthDetails_TravelBackgroundPeriodsCoverEveryDay() {
+            var info = new BaZiInfo(BirthDate, 2);
+            var service = new DailyFortuneService();
+
+            var analysis = service.AnalyzeMonthDetails(info, 2026, 2);
+
+            Assert.NotEmpty(analysis.TravelSafetyBackgrounds);
+            Assert.Equal(new DateTime(2026, 2, 1), analysis.TravelSafetyBackgrounds[0].StartDate);
+            Assert.Equal(new DateTime(2026, 2, 28), analysis.TravelSafetyBackgrounds[^1].EndDate);
+            for (var index = 1; index < analysis.TravelSafetyBackgrounds.Count; index++) {
+                Assert.Equal(
+                    analysis.TravelSafetyBackgrounds[index - 1].EndDate.AddDays(1),
+                    analysis.TravelSafetyBackgrounds[index].StartDate
+                );
+            }
+            Assert.All(
+                analysis.TravelSafetyBackgrounds,
+                background => Assert.DoesNotContain(background.Sources, source => source.Label.Contains("流日"))
+            );
+        }
+
+        [Fact]
+        public void AnalyzeMonth_TravelSafetySignalsRequireDailyTriggerAndIncludeFavorabilityFactor() {
+            var info = new BaZiInfo(BirthDate, 2);
+            var service = new DailyFortuneService();
+            var signals = service.AnalyzeMonth(info, 2026, 2)
+                .SelectMany(result => result.Signals)
+                .Where(signal => signal.Topic == DailyFortuneTopic.TravelSafety)
+                .ToArray();
+
+            Assert.NotEmpty(signals);
+            Assert.All(signals, signal => {
+                Assert.Contains("流日地支", signal.Summary);
+                Assert.True(signal.Summary.Contains("相沖") || signal.Summary.Contains("補齊"));
+                var factor = Assert.Single(signal.TenGodFactors!);
+                Assert.Equal("流日地支", factor.Source);
+            });
+        }
+
+        [Fact]
+        public void AnalyzeMonth_TravelBackgroundAlone_DoesNotFlagEveryDay() {
+            var info = new BaZiInfo(BirthDate, 2);
+            var service = new DailyFortuneService();
+
+            for (var year = 2024; year <= 2032; year++) {
+                for (var month = 1; month <= 12; month++) {
+                    var analysis = service.AnalyzeMonthDetails(info, year, month);
+                    DailyTravelSafetyPeriodBackground? background = analysis.TravelSafetyBackgrounds
+                        .FirstOrDefault(candidate =>
+                            (candidate.EndDate - candidate.StartDate).Days >= 11
+                            && (candidate.TravelBranchCount >= 3 || candidate.Punishments.Count > 0));
+                    if (background is null) {
+                        continue;
+                    }
+
+                    var periodResults = analysis.Results
+                        .Where(result => result.Day.Date >= background.StartDate && result.Day.Date <= background.EndDate)
+                        .ToArray();
+                    Assert.Contains(
+                        periodResults,
+                        result => result.Signals.All(signal => signal.Topic != DailyFortuneTopic.TravelSafety)
+                    );
+                    return;
+                }
+            }
+
+            throw new Xunit.Sdk.XunitException("找不到可驗證固定交通背景的月份區段。");
+        }
+
+        [Fact]
         public void AnalyzeDate_MovingWithSameYearBranch_DoesNotTreatSameBranchAsClash() {
             var info = new BaZiInfo(BirthDate, 2);
             var service = new DailyFortuneService();
