@@ -141,16 +141,37 @@
                                 <th scope="row" colspan="4">幫身總分</th>
                                 <td colspan="2" class="fw-semibold">@info.StrengthScore%</td>
                             </tr>
+                            <tr>
+                                <th scope="row" colspan="4">總分判斷</th>
+                                <td colspan="2" class="fw-semibold">
+                                    (分數 &lt; 20) 疑似從弱<br/>
+                                    (20 ≤ 分數 &lt; 45) 身弱；(45 ≤ 分數 ≤ 80) 身強<br />
+                                    (分數 &gt; 80) 疑似從強
+                                </td>
+                            </tr>
                         </tfoot>
                     </table>
                 </div>
             </ChildContent>
             <NoticeContent>
-                @if (info.RequiresStrengthVerification) {
-                    <span>目前分數落在<strong>@GetStrengthStatusText(info)</strong>區間，不能只憑分數定案。必須用多個大運、流年的實際事件與身心狀態複核，確認順勢方向後再採用從格補運。</span>
-                } else {
-                    <span>每個柱位只計一次固定權重；四庫、三合、半合、暗拱與三會只會改變該位置的定案五行，不會重複加分。</span>
-                }
+                <ul>
+                    <li>
+                        @if (info.RequiresStrengthVerification) {
+                            <span>目前分數落在<strong>@GetStrengthStatusText(info)</strong>區間，不能只憑分數定案。必須用多個大運、流年的實際事件與身心狀態複核，確認順勢方向後再採用從格補運。</span>
+                        } else {
+                            <span>每個柱位只計一次固定權重；四庫、三合、半合、暗拱與三會只會改變該位置的定案五行，不會重複加分。</span>
+                        }
+                    </li>
+                    <li>
+                        格局僅表示五行上的能量狀態，並非命主的生理狀態
+                        <ul>
+                            <li><strong>身弱</strong>&ensp;日主五行佔整體的比例&nbsp;<strong>偏少</strong>，需要多補充幫扶日主的五行能量</li>
+                            <li><strong>身強</strong>&ensp;日主五行佔整體的比例&nbsp;<strong>偏多</strong>，需要多耗洩日主的五行能量</li>
+                            <li><strong>從弱</strong>&ensp;日主五行佔整體的比例&nbsp;<strong>極端的少</strong>，需要持續耗洩日主的五行能量</li>
+                            <li><strong>從強</strong>&ensp;日主五行佔整體的比例&nbsp;<strong>極端的多</strong>，需要持續補充幫扶日主的五行能量</li>
+                        </ul>
+                    </li>
+                </ul>
             </NoticeContent>
         </AnalysisCard>
 
