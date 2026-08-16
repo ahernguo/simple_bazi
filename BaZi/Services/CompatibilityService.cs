@@ -226,7 +226,7 @@ namespace BaZi.Services {
                 (false, true) => "對方的表層日支五行符合夫妻星坐夫妻宮；自己未符合。",
                 _ => "雙方表層日支五行皆非夫妻星坐夫妻宮；此項沒有形成加分條件，但不代表不合。"
             };
-
+            var loveDetails = _tenGodService.GetDominantGroups(other).SelectMany(group => group.LeadingStars.Select(star => $"{star.ToShenString()}： {TenGodAnalysisService.GetViewsOnLove(star)}")).ToArray();
             return [
                 new CompatibilitySection(
                 "生肖初篩",
@@ -275,6 +275,12 @@ namespace BaZi.Services {
                 [],
                 selfSpouseInPalace || otherSpouseInPalace ? CompatibilityTone.Positive : CompatibilityTone.Information,
                 Notes: ["藏干未有固定權重，故不作等量推論。", "不是關係永久穩定的保證。"]
+            ),
+            new CompatibilitySection(
+                "對方戀愛關係",
+                string.Empty,
+                loveDetails,
+                CompatibilityTone.Information
             ),
         ];
         }

@@ -121,7 +121,8 @@ namespace BaZi.Services {
                     ? string.Empty
                     : $"；以 {string.Join("、", group.LeadingStars.Select(star => star.ToShenString()))} 較明顯";
                 return $"{group.Group.ToShenString()}（{group.Count}）{leadingStars}：重視{rule.Need}。優勢是{rule.Strength}；需留意{rule.Risk}。建議{rule.Advice}。";
-            }).ToArray();
+            });
+            var loveDetails = dominantGroups.SelectMany(group => group.LeadingStars.Select(star => TenGodAnalysisService.GetViewsOnLove(star)));
             var spouseSummary = candidates.Count == 0
                 ? $"依{info.Gender.ToSexString()}命口徑，夫妻星為 {spouseElement.ToWuXingString()}（{spouseGroup.ToShenString()}），本命明顯訊號較少。"
                 : $"依{info.Gender.ToSexString()}命口徑，夫妻星為 {spouseElement.ToWuXingString()}（{spouseGroup.ToShenString()}），找到 {candidates.Count} 個所在柱候選。";
@@ -148,7 +149,7 @@ namespace BaZi.Services {
                 new PersonalOverviewSection(
                     "你的關係需求",
                     "以並列最多的十神為主，提供伴侶理解你的需求與相處方式。",
-                    relationshipDetails,
+                    [.. relationshipDetails, .. loveDetails],
                     PersonalOverviewTone.Positive
                 )
                 ],
