@@ -2,10 +2,14 @@
 
 @{
     DayMasterProfile profile = DescriptionService.GetDayMasterProfile(Info.DayZhu.Gan);
+    string? dayPillarDescription = DescriptionService.GetDayPillarDescription(Info.DayZhu.Gan, Info.DayZhu.Zhi);
 }
 
-<div><strong>代表物：</strong> @profile.Representative</div>
-<div><strong>描&ensp;&ensp;述：</strong> @profile.Description</div>
+<div><strong>代&ensp;表&ensp;物：</strong> @profile.Representative</div>
+<div><strong>描&emsp;&emsp;述：</strong> @profile.Description</div>
+@if (!string.IsNullOrWhiteSpace(dayPillarDescription)) {
+    <p><strong>日柱補充：</strong> @dayPillarDescription</p>
+}
 
 @code {
     [Parameter, EditorRequired]
